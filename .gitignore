@@ -3,4 +3,3 @@ backend/.env
 backend/data/leads.csv
 .DS_Store
 *.log
-*.png
