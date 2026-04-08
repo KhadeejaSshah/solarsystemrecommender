@@ -297,12 +297,48 @@ input::-webkit-inner-spin-button, input::-webkit-outer-spin-button { -webkit-app
 
 /* ── Empty State ───────────────────────── */
 .empty-state {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 3.5rem 2rem;
-  text-align: center;
+  position: relative;
+  overflow: hidden;
+  min-height: 340px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;   /
 }
+.empty-bg {
+  position: absolute;
+  inset: 0;
+  background: url('assets/legomen.jpeg') center center/cover no-repeat;
+  /* filter: brightness(0.55) blur(1px); */
+  z-index: 1;
+}
+.empty-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  text-align: center;
+  color: #fff;
+  padding: 2.5rem 1.5rem;
+}
+.empty-content .empty-icon svg {
+  color: #fff;
+  opacity: 0.92;
+}
+.empty-content h3,
+.empty-content p,
+.empty-content .empty-features {
+  color: #fff;
+  text-shadow: 0 2px 16px rgba(0,0,0,0.18);
+}
+.empty-content .empty-features span {
+  background: rgba(0,0,0,0.18);
+  border-radius: 12px;
+  padding: 2px 10px;
+  margin: 0 3px;
+  display: inline-block;
+  font-size: 13px;
+}
+
 .empty-icon {
   width: 72px; height: 72px;
   background: var(--blue-light);
