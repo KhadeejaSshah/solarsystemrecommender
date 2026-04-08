@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Sun, Battery, Zap, Home, Car, Bike, Plus, Minus, 
   Upload, FileText, Settings, ChevronRight, CheckCircle2,
-  Info, Ruler, Moon, Lightbulb, Wind, Droplets
+  Info, Ruler, Moon, Lightbulb, Wind, Droplets, ZapOff,
+  Cloud, Refrigerator, Fan as FanIcon
 } from 'lucide-react';
 import { InteractiveHouse } from './components/InteractiveHouse';
 import { analyzeBill } from './services/geminiService';
@@ -68,7 +69,7 @@ export default function App() {
       });
       const data = await res.json();
       setResult(data);
-      setStep(10); // Result step
+      setStep(11); // Result step
     } catch (error) {
       console.error(error);
     } finally {
@@ -139,10 +140,10 @@ export default function App() {
     const fields = [
       { key: 'ac15', label: 'AC 1.5 Ton', icon: Wind },
       { key: 'ac20', label: 'AC 2.0 Ton', icon: Wind },
-      { key: 'fan', label: 'Fans', icon: Droplets },
+      { key: 'fan', label: 'Fans', icon: FanIcon },
       { key: 'light', label: 'Lights', icon: Lightbulb },
-      { key: 'fridge', label: 'Refrigerators', icon: Settings },
-      { key: 'motor', label: 'Motors', icon: Zap },
+      { key: 'fridge', label: 'Refrigerators', icon: Refrigerator },
+      { key: 'motor', label: 'Motors', icon: Settings },
     ];
 
     return (
@@ -179,11 +180,19 @@ export default function App() {
                   </button>
                 </div>
               </div>
+              {step === idx + 1 && (
+                <button 
+                  onClick={() => setStep(idx + 2)}
+                  className="mt-2 text-xs font-bold text-sky-blue uppercase tracking-widest hover:underline"
+                >
+                  Skip this appliance
+                </button>
+              )}
             </div>
           ))}
 
           {/* EV Section */}
-          <div className={`step-blur ${step < 7 ? 'step-hidden' : 'step-visible'} space-y-4`}>
+          <div key="ev-car-step" className={`step-blur ${step < 7 ? 'step-hidden' : 'step-visible'} space-y-4`}>
             <div className="p-4 glass rounded-2xl">
                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-4">
@@ -209,10 +218,18 @@ export default function App() {
                   className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-blue outline-none"
                  />
                )}
+               {step === 7 && !hasEvCar && (
+                 <button 
+                  onClick={() => setStep(8)}
+                  className="mt-2 text-xs font-bold text-sky-blue uppercase tracking-widest hover:underline"
+                >
+                  Skip EV Car
+                </button>
+               )}
             </div>
           </div>
 
-          <div className={`step-blur ${step < 8 ? 'step-hidden' : 'step-visible'} space-y-4`}>
+          <div key="ev-bike-step" className={`step-blur ${step < 8 ? 'step-hidden' : 'step-visible'} space-y-4`}>
             <div className="p-4 glass rounded-2xl">
                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-4">
@@ -238,10 +255,42 @@ export default function App() {
                   className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-blue outline-none"
                  />
                )}
+               {step === 8 && !hasEvBike && (
+                 <button 
+                  onClick={() => setStep(9)}
+                  className="mt-2 text-xs font-bold text-sky-blue uppercase tracking-widest hover:underline"
+                >
+                  Skip EV Bike
+                </button>
+               )}
             </div>
           </div>
 
-          <div className={`step-blur ${step < 9 ? 'step-hidden' : 'step-visible'}`}>
+          <div key="other-appliances-step" className={`step-blur ${step < 9 ? 'step-hidden' : 'step-visible'} space-y-4`}>
+            <div className="p-4 glass rounded-2xl space-y-4">
+              <div className="flex items-center gap-4">
+                <Settings className="w-6 h-6 text-slate-400" />
+                <span className="font-medium">Other Appliances (kWh)</span>
+              </div>
+              <input 
+                type="number" 
+                placeholder="Total kWh of other appliances"
+                value={otherKwh || ''}
+                onChange={(e) => setOtherKwh(Number(e.target.value))}
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none"
+              />
+              {step === 9 && (
+                <button 
+                  onClick={() => setStep(10)}
+                  className="text-xs font-bold text-sky-blue uppercase tracking-widest hover:underline"
+                >
+                  Skip Other Appliances
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div key="roof-size-step" className={`step-blur ${step < 10 ? 'step-hidden' : 'step-visible'}`}>
             <div className="p-4 glass rounded-2xl space-y-4">
               <div className="flex items-center gap-4">
                 <Ruler className="w-6 h-6 text-slate-400" />
@@ -277,7 +326,8 @@ export default function App() {
             }}
             isNight={isNight}
             hasPanels={false}
-            isCharging={hasEvCar || hasEvBike}
+            hasEvCar={hasEvCar}
+            hasEvBike={hasEvBike}
           />
           <div className="mt-8 text-center text-slate-400 text-sm italic">
             Watch your house update as you add appliances!
@@ -300,14 +350,29 @@ export default function App() {
         
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { label: 'Solar Panels', value: `${result?.suggestedPv} kW`, icon: Sun, color: 'text-yellow-500' },
-            { label: 'Inverter', value: `${result?.suggestedInverter} kW`, icon: Zap, color: 'text-sky-blue' },
-            { label: 'Battery', value: `${result?.suggestedBattery} kWh`, icon: Battery, color: 'text-sky-green' }
+            { id: 'pv', label: 'Solar Panels', value: `${result?.suggestedPv} kW`, icon: Sun, color: 'text-yellow-500' },
+            { id: 'inv', label: 'Inverter', value: `${result?.suggestedInverter} kW`, icon: Zap, color: 'text-sky-blue' },
+            { id: 'bat', label: 'Battery', value: `${result?.suggestedBattery} kWh`, icon: Battery, color: 'text-sky-green' }
           ].map((item) => (
-            <div key={item.label} className="glass p-6 rounded-3xl text-center">
+            <div key={item.id} className="glass p-6 rounded-3xl text-center">
               <item.icon className={`w-8 h-8 mx-auto mb-4 ${item.color}`} />
               <div className="text-2xl font-bold mb-1">{item.value}</div>
               <div className="text-slate-500 text-xs uppercase font-bold tracking-widest">{item.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Environmental Impact Section */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[
+            { id: 'co2', label: 'CO2 Saved', value: `${result?.co2Saved} kg/yr`, icon: Wind, color: 'text-sky-blue' },
+            { id: 'trees', label: 'Trees Planted', value: `${result?.treesPlanted}`, icon: Droplets, color: 'text-green-500' },
+            { id: 'carbon', label: 'Carbon Footprint', value: `-${result?.carbonFootprintReduction}%`, icon: ZapOff, color: 'text-indigo-500' }
+          ].map((item) => (
+            <div key={item.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
+              <item.icon className={`w-5 h-5 mx-auto mb-2 ${item.color}`} />
+              <div className="text-lg font-bold">{item.value}</div>
+              <div className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">{item.label}</div>
             </div>
           ))}
         </div>
@@ -341,7 +406,8 @@ export default function App() {
           }}
           isNight={isNight}
           hasPanels={true}
-          isCharging={hasEvCar || hasEvBike}
+          hasEvCar={hasEvCar}
+          hasEvBike={hasEvBike}
         />
         <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 glass px-6 py-3 rounded-full flex items-center gap-3">
           <div className={`w-3 h-3 rounded-full ${isNight ? 'bg-indigo-400' : 'bg-yellow-400'} animate-pulse`} />
@@ -396,7 +462,7 @@ export default function App() {
               </div>
               {renderSelection()}
             </motion.div>
-          ) : step === 10 ? (
+          ) : step === 11 ? (
             <motion.div 
               key="result"
               initial={{ opacity: 0 }}
@@ -471,7 +537,7 @@ export default function App() {
       {/* Footer Branding */}
       <footer className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
         <div className="glass px-6 py-3 rounded-full flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-slate-400">
-          <span>Powered by Gemini AI</span>
+          <span>recommender of solar system</span>
           <div className="w-px h-4 bg-slate-200" />
           <span className="text-sky-blue">SkyElectric Designer v1.0</span>
         </div>
