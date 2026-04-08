@@ -1,0 +1,5 @@
+{
+  "name": "SkyElectric Solar Designer",
+  "description": "Interactive solar system sizing tool with bill analysis and appliance-based estimation.",
+  "requestFramePermissions": []
+}

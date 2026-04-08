@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;600;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+  
+  --color-sky-blue: #00A3E0;
+  --color-sky-dark: #003358;
+  --color-sky-green: #8CC63F;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 font-sans antialiased;
+}
+
+.glass {
+  @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-xl;
+}
+
+.step-blur {
+  @apply transition-all duration-500;
+}
+
+.step-hidden {
+  @apply opacity-0 blur-lg pointer-events-none translate-y-4;
+}
+
+.step-visible {
+  @apply opacity-100 blur-none pointer-events-auto translate-y-0;
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}

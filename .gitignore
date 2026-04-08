@@ -1,5 +1,8 @@
 node_modules/
-backend/.env
-backend/data/leads.csv
+build/
+dist/
+coverage/
 .DS_Store
 *.log
+.env*
+!.env.example
