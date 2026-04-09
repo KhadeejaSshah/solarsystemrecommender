@@ -13,6 +13,9 @@ export interface CalculationResult {
   suggestedPv: number;
   suggestedInverter: number;
   suggestedBattery: number;
+  co2Saved: number;
+  treesPlanted: number;
+  carbonFootprintReduction: number;
 }
 
 export type InputMode = 'bill' | 'units' | 'appliances' | null;

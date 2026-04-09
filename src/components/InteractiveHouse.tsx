@@ -103,7 +103,7 @@ export const InteractiveHouse: React.FC<HouseProps> = ({ appliances, isNight, ha
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="absolute top-12 left-1/2 -translate-x-1/2 w-48 h-16 bg-slate-900/80 grid grid-cols-4 gap-1 p-1 rounded border border-sky-500/30 rotate-[5deg]"
+            className="absolute top-12 left-[53%] -translate-x-[55%] w-48 h-16 bg-slate-600/80 grid grid-cols-4 gap-1 p-1 rounded border border-sky-500/30 rotate-[0deg]"
           >
             {[...Array(8)].map((_, i) => (
               <div key={`panel-${i}`} className="relative bg-sky-900/80 border border-sky-400/20 overflow-hidden">
@@ -141,7 +141,7 @@ export const InteractiveHouse: React.FC<HouseProps> = ({ appliances, isNight, ha
             {/* Lamp 1 */}
             {appliances.light > 0 && (
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute bottom-8 left-4">
-                <div className={`w-3 h-3 rounded-t-full ${isNight ? 'bg-yellow-400 shadow-[0_0_10px_#fbbf24]' : 'bg-slate-400'}`} />
+                <div className={`w-3 h-3 rounded-t-full ${isNight ? 'bg-yellow-400 shadow-[0_0_10px_#fbbf24]' : 'bg-yellow-400 shadow-[0_0_10px_#fbbf24]'}`} />
                 <div className="w-0.5 h-3 bg-slate-600 mx-auto" />
               </motion.div>
             )}
@@ -156,7 +156,7 @@ export const InteractiveHouse: React.FC<HouseProps> = ({ appliances, isNight, ha
             {/* Lamp 2 */}
             {appliances.light > 1 && (
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-2 right-2">
-                <div className={`w-4 h-4 rounded-full ${isNight ? 'bg-yellow-200 shadow-[0_0_15px_#fef08a]' : 'bg-slate-400'}`} />
+                <div className={`w-4 h-4 rounded-full ${isNight ? 'bg-yellow-200 shadow-[0_0_15px_#fef08a]' : 'bg-yellow-400 shadow-[0_0_10px_#fbbf24]'}`} />
               </motion.div>
             )}
           </div>
@@ -169,15 +169,15 @@ export const InteractiveHouse: React.FC<HouseProps> = ({ appliances, isNight, ha
             
             {/* Fan in Drawing Room */}
             {appliances.fan > 0 && (
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-1 left-1/2 -translate-x-1/2">
+              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-1 left-[78%] -translate-x-1/2">
                 <Fan className="w-8 h-8 text-slate-400 animate-spin-slow" />
               </motion.div>
             )}
 
             {/* Lamp 3 */}
             {appliances.light > 2 && (
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute bottom-8 right-4">
-                <div className={`w-3 h-3 rounded-t-full ${isNight ? 'bg-yellow-400 shadow-[0_0_10px_#fbbf24]' : 'bg-slate-400'}`} />
+              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute bottom-8 right-20">
+                <div className={`w-3 h-3 rounded-t-full ${isNight ? 'bg-yellow-400 shadow-[0_0_10px_#fbbf24]' : 'bg-yellow-400 shadow-[0_0_10px_#fbbf24]'}`} />
                 <div className="w-0.5 h-3 bg-slate-600 mx-auto" />
               </motion.div>
             )}
@@ -200,8 +200,8 @@ export const InteractiveHouse: React.FC<HouseProps> = ({ appliances, isNight, ha
 
             {/* Lamp 4 */}
             {appliances.light > 3 && (
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-2 left-2">
-                <div className={`w-4 h-4 rounded-full ${isNight ? 'bg-yellow-200 shadow-[0_0_15px_#fef08a]' : 'bg-slate-400'}`} />
+              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-2 left-[72px]">
+                <div className={`w-4 h-4 rounded-full ${isNight ? 'bg-yellow-200 shadow-[0_0_15px_#fef08a]' : 'bg-yellow-400 shadow-[0_0_10px_#fbbf24]'}`} />
               </motion.div>
             )}
           </div>
@@ -213,7 +213,7 @@ export const InteractiveHouse: React.FC<HouseProps> = ({ appliances, isNight, ha
         <motion.div 
           initial={{ scale: 0 }} 
           animate={{ scale: 1 }} 
-          className="absolute bottom-[30%] right-90 w-10 h-10 bg-slate-800 rounded border border-white/10 flex items-center justify-center"
+          className="absolute bottom-[40%] right-[15px] w-10 h-10 bg-slate-800 rounded border border-white/10 flex items-center justify-center"
         >
           <Settings className="w-6 h-6 text-sky-400 animate-spin" />
           <div className="absolute -top-4 text-[6px] font-bold text-white/50 uppercase">Motor</div>
@@ -221,7 +221,7 @@ export const InteractiveHouse: React.FC<HouseProps> = ({ appliances, isNight, ha
       )}
 
       {/* Energy Infrastructure */}
-      <div className="absolute bottom-[30%] right-2 w-12 h-20 bg-slate-800 rounded border border-white/10 shadow-lg flex flex-col items-center justify-center gap-2">
+      <div className="absolute bottom-[20%] right-2 w-12 h-20 bg-slate-800 rounded border border-white/10 shadow-lg flex flex-col items-center justify-center gap-2">
         <div className="w-8 h-1 bg-sky-500 rounded-full shadow-[0_0_10px_#0ea5e9]" />
         <Battery className={`w-6 h-6 ${isNight ? 'text-sky-400' : 'text-green-400'}`} />
         <div className="text-[8px] font-bold text-white/50 uppercase">Inverter</div>
@@ -234,7 +234,7 @@ export const InteractiveHouse: React.FC<HouseProps> = ({ appliances, isNight, ha
             initial={{ x: -200, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -200, opacity: 0 }}
-            className="absolute bottom-[4%] left-13 flex items-end gap-6"
+            className="absolute bottom-[4%] left-[52px] flex items-end gap-6"
           >
             {hasEvCar && (
               <div className="flex flex-col items-center gap-2">
@@ -277,7 +277,7 @@ export const InteractiveHouse: React.FC<HouseProps> = ({ appliances, isNight, ha
       {!isNight && hasPanels && (
         <svg className="absolute inset-0 w-full h-full pointer-events-none">
           <motion.path
-            d="M 250 150 L 350 350"
+            d="M 250 150 L 990 800"
             stroke="url(#energyGradient)"
             strokeWidth="2"
             fill="none"

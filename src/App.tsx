@@ -365,9 +365,9 @@ export default function App() {
         {/* Environmental Impact Section */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { id: 'co2', label: 'CO2 Saved', value: `${result?.co2Saved} kg/yr`, icon: Wind, color: 'text-sky-blue' },
-            { id: 'trees', label: 'Trees Planted', value: `${result?.treesPlanted}`, icon: Droplets, color: 'text-green-500' },
-            { id: 'carbon', label: 'Carbon Footprint', value: `-${result?.carbonFootprintReduction}%`, icon: ZapOff, color: 'text-indigo-500' }
+            { id: 'co2', label: 'CO2 Saved', value: `${result?.co2Saved ?? 0} kg/yr`, icon: Wind, color: 'text-sky-blue' },
+            { id: 'trees', label: 'Trees Planted', value: `${result?.treesPlanted ?? 0}`, icon: Droplets, color: 'text-green-500' },
+            { id: 'carbon', label: 'Carbon Footprint', value: `${result?.carbonFootprintReduction ?? 0}%`, icon: ZapOff, color: 'text-indigo-500' }
           ].map((item) => (
             <div key={item.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
               <item.icon className={`w-5 h-5 mx-auto mb-2 ${item.color}`} />
