@@ -7,34 +7,40 @@
   --font-display: "Sora", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 
-  --color-solar-orange: #FF9F1C;
-  --color-solar-navy: #0B132B;
-  --color-solar-electric: #3A86FF;
-  --color-solar-glow: rgba(255, 159, 28, 0.3);
+  --color-solar-orange: #FF8C00;
+  --color-solar-navy: #F8FAFC;
+  --color-solar-electric: #2563EB;
+  --color-solar-glow: rgba(37, 99, 235, 0.1);
+  --color-solar-text: #0F172A;
 
-  --background-image-solar-gradient: radial-gradient(circle at top right, #1a2a6c, #b21f1f, #fdbb2d);
-  --background-image-deep-void: linear-gradient(to bottom, #0B132B, #1C2541);
+  --background-image-solar-gradient: radial-gradient(circle at top right, #F5F7FA, #E4E7EB, #D1D5DB);
+  --background-image-deep-void: linear-gradient(to bottom, #F5F7FA, #E4E7EB);
 }
 
 @layer base {
   body {
-    @apply bg-solar-navy text-white font-sans antialiased overflow-x-hidden;
+    @apply bg-solar-navy text-solar-text font-sans antialiased overflow-x-hidden;
+    background-image: linear-gradient(rgba(248, 250, 252, 0.95), rgba(248, 250, 252, 0.95)), url('/logo.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+    background-size: 40%;
   }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl;
+    @apply bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl;
   }
 
   .btn-primary {
-    @apply px-8 py-3 bg-solar-orange text-white rounded-full font-bold tracking-wide 
-           hover:shadow-[0_0_20px_rgba(255,159,28,0.5)] transition-all duration-300 active:scale-95;
+    @apply px-8 py-3 bg-solar-electric text-white rounded-full font-bold tracking-wide 
+           hover:shadow-[0_0_20px_rgba(58,134,255,0.3)] transition-all duration-300 active:scale-95;
   }
 
   .btn-secondary {
-    @apply px-8 py-3 bg-white/10 text-white rounded-full font-bold tracking-wide 
-           hover:bg-white/20 transition-all duration-300 active:scale-95 border border-white/10;
+    @apply px-8 py-3 bg-white text-solar-text rounded-full font-bold tracking-wide 
+           hover:bg-solar-navy transition-all duration-300 active:scale-95 border border-solar-text/10 shadow-sm;
   }
 }
 
@@ -43,9 +49,17 @@
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0B132B;
+  background: #F5F7FA;
 }
 ::-webkit-scrollbar-thumb {
-  background: #FF9F1C;
+  background: #3A86FF;
   border-radius: 10px;
+}
+
+.solar-glow-text {
+  text-shadow: 0 0 10px rgba(58, 134, 255, 0.2);
+}
+
+.solar-border {
+  @apply border border-solar-text/10;
 }

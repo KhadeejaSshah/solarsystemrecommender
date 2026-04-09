@@ -7,28 +7,26 @@ import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import EntryScreen from './components/EntryScreen';
 import UserDetailsStep from './components/UserDetailsStep';
-import EntryPathStep from './components/EntryPathStep';
-import BillUploadStep from './components/BillUploadStep';
-import MonthlyUnitsStep from './components/MonthlyUnitsStep';
 import ApplianceStaging from './components/ApplianceStaging';
 import EVStep from './components/EVStep';
 import UsageBehaviorStep from './components/UsageBehavior';
 import BackupPreferenceStep from './components/BackupPreference';
-import BudgetSlider from './components/BudgetSlider';
+import OptionalBillStep from './components/OptionalBillStep';
 import AIAnalyzer from './components/AIAnalyzer';
 import ResultDashboard from './components/ResultDashboard';
 import { UserData, HouseType, Appliance, UsageBehavior, BackupPreference, UserDetails, EntryPath, EVInfo } from './types';
 import { cn } from './lib/utils';
 
-type Step = 'entry' | 'user-details' | 'entry-path' | 'bill-upload' | 'monthly-units' | 'appliances' | 'ev-info' | 'usage' | 'backup' | 'budget' | 'analyzing' | 'result';
+type Step = 'entry' | 'user-details' | 'appliances' | 'ev-info' | 'usage' | 'backup' | 'optional-bill' | 'analyzing' | 'result';
 
 export default function App() {
   const [step, setStep] = useState<Step>('entry');
   const [userData, setUserData] = useState<Partial<UserData>>({
     appliances: [],
     budgetSensitivity: 50,
-    evInfo: { hasCar: false, hasBike: false },
+    evInfo: { status: 'none' },
     houseType: 'house',
+    entryPath: 'appliances',
   });
 
   const updateData = (newData: Partial<UserData>) => {
@@ -38,18 +36,12 @@ export default function App() {
   const nextStep = (currentStep: Step): Step => {
     switch (currentStep) {
       case 'entry': return 'user-details';
-      case 'user-details': return 'entry-path';
-      case 'entry-path': 
-        if (userData.entryPath === 'upload-bill') return 'bill-upload';
-        if (userData.entryPath === 'monthly-units') return 'monthly-units';
-        return 'appliances';
-      case 'bill-upload': return 'ev-info';
-      case 'monthly-units': return 'ev-info';
+      case 'user-details': return 'appliances';
       case 'appliances': return 'ev-info';
       case 'ev-info': return 'usage';
       case 'usage': return 'backup';
-      case 'backup': return 'budget';
-      case 'budget': return 'analyzing';
+      case 'backup': return 'optional-bill';
+      case 'optional-bill': return 'analyzing';
       case 'analyzing': return 'result';
       default: return 'entry';
     }
@@ -59,24 +51,7 @@ export default function App() {
 
   const handleUserDetails = (details: UserDetails) => {
     updateData({ details });
-    setStep('entry-path');
-  };
-
-  const handleEntryPath = (path: EntryPath) => {
-    updateData({ entryPath: path });
-    if (path === 'upload-bill') setStep('bill-upload');
-    else if (path === 'monthly-units') setStep('monthly-units');
-    else setStep('appliances');
-  };
-
-  const handleBillUpload = (units: number) => {
-    updateData({ monthlyUnits: units });
-    setStep('ev-info');
-  };
-
-  const handleMonthlyUnits = (units: number) => {
-    updateData({ monthlyUnits: units });
-    setStep('ev-info');
+    setStep('appliances');
   };
 
   const handleAppliances = (apps: Appliance[]) => {
@@ -96,11 +71,11 @@ export default function App() {
 
   const handleBackup = (pref: BackupPreference) => {
     updateData({ backupPreference: pref });
-    setStep('budget');
+    setStep('optional-bill');
   };
 
-  const handleBudget = (value: number) => {
-    updateData({ budgetSensitivity: value });
+  const handleOptionalBill = (data: { monthlyUnits?: number; monthlyBill?: number }) => {
+    updateData(data);
     setStep('analyzing');
   };
 
@@ -108,7 +83,7 @@ export default function App() {
     setStep('result');
   };
 
-  const journeySteps: Step[] = ['user-details', 'entry-path', 'appliances', 'ev-info', 'usage', 'backup', 'budget'];
+  const journeySteps: Step[] = ['user-details', 'appliances', 'ev-info', 'usage', 'backup', 'optional-bill'];
   const currentProgressIdx = journeySteps.indexOf(step);
 
   return (
@@ -141,21 +116,6 @@ export default function App() {
                   <UserDetailsStep onComplete={handleUserDetails} />
                 </motion.div>
               )}
-              {step === 'entry-path' && (
-                <motion.div key="path" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex justify-center">
-                  <EntryPathStep onSelect={handleEntryPath} />
-                </motion.div>
-              )}
-              {step === 'bill-upload' && (
-                <motion.div key="bill" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex justify-center">
-                  <BillUploadStep onComplete={handleBillUpload} />
-                </motion.div>
-              )}
-              {step === 'monthly-units' && (
-                <motion.div key="units" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex justify-center">
-                  <MonthlyUnitsStep onComplete={handleMonthlyUnits} />
-                </motion.div>
-              )}
               {step === 'appliances' && (
                 <motion.div key="apps" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex justify-center">
                   <ApplianceStaging onComplete={handleAppliances} />
@@ -176,9 +136,9 @@ export default function App() {
                   <BackupPreferenceStep onSelect={handleBackup} />
                 </motion.div>
               )}
-              {step === 'budget' && (
-                <motion.div key="budget" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex justify-center">
-                  <BudgetSlider onComplete={handleBudget} />
+              {step === 'optional-bill' && (
+                <motion.div key="optional-bill" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex justify-center">
+                  <OptionalBillStep onComplete={handleOptionalBill} />
                 </motion.div>
               )}
             </AnimatePresence>

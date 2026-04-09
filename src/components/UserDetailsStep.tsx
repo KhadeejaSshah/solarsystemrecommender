@@ -21,10 +21,10 @@ export default function UserDetailsStep({ onComplete }: UserDetailsStepProps) {
   return (
     <div className="flex flex-col items-center">
       <StepWrapper direction="top">
-        <h2 className="text-3xl font-display font-bold text-white mb-2 text-center">
+        <h2 className="text-3xl font-display font-bold text-solar-text mb-2 text-center">
           Personal Details
         </h2>
-        <p className="text-white/50 mb-8 text-center">Let's start by getting to know you.</p>
+        <p className="text-solar-text/50 mb-8 text-center">Let's start by getting to know you.</p>
 
         <div className="space-y-4">
           <InputGroup 
@@ -47,14 +47,14 @@ export default function UserDetailsStep({ onComplete }: UserDetailsStepProps) {
             onChange={(v) => setDetails(d => ({ ...d, phone: v }))} 
           />
           <div className="relative group">
-            <div className="absolute top-4 left-4 text-white/30 group-focus-within:text-solar-orange transition-colors">
+            <div className="absolute top-4 left-4 text-solar-text/30 group-focus-within:text-solar-electric transition-colors">
               <MapPin className="w-5 h-5" />
             </div>
             <textarea
               placeholder="Installation Address"
               value={details.address}
               onChange={(e) => setDetails(d => ({ ...d, address: e.target.value }))}
-              className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:border-solar-orange/50 focus:ring-1 focus:ring-solar-orange/50 transition-all min-h-[100px] resize-none"
+              className="w-full bg-white border border-solar-text/10 rounded-2xl py-4 pl-12 pr-4 text-solar-text placeholder:text-solar-text/20 focus:outline-none focus:border-solar-electric focus:ring-1 focus:ring-solar-electric transition-all min-h-[100px] resize-none"
             />
           </div>
 
@@ -76,7 +76,7 @@ export default function UserDetailsStep({ onComplete }: UserDetailsStepProps) {
 function InputGroup({ icon: Icon, placeholder, value, onChange, type = "text" }: any) {
   return (
     <div className="relative group">
-      <div className="absolute inset-y-0 left-4 flex items-center text-white/30 group-focus-within:text-solar-orange transition-colors">
+      <div className="absolute inset-y-0 left-4 flex items-center text-solar-text/30 group-focus-within:text-solar-electric transition-colors">
         <Icon className="w-5 h-5" />
       </div>
       <input
@@ -84,7 +84,7 @@ function InputGroup({ icon: Icon, placeholder, value, onChange, type = "text" }:
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:border-solar-orange/50 focus:ring-1 focus:ring-solar-orange/50 transition-all"
+        className="w-full bg-white border border-solar-text/10 rounded-2xl py-4 pl-12 pr-4 text-solar-text placeholder:text-solar-text/20 focus:outline-none focus:border-solar-electric focus:ring-1 focus:ring-solar-electric transition-all"
       />
     </div>
   );

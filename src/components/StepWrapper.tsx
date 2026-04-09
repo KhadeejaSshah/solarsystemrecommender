@@ -39,7 +39,7 @@ export default function StepWrapper({ children, direction = 'right', className }
       animate="animate"
       exit="exit"
       transition={{ type: "spring", damping: 20, stiffness: 100 }}
-      className={cn("glass-card p-8 rounded-3xl border border-white/10 backdrop-blur-2xl bg-white/5 shadow-2xl max-w-2xl w-full", className)}
+      className={cn("glass-card p-8 rounded-3xl border border-solar-text/5 backdrop-blur-2xl bg-white shadow-2xl max-w-2xl w-full", className)}
     >
       {children}
     </motion.div>
