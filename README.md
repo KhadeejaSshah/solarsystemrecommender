@@ -18,7 +18,3 @@ View your app in AI Studio: https://ai.studio/apps/d926abc6-664d-4c78-a3c4-5e118
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
-
-
-
-in the final recommendation screen, can you please add a day night effect? its currently night. the house and backdrop is blue indication night time but solar pv is produced at daytime. so i nedd both day and night changing with a delay of 2 seconds. 
