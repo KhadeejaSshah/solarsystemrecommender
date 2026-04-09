@@ -1,5 +1,5 @@
 {
-  "name": "SkyElectric Solar Designer",
-  "description": "Interactive solar system sizing tool with bill analysis and appliance-based estimation.",
+  "name": "SkyElectric",
+  "description": "AI-powered Solar System Designer for Pakistan. Determine your ideal solar setup with guided simulations and Gemini AI insights.",
   "requestFramePermissions": []
 }

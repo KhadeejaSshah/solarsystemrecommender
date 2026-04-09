@@ -3,7 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
+    <title>SkyElectric</title>
+    <script>
+      // Fix for "Uncaught TypeError: Cannot set property fetch of #<Window> which has only a getter"
+      // Some libraries try to overwrite window.fetch which is read-only in this environment.
+      (function() {
+        var _fetch = window.fetch;
+        if (_fetch) {
+          try {
+            Object.defineProperty(window, 'fetch', {
+              configurable: true,
+              enumerable: true,
+              get: function() { return _fetch; },
+              set: function(v) { console.warn('Attempted to overwrite window.fetch ignored'); }
+            });
+          } catch (e) {
+            console.error('Failed to patch window.fetch:', e);
+          }
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
