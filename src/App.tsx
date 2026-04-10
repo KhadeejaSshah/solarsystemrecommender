@@ -87,7 +87,22 @@ export default function App() {
   const currentProgressIdx = journeySteps.indexOf(step);
 
   return (
-    <div className="min-h-screen bg-solar-navy text-white selection:bg-solar-orange/30">
+    <div className="min-h-screen bg-solar-navy text-white selection:bg-solar-orange/30 relative">
+      {/* Persistent Background Logo */}
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
+        <div className="relative w-[40%] aspect-square opacity-[0.08] ">
+          <img
+            src="/logo.png"
+            alt=""
+            className="w-full h-full object-contain"
+            onError={(e) => {
+              e.currentTarget.src = "https://api.iconify.design/lucide:zap.svg?color=%232563EB";
+            }}
+            referrerPolicy="no-referrer"
+          />
+        </div>
+      </div>
+
       <CursorGlow />
 
       <AnimatePresence mode="wait">
@@ -98,7 +113,7 @@ export default function App() {
         )}
 
         {step !== 'entry' && step !== 'result' && step !== 'analyzing' && (
-          <motion.div 
+          <motion.div
             key="journey"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -149,8 +164,8 @@ export default function App() {
                 <span className="text-[10px] uppercase tracking-[0.3em] text-white/20 font-bold">Step</span>
                 <div className="flex gap-1">
                   {journeySteps.map((s, i) => (
-                    <div 
-                      key={s} 
+                    <div
+                      key={s}
                       className={cn(
                         "h-1 rounded-full transition-all duration-500",
                         i <= currentProgressIdx ? "w-8 bg-solar-orange" : "w-2 bg-white/10"

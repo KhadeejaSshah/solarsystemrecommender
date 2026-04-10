@@ -20,11 +20,6 @@
 @layer base {
   body {
     @apply bg-solar-navy text-solar-text font-sans antialiased overflow-x-hidden;
-    background-image: linear-gradient(rgba(248, 250, 252, 0.95), rgba(248, 250, 252, 0.95)), url('/logo.png');
-    background-repeat: no-repeat;
-    background-position: center;
-    background-attachment: fixed;
-    background-size: 40%;
   }
 }
 
@@ -34,13 +29,11 @@
   }
 
   .btn-primary {
-    @apply px-8 py-3 bg-solar-electric text-white rounded-full font-bold tracking-wide 
-           hover:shadow-[0_0_20px_rgba(58,134,255,0.3)] transition-all duration-300 active:scale-95;
+    @apply px-8 py-3 bg-solar-electric text-white rounded-full font-bold tracking-wide hover:shadow-lg hover:shadow-solar-electric/30 transition-all duration-300 active:scale-95;
   }
 
   .btn-secondary {
-    @apply px-8 py-3 bg-white text-solar-text rounded-full font-bold tracking-wide 
-           hover:bg-solar-navy transition-all duration-300 active:scale-95 border border-solar-text/10 shadow-sm;
+    @apply px-8 py-3 bg-white text-solar-text rounded-full font-bold tracking-wide hover:bg-solar-navy transition-all duration-300 active:scale-95 border border-solar-text/10 shadow-sm;
   }
 }
 
@@ -48,9 +41,11 @@
 ::-webkit-scrollbar {
   width: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: #F5F7FA;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #3A86FF;
   border-radius: 10px;
