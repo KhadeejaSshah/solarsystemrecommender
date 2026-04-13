@@ -73,22 +73,6 @@ export default function OptionalBillStep({ onComplete }: OptionalBillStepProps) 
 
         <div className="space-y-2">
           <label className="text-xs font-bold uppercase tracking-widest text-solar-text/60 ml-1">
-            Average Monthly Units
-          </label>
-          <div className="relative">
-            <Zap className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-solar-electric" />
-            <input
-              type="number"
-              value={units}
-              onChange={(e) => setUnits(e.target.value)}
-              placeholder="e.g. 500"
-              className="w-full bg-white border border-solar-text/10 rounded-2xl py-4 pl-12 pr-4 text-solar-text focus:border-solar-electric focus:ring-1 focus:ring-solar-electric outline-none transition-all"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-widest text-solar-text/60 ml-1">
             Average Monthly Bill (PKR)
           </label>
           <div className="relative">
@@ -98,7 +82,7 @@ export default function OptionalBillStep({ onComplete }: OptionalBillStepProps) 
               value={bill}
               onChange={(e) => setBill(e.target.value)}
               placeholder="e.g. 25000"
-              className="w-full bg-white border border-solar-text/10 rounded-2xl py-4 pl-12 pr-4 text-solar-text focus:border-solar-electric focus:ring-1 focus:ring-solar-electric outline-none transition-all"
+              className="w-full bg-solar-input border border-solar-text/10 rounded-2xl py-4 pl-12 pr-4 text-solar-text focus:border-solar-electric focus:ring-1 focus:ring-solar-electric outline-none transition-all"
             />
           </div>
         </div>

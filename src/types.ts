@@ -80,7 +80,7 @@ export const APPLIANCES_LIST: Omit<Appliance, 'quantity'>[] = [
   },
   { 
     id: 'lights', 
-    name: 'LED Lights (Set of 5)', 
+    name: 'LED Lights', 
     icon: 'lights', 
     wattage: 60 
   },

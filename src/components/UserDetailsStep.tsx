@@ -54,7 +54,7 @@ export default function UserDetailsStep({ onComplete }: UserDetailsStepProps) {
               placeholder="Installation Address"
               value={details.address}
               onChange={(e) => setDetails(d => ({ ...d, address: e.target.value }))}
-              className="w-full bg-white border border-solar-text/10 rounded-2xl py-4 pl-12 pr-4 text-solar-text placeholder:text-solar-text/20 focus:outline-none focus:border-solar-electric focus:ring-1 focus:ring-solar-electric transition-all min-h-[100px] resize-none"
+              className="w-full bg-solar-input border border-solar-text/10 rounded-2xl py-4 pl-12 pr-4 text-solar-text placeholder:text-solar-text/20 focus:outline-none focus:border-solar-electric focus:ring-1 focus:ring-solar-electric transition-all min-h-[100px] resize-none"
             />
           </div>
 
@@ -84,7 +84,7 @@ function InputGroup({ icon: Icon, placeholder, value, onChange, type = "text" }:
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-white border border-solar-text/10 rounded-2xl py-4 pl-12 pr-4 text-solar-text placeholder:text-solar-text/20 focus:outline-none focus:border-solar-electric focus:ring-1 focus:ring-solar-electric transition-all"
+        className="w-full bg-solar-input border border-solar-text/10 rounded-2xl py-4 pl-12 pr-4 text-solar-text placeholder:text-solar-text/20 focus:outline-none focus:border-solar-electric focus:ring-1 focus:ring-solar-electric transition-all"
       />
     </div>
   );

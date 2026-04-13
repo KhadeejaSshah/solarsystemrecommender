@@ -102,7 +102,7 @@ export default function BackupPreferenceStep({ onSelect }: BackupPreferenceProps
 
             {/* Dial Center */}
             <div className={cn(
-              "relative z-10 w-48 h-48 rounded-full bg-white shadow-2xl border border-solar-text/10 flex flex-col items-center justify-center transition-transform duration-200",
+              "relative z-10 w-48 h-48 rounded-full bg-solar-surface shadow-2xl border border-solar-text/10 flex flex-col items-center justify-center transition-transform duration-200",
               isDragging && "scale-105 shadow-solar-electric/30"
             )}>
               <Battery className={cn(
@@ -135,7 +135,7 @@ export default function BackupPreferenceStep({ onSelect }: BackupPreferenceProps
               onClick={() => { setIsFull(false); setValue(4); }}
               className={cn(
                 "flex-1 py-4 rounded-2xl border text-sm font-bold transition-all",
-                !isFull && value === 4 ? "bg-solar-electric text-white border-solar-electric shadow-lg shadow-solar-electric/20" : "bg-white text-solar-text border-solar-text/10 hover:border-solar-electric/30"
+                !isFull && value === 4 ? "bg-solar-electric text-white border-solar-electric shadow-lg shadow-solar-electric/20" : "bg-solar-surface text-solar-text border-solar-text/10 hover:border-solar-electric/30"
               )}
             >
               Standard (4h)
@@ -144,7 +144,7 @@ export default function BackupPreferenceStep({ onSelect }: BackupPreferenceProps
               onClick={() => setIsFull(true)}
               className={cn(
                 "flex-1 py-4 rounded-2xl border text-sm font-bold transition-all",
-                isFull ? "bg-solar-orange text-white border-solar-orange shadow-lg shadow-solar-orange/20" : "bg-white text-solar-text border-solar-text/10 hover:border-solar-orange/30"
+                isFull ? "bg-solar-orange text-white border-solar-orange shadow-lg shadow-solar-orange/20" : "bg-solar-surface text-solar-text border-solar-text/10 hover:border-solar-orange/30"
               )}
             >
               Full Backup

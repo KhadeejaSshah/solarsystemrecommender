@@ -42,7 +42,7 @@ export default function EVStep({ onComplete }: EVStepProps) {
                   "w-full p-6 rounded-2xl border transition-all duration-300 flex items-center justify-between group",
                   status === opt.id 
                     ? 'bg-solar-electric/10 border-solar-electric' 
-                    : 'bg-white border-solar-text/10 hover:bg-solar-navy'
+                    : 'bg-solar-surface border-solar-text/10 hover:bg-solar-navy'
                 )}
               >
                 <div className="flex items-center gap-4">
@@ -82,7 +82,7 @@ export default function EVStep({ onComplete }: EVStepProps) {
                     placeholder="e.g. 40, 60, 80"
                     value={batterySize}
                     onChange={(e) => setBatterySize(e.target.value)}
-                    className="w-full bg-white border border-solar-text/10 rounded-2xl py-4 px-6 text-solar-text placeholder:text-solar-text/20 focus:outline-none focus:border-solar-electric transition-all"
+                    className="w-full bg-solar-input border border-solar-text/10 rounded-2xl py-4 px-6 text-solar-text placeholder:text-solar-text/20 focus:outline-none focus:border-solar-electric transition-all"
                   />
                 </div>
               </motion.div>

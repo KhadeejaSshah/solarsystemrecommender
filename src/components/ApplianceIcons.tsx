@@ -1,9 +1,16 @@
 import React from 'react';
 
 export const FanIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
-    <path d="M12 12c0-3.3 2.7-6 6-6s6 2.7 6 6-2.7 6-6 6-6-2.7-6-6zM12 12c0 3.3-2.7 6-6 6S0 15.3 0 12s2.7-6 6-6 6 2.7 6 6zM12 12c-3.3 0-6-2.7-6-6s2.7-6 6-6 6 2.7 6 6-2.7 6-6 6zM12 12c3.3 0 6 2.7 6 6s-2.7 6-6 6-6-2.7-6-6 2.7-6 6-6z" />
-    <circle cx="12" cy="12" r="2" fill="white" />
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <circle cx="12" cy="12" r="2" fill="currentColor" />
+    <path d="M12 10V3" />
+    <path d="M12 21v-7" />
+    <path d="M10 12H3" />
+    <path d="M21 12h-7" />
+    <path d="M12 12c4-4 8-2 8 2s-4 6-8 2" />
+    <path d="M12 12c-4 4-8 2-8-2s4-6 8-2" />
+    <path d="M12 12c4 4 2 8-2 8s-6-4-2-8" />
+    <path d="M12 12c-4-4-2-8 2-8s6 4 2 8" />
   </svg>
 );
 

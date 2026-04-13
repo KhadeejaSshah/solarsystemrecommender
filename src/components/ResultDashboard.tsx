@@ -17,6 +17,7 @@ import {
 import { GoogleGenAI } from "@google/genai";
 import HouseVisual from './HouseVisual';
 import Markdown from 'react-markdown';
+import { cn } from '../lib/utils';
 
 interface ResultDashboardProps {
   data: UserData;
@@ -25,6 +26,18 @@ interface ResultDashboardProps {
 export default function ResultDashboard({ data }: ResultDashboardProps) {
   const [aiInsights, setAiInsights] = useState<string>('');
   const [loadingAi, setLoadingAi] = useState(true);
+  const [isDark, setIsDark] = useState(true);
+
+  useEffect(() => {
+    setIsDark(!document.documentElement.classList.contains('light'));
+    
+    // Listen for theme changes
+    const observer = new MutationObserver(() => {
+      setIsDark(!document.documentElement.classList.contains('light'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   // Simplified calculations for the dashboard
   const totalWattage = data.appliances.reduce((acc, app) => acc + (app.wattage * app.quantity), 0);
@@ -76,139 +89,149 @@ export default function ResultDashboard({ data }: ResultDashboardProps) {
   }, [data]);
 
   return (
-    <div className="min-h-screen bg-solar-navy p-4 md:p-8 pt-20">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div className="h-screen p-4 md:p-6 pt-20 flex flex-col overflow-hidden transition-colors duration-500 bg-solar-navy text-solar-text">
+      <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col gap-4 min-h-0">
         
-        {/* Left Column: System Overview */}
-        <div className="lg:col-span-8 space-y-8">
-          <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <motion.h1 
-                initial={{ x: -20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                className="text-4xl font-display font-bold text-solar-text"
-              >
-                System Blueprint
-              </motion.h1>
-              <div className="flex items-center gap-4 mt-2 text-solar-text/40 text-sm">
-                <span className="flex items-center gap-1"><User className="w-4 h-4" /> {data.details?.name}</span>
-                <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> {data.details?.address}</span>
-              </div>
+        {/* Header */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
+          <div>
+            <motion.h1 
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              className="text-3xl font-display font-bold"
+            >
+              System Blueprint
+            </motion.h1>
+            <div className="flex items-center gap-4 mt-1 text-xs opacity-40">
+              <span className="flex items-center gap-1"><User className="w-3 h-3" /> {data.details?.name}</span>
+              <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {data.details?.address}</span>
             </div>
-            <div className="flex gap-3">
-              <button className="btn-secondary px-4 py-2 flex items-center gap-2 text-sm">
-                <Share2 className="w-4 h-4" /> Share
-              </button>
-              <button className="btn-primary px-6 py-2 flex items-center gap-2 text-sm">
-                <Download className="w-4 h-4" /> Download Proposal
-              </button>
-            </div>
-          </header>
+          </div>
+          <div className="flex gap-2">
+            <button className="px-3 py-1.5 flex items-center gap-2 text-xs rounded-xl border border-solar-border bg-solar-card hover:bg-solar-navy transition-all">
+              <Share2 className="w-3 h-3" /> Share
+            </button>
+            <button className="btn-primary px-4 py-1.5 flex items-center gap-2 text-xs">
+              <Download className="w-3 h-3" /> Download Proposal
+            </button>
+          </div>
+        </header>
 
-          {/* Main Visualization Card */}
-          <div className="glass-card p-0 overflow-hidden relative min-h-[400px] flex flex-col md:flex-row">
-            <div className="flex-1 bg-gradient-to-br from-solar-navy to-white relative">
+        {/* Main Content Grid */}
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
+          
+          {/* Left Column: Visualization */}
+          <div className="flex flex-col gap-4 min-h-0">
+            <div className="glass-card p-0 overflow-hidden relative flex-1 bg-gradient-to-br from-solar-navy to-solar-card transition-colors duration-500">
               <HouseVisual appliances={data.appliances} evInfo={data.evInfo} />
               
-              <div className="absolute top-6 left-6 flex flex-col gap-2">
-                <div className="bg-solar-electric/10 border border-solar-electric/30 px-3 py-1 rounded-full flex items-center gap-2">
-                  <div className="w-2 h-2 bg-solar-electric rounded-full animate-pulse" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-solar-electric">Live Simulation</span>
+              <div className="absolute top-4 left-4">
+                <div className="bg-solar-electric/10 border border-solar-electric/30 px-2 py-0.5 rounded-full flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-solar-electric rounded-full animate-pulse" />
+                  <span className="text-[8px] font-bold uppercase tracking-widest text-solar-electric">Live Simulation</span>
                 </div>
               </div>
             </div>
 
-            <div className="w-full md:w-80 border-t md:border-t-0 md:border-l border-solar-text/10 p-6 space-y-6 bg-white/[0.02]">
-              <h3 className="text-sm font-bold text-solar-text/40 uppercase tracking-widest">Technical Specs</h3>
-              <div className="space-y-4">
+            {/* Technical Specs Bar */}
+            <div className="glass-card p-4 shrink-0 transition-colors">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <SpecItem icon={Sun} label="PV Capacity" value={`${systemSizeKW} kW`} />
-                <SpecItem icon={Battery} label="Battery Storage" value={`${batteryKWh.toFixed(1)} kWh`} />
-                <SpecItem icon={Zap} label="Hybrid Inverter" value={`${systemSizeKW} kW`} />
-                <SpecItem icon={Leaf} label="Eco Impact" value={`${(systemSizeKW * 0.7).toFixed(1)} Tons CO2`} />
+                <SpecItem icon={Battery} label="Storage" value={`${batteryKWh.toFixed(1)} kWh`} />
+                <SpecItem icon={Zap} label="Inverter" value={`${systemSizeKW} kW`} />
+                <SpecItem icon={Leaf} label="Eco Impact" value={`${(systemSizeKW * 0.7).toFixed(1)} T`} />
               </div>
             </div>
           </div>
 
-          {/* AI Insights Section */}
-          <div className="glass-card p-8 border-l-4 border-l-solar-electric">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-solar-electric/10 flex items-center justify-center">
-                <Cpu className="w-6 h-6 text-solar-electric" />
+          {/* Right Column: Insights & CTA */}
+          <div className="flex flex-col gap-4 min-h-0">
+            {/* Insights & Volatility Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 shrink-0">
+              <div className="glass-card p-4 border-l-2 border-l-solar-electric flex flex-col transition-colors">
+                <div className="flex items-center gap-2 mb-2">
+                  <Cpu className="w-4 h-4 text-solar-electric" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider">AI Insights</h3>
+                </div>
+                <div className="text-[10px] leading-relaxed overflow-y-auto max-h-24 pr-1 custom-scrollbar opacity-70">
+                  {loadingAi ? (
+                    <div className="space-y-2 animate-pulse">
+                      <div className="h-2 bg-solar-text/5 rounded w-full" />
+                      <div className="h-2 bg-solar-text/5 rounded w-3/4" />
+                    </div>
+                  ) : (
+                    <Markdown>{aiInsights}</Markdown>
+                  )}
+                </div>
               </div>
+
+              <div className="glass-card p-4 border-l-2 border-l-solar-orange flex flex-col transition-colors">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingDown className="w-4 h-4 text-solar-orange" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider">Volatility</h3>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="opacity-60">Stability</span>
+                    <span className="font-bold text-green-500">8.4/10</span>
+                  </div>
+                  <div className="w-full h-1 bg-solar-text/5 rounded-full overflow-hidden">
+                    <motion.div initial={{ width: 0 }} animate={{ width: '84%' }} className="h-full bg-solar-orange" />
+                  </div>
+                  <p className="text-[9px] leading-tight opacity-50">
+                    Solar provides 84% more cost stability than grid-only over 10 years.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Next Steps & CTA */}
+            <div className="glass-card p-6 flex-1 flex flex-col justify-between bg-gradient-to-b from-solar-electric/5 to-transparent border-solar-electric/20 transition-colors">
               <div>
-                <h2 className="text-xl font-bold text-solar-text">SkyElectric AI Insights</h2>
-                <p className="text-xs text-solar-text/40">Personalized optimization for your profile</p>
-              </div>
-            </div>
-            
-            {loadingAi ? (
-              <div className="space-y-3 animate-pulse">
-                <div className="h-4 bg-solar-text/5 rounded w-3/4" />
-                <div className="h-4 bg-solar-text/5 rounded w-1/2" />
-                <div className="h-4 bg-solar-text/5 rounded w-2/3" />
-              </div>
-            ) : (
-              <div className="prose prose-slate max-w-none">
-                <div className="text-solar-text/70 leading-relaxed markdown-body">
-                  <Markdown>{aiInsights}</Markdown>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right Column: CTA */}
-        <div className="lg:col-span-4 space-y-8">
-          <div className="glass-card p-8 bg-gradient-to-b from-solar-electric/5 to-transparent border-solar-electric/20">
-            <h3 className="text-xl font-bold mb-6 text-solar-text">Next Steps</h3>
-            
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-solar-electric/10 flex items-center justify-center text-solar-electric text-xs font-bold shrink-0">1</div>
-                  <p className="text-sm text-solar-text/70">Review your AI-generated blueprint and technical specs.</p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-solar-electric/10 flex items-center justify-center text-solar-electric text-xs font-bold shrink-0">2</div>
-                  <p className="text-sm text-solar-text/70">Get a detailed quotation based on current market rates.</p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-solar-electric/10 flex items-center justify-center text-solar-electric text-xs font-bold shrink-0">3</div>
-                  <p className="text-sm text-solar-text/70">Schedule a free site survey with our expert engineers.</p>
+                <h3 className="text-lg font-bold mb-4">Next Steps</h3>
+                <div className="space-y-3">
+                  {[
+                    "Review your AI-generated blueprint and technical specs.",
+                    "Get a detailed quotation based on current market rates.",
+                    "Schedule a free site survey with our expert engineers."
+                  ].map((step, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-solar-electric/10 flex items-center justify-center text-solar-electric text-[10px] font-bold shrink-0">{i+1}</div>
+                      <p className="text-xs opacity-70">{step}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="pt-6 space-y-3">
-                <button className="btn-primary w-full py-5 flex flex-col items-center justify-center gap-1 group">
-                  <span className="text-lg">Book Free Site Visit</span>
-                  <span className="text-[10px] uppercase tracking-widest opacity-80">Get Quotation from SkyElectric</span>
+              <div className="pt-4 space-y-2">
+                <button className="btn-primary w-full py-4 flex flex-col items-center justify-center gap-0.5 group">
+                  <span className="text-base">Book Free Site Visit</span>
+                  <span className="text-[8px] uppercase tracking-widest opacity-80">Get Quotation from SkyElectric</span>
                 </button>
-                <p className="text-[10px] text-center text-solar-text/30 uppercase tracking-widest">
+                <p className="text-[9px] text-center uppercase tracking-widest opacity-30">
                   No commitment required • Expert consultation
                 </p>
               </div>
             </div>
+
+            {/* Why SkyElectric Footer */}
+            <div className="glass-card p-4 shrink-0 transition-colors">
+              <div className="flex items-center justify-around">
+                {[
+                  "Smart SEMS System",
+                  "Tier-1 550W Panels",
+                  "24/7 Remote Support"
+                ].map((feature, i) => (
+                  <div key={i} className="flex items-center gap-2 text-[9px] opacity-60">
+                    <div className="w-1 h-1 rounded-full bg-solar-electric" />
+                    {feature}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div className="glass-card p-6 border-solar-electric/30">
-            <h4 className="text-sm font-bold mb-4 text-solar-text">Why SkyElectric?</h4>
-            <ul className="space-y-3">
-              <li className="flex items-start gap-3 text-xs text-solar-text/60">
-                <div className="w-1.5 h-1.5 rounded-full bg-solar-electric mt-1" />
-                Smart Energy Management System (SEMS)
-              </li>
-              <li className="flex items-start gap-3 text-xs text-solar-text/60">
-                <div className="w-1.5 h-1.5 rounded-full bg-solar-electric mt-1" />
-                Tier-1 Jinko/Longi 550W Panels
-              </li>
-              <li className="flex items-start gap-3 text-xs text-solar-text/60">
-                <div className="w-1.5 h-1.5 rounded-full bg-solar-electric mt-1" />
-                24/7 Remote Monitoring & Support
-              </li>
-            </ul>
-          </div>
         </div>
-
       </div>
     </div>
   );
@@ -216,13 +239,13 @@ export default function ResultDashboard({ data }: ResultDashboardProps) {
 
 function SpecItem({ icon: Icon, label, value }: any) {
   return (
-    <div className="flex items-center gap-4">
-      <div className="w-10 h-10 rounded-xl bg-solar-electric/5 flex items-center justify-center border border-solar-electric/10">
-        <Icon className="w-5 h-5 text-solar-electric" />
+    <div className="flex items-center gap-3">
+      <div className="w-8 h-8 rounded-lg flex items-center justify-center border border-solar-border bg-solar-card transition-colors">
+        <Icon className="w-4 h-4 text-solar-electric" />
       </div>
       <div>
-        <p className="text-[10px] text-solar-text/50 uppercase tracking-wider">{label}</p>
-        <p className="text-sm font-bold text-solar-text">{value}</p>
+        <p className="text-[8px] uppercase tracking-wider opacity-50">{label}</p>
+        <p className="text-xs font-bold">{value}</p>
       </div>
     </div>
   );

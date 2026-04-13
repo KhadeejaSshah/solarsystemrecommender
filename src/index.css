@@ -2,19 +2,45 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+:root {
+  --solar-navy: #0F172A;
+  --solar-text: #F8FAFC;
+  --solar-card: rgba(255, 255, 255, 0.05);
+  --solar-border: rgba(255, 255, 255, 0.1);
+  --solar-glow: rgba(37, 99, 235, 0.1);
+  --solar-gradient: radial-gradient(circle at top right, #1E293B, #0F172A, #020617);
+  --solar-surface: #1E293B;
+  --solar-input: #1E293B;
+}
+
+.light {
+  --solar-navy: #F8FAFC;
+  --solar-text: #0F172A;
+  --solar-card: rgba(255, 255, 255, 0.9);
+  --solar-border: rgba(15, 23, 42, 0.1);
+  --solar-glow: rgba(37, 99, 235, 0.05);
+  --solar-gradient: radial-gradient(circle at top right, #F5F7FA, #E4E7EB, #D1D5DB);
+  --solar-surface: #FFFFFF;
+  --solar-input: #FFFFFF;
+}
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Sora", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 
   --color-solar-orange: #FF8C00;
-  --color-solar-navy: #F8FAFC;
+  --color-solar-navy: var(--solar-navy);
   --color-solar-electric: #2563EB;
-  --color-solar-glow: rgba(37, 99, 235, 0.1);
-  --color-solar-text: #0F172A;
+  --color-solar-glow: var(--solar-glow);
+  --color-solar-text: var(--solar-text);
+  --color-solar-card: var(--solar-card);
+  --color-solar-border: var(--solar-border);
+  --color-solar-surface: var(--solar-surface);
+  --color-solar-input: var(--solar-input);
 
-  --background-image-solar-gradient: radial-gradient(circle at top right, #F5F7FA, #E4E7EB, #D1D5DB);
-  --background-image-deep-void: linear-gradient(to bottom, #F5F7FA, #E4E7EB);
+  --background-image-solar-gradient: var(--solar-gradient);
+  --background-image-deep-void: linear-gradient(to bottom, var(--solar-navy), #000);
 }
 
 @layer base {
@@ -25,15 +51,17 @@
 
 @layer components {
   .glass-card {
-    @apply bg-white/60 backdrop-blur-xl border border-white/40 shadow-xl;
+    @apply bg-solar-card backdrop-blur-xl border border-solar-border shadow-xl;
   }
 
   .btn-primary {
-    @apply px-8 py-3 bg-solar-electric text-white rounded-full font-bold tracking-wide hover:shadow-lg hover:shadow-solar-electric/30 transition-all duration-300 active:scale-95;
+    @apply px-8 py-3 bg-solar-electric text-white rounded-full font-bold tracking-wide 
+           hover:shadow-lg hover:shadow-solar-electric/30 transition-all duration-300 active:scale-95;
   }
 
   .btn-secondary {
-    @apply px-8 py-3 bg-white text-solar-text rounded-full font-bold tracking-wide hover:bg-solar-navy transition-all duration-300 active:scale-95 border border-solar-text/10 shadow-sm;
+    @apply px-8 py-3 bg-solar-card text-solar-text rounded-full font-bold tracking-wide 
+           hover:bg-solar-navy transition-all duration-300 active:scale-95 border border-solar-border shadow-sm;
   }
 }
 
@@ -41,11 +69,9 @@
 ::-webkit-scrollbar {
   width: 6px;
 }
-
 ::-webkit-scrollbar-track {
   background: #F5F7FA;
 }
-
 ::-webkit-scrollbar-thumb {
   background: #3A86FF;
   border-radius: 10px;

@@ -44,7 +44,7 @@ export default function UsageBehaviorStep({ onSelect }: UsageBehaviorProps) {
               whileHover={{ scale: 1.05, translateY: -5 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => onSelect(option.id)}
-              className="flex flex-col items-center p-6 rounded-2xl bg-white border border-solar-text/10 hover:bg-solar-navy hover:border-solar-electric/50 transition-all duration-300 group text-center"
+              className="flex flex-col items-center p-6 rounded-2xl bg-solar-surface border border-solar-text/10 hover:bg-solar-navy hover:border-solar-electric/50 transition-all duration-300 group text-center"
             >
               <div className="w-16 h-16 rounded-full bg-solar-electric/10 flex items-center justify-center mb-4 group-hover:bg-solar-electric/20 transition-colors">
                 <option.icon className="w-8 h-8 text-solar-electric" />

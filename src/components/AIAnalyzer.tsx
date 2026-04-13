@@ -50,7 +50,7 @@ export default function AIAnalyzer({ onComplete }: AIAnalyzerProps) {
             transition={{ duration: 0.8, ease: "backOut" }}
             className="flex flex-col items-center gap-6"
           >
-            <div className="w-32 h-32 rounded-3xl bg-white shadow-2xl flex items-center justify-center border border-solar-text/5 relative overflow-hidden">
+            <div className="w-32 h-32 rounded-3xl bg-solar-surface shadow-2xl flex items-center justify-center border border-solar-text/5 relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-solar-electric/5 to-transparent" />
               {step === 0 && <Sun className="w-16 h-16 text-solar-orange animate-pulse" />}
               {step === 1 && <Home className="w-16 h-16 text-solar-electric animate-bounce" />}
