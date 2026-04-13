@@ -137,7 +137,29 @@ export default function ResultDashboard({ data }: ResultDashboardProps) {
             </div>
             {/* Live Simulation Video */}
             <div className="w-full h-full flex items-center justify-center">
-              <HouseVisual appliances={data.appliances} evInfo={data.evInfo} />
+              <HouseVisual appliances={data.appliances} evInfo={data.evInfo} isDark={isDark} />
+            </div>
+
+            {/* Day/Night Toggle Overlay */}
+            <div className="absolute bottom-10 left-10 flex gap-2 z-40">
+              <button 
+                onClick={() => setIsDark(true)}
+                className={cn(
+                  "px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
+                  isDark ? "bg-solar-orange text-white shadow-lg" : "bg-white/10 text-white/40 hover:bg-white/20"
+                )}
+              >
+                Night
+              </button>
+              <button 
+                onClick={() => setIsDark(false)}
+                className={cn(
+                  "px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
+                  !isDark ? "bg-solar-orange text-white shadow-lg" : "bg-white/10 text-white/40 hover:bg-white/20"
+                )}
+              >
+                Day
+              </button>
             </div>
           </div>
 
