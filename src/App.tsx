@@ -111,7 +111,7 @@ export default function App() {
       <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
         <div className={cn(
           "relative w-[40%] aspect-square opacity-[0.03] grayscale transition-opacity duration-500",
-          theme === 'light' && "opacity-[0.05]"
+          theme === 'light' && "opacity-[0.5]"
         )}>
           <img 
             src="/logo.png" 
