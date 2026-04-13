@@ -22,14 +22,14 @@ export default function HouseVisual({ appliances, evInfo }: HouseVisualProps) {
 
   // Define room-based slots for appliances in the new modern house layout
   const applianceSlots: Record<string, { left: string; top: string; room: string }> = {
-    'fridge': { left: '35%', top: '75%', room: 'Kitchen' },
-    'microwave': { left: '42%', top: '75%', room: 'Kitchen' },
-    'tv': { left: '75%', top: '75%', room: 'Living' },
-    'lights': { left: '85%', top: '75%', room: 'Living' },
-    'ac': { left: '35%', top: '45%', room: 'Bedroom' },
-    'fan': { left: '45%', top: '45%', room: 'Bedroom' },
-    'iron': { left: '75%', top: '45%', room: 'Study' },
-    'motor': { left: '15%', top: '85%', room: 'Utility' },
+    'fridge': { left: '22%', top: '72%', room: 'Kitchen' },
+    'microwave': { left: '34%', top: '72%', room: 'Kitchen' },
+    'tv': { left: '68%', top: '72%', room: 'Living' },
+    'lights': { left: '80%', top: '72%', room: 'Living' },
+    'ac': { left: '22%', top: '48%', room: 'Bedroom' },
+    'fan': { left: '34%', top: '48%', room: 'Bedroom' },
+    'iron': { left: '68%', top: '42%', room: 'Study' },
+    'motor': { left: '12%', top: '88%', room: 'Utility' },
   };
 
   const fallbackSlots = [
@@ -44,6 +44,22 @@ export default function HouseVisual({ appliances, evInfo }: HouseVisualProps) {
       "relative w-full h-full flex items-center justify-center p-4 overflow-hidden transition-colors duration-[2000ms]",
       isNight ? "bg-slate-900" : "bg-sky-50"
     )}>
+      {/* Drifting Clouds (Day Only) */}
+      {!isNight && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(3)].map((_, i) => (
+            <motion.div
+              key={i}
+              initial={{ x: -200, y: 100 + (i * 60) }}
+              animate={{ x: '110vw' }}
+              transition={{ duration: 40 + (i * 15), repeat: Infinity, ease: 'linear', delay: i * 8 }}
+              className="absolute opacity-20"
+            >
+              <div className="w-48 h-12 bg-white rounded-full blur-3xl" />
+            </motion.div>
+          ))}
+        </div>
+      )}
       {/* Sky Elements */}
       <div className="absolute top-10 right-10">
         <AnimatePresence mode="wait">
@@ -75,74 +91,83 @@ export default function HouseVisual({ appliances, evInfo }: HouseVisualProps) {
       <div className="relative aspect-[4/3] w-full max-w-2xl">
         <svg viewBox="0 0 400 300" className="w-full h-full drop-shadow-2xl">
           {/* Ground */}
-          <rect x="0" y="250" width="400" height="50" fill={isNight ? "#0f172a" : "#e2e8f0"} />
-          
+          <rect x="0" y="250" width="400" height="50" fill={isNight ? "#0f172a" : "#cbd5e1"} />
+
+          {/* Stars (Night Only) */}
+          {isNight && [...Array(15)].map((_, i) => (
+            <motion.circle
+              key={i}
+              cx={20 + (Math.random() * 360)}
+              cy={20 + (Math.random() * 80)}
+              r={0.5 + Math.random()}
+              fill="white"
+              initial={{ opacity: 0.2 }}
+              animate={{ opacity: [0.2, 1, 0.2] }}
+              transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 5 }}
+            />
+          ))}
+
           {/* Pool */}
-          <motion.rect 
-            x="20" y="240" width="180" height="40" 
-            fill="#38bdf8" 
-            opacity={isNight ? 0.4 : 0.6}
-            animate={{ opacity: isNight ? [0.3, 0.5, 0.3] : [0.5, 0.7, 0.5] }}
-            transition={{ duration: 3, repeat: Infinity }}
+          <motion.rect
+            x="20" y="240" width="180" height="40"
+            fill="#38bdf8"
+            opacity={isNight ? 0.3 : 0.5}
+            animate={{ opacity: isNight ? [0.2, 0.4, 0.2] : [0.4, 0.6, 0.4] }}
+            transition={{ duration: 4, repeat: Infinity }}
           />
-          <rect x="20" y="240" width="180" height="2" fill="white" opacity="0.3" />
 
-          {/* Left Section (Grey with sloped roof) */}
+          {/* House Structure */}
+          {/* Main Body - Left */}
           <path d="M40 250 V120 L180 80 V250 Z" fill={isNight ? "#1e293b" : "#475569"} />
-          <path d="M40 120 L180 80 L190 90 L50 130 Z" fill={isNight ? "#0f172a" : "#334155"} /> {/* Roof edge */}
+          <path d="M40 120 L180 80 L195 90 L55 130 Z" fill={isNight ? "#0f172a" : "#334155"} /> {/* Roof edge thickness */}
 
-          {/* Right Section (White Boxy) */}
+          {/* Main Body - Right */}
           <rect x="180" y="100" width="160" height="150" fill={isNight ? "#334155" : "#f8fafc"} />
-          <rect x="180" y="100" width="160" height="10" fill={isNight ? "#1e293b" : "#e2e8f0"} /> {/* Roof edge */}
+          <rect x="180" y="100" width="160" height="12" fill={isNight ? "#1e293b" : "#f1f5f9"} /> {/* Flat roof edge */}
 
-          {/* Balcony */}
-          <rect x="180" y="150" width="160" height="5" fill={isNight ? "#0f172a" : "#94a3b8"} />
-          <rect x="190" y="110" width="140" height="40" fill={isNight ? "#1e293b" : "#cbd5e1"} opacity="0.3" /> {/* Balcony glass */}
+          {/* Large Windows with Sheen */}
+          <rect x="60" y="150" width="80" height="70" fill={isNight ? "#fef08a" : "#94a3b8"} opacity={isNight ? 0.9 : 0.2} />
+          {!isNight && <path d="M60 150 L140 220" stroke="white" strokeWidth="0.5" opacity="0.1" />} {/* Glass reflection */}
+          <rect x="60" y="150" width="80" height="70" fill="none" stroke={isNight ? "#fde047" : "#475569"} strokeWidth="1.5" />
 
-          {/* Windows with Night Glow */}
-          {/* Left Window */}
-          <rect x="60" y="150" width="80" height="70" fill={isNight ? "#fef08a" : "#94a3b8"} opacity={isNight ? 0.8 : 0.2} className="transition-all duration-[2000ms]" />
-          <rect x="60" y="150" width="80" height="70" fill="none" stroke={isNight ? "#fde047" : "#475569"} strokeWidth="2" />
-          
-          {/* Right Windows */}
-          <rect x="200" y="170" width="50" height="60" fill={isNight ? "#fef08a" : "#94a3b8"} opacity={isNight ? 0.8 : 0.2} className="transition-all duration-[2000ms]" />
-          <rect x="270" y="170" width="50" height="60" fill={isNight ? "#fef08a" : "#94a3b8"} opacity={isNight ? 0.8 : 0.2} className="transition-all duration-[2000ms]" />
-          
-          {/* Door */}
-          <rect x="190" y="210" width="30" height="40" fill="#1e293b" />
+          <rect x="200" y="170" width="50" height="60" fill={isNight ? "#fef08a" : "#94a3b8"} opacity={isNight ? 0.9 : 0.2} />
+          <rect x="270" y="170" width="50" height="60" fill={isNight ? "#fef08a" : "#94a3b8"} opacity={isNight ? 0.9 : 0.2} />
 
-          {/* Interior Labels (Subtle) */}
-          <text x="110" y="100" fontSize="6" className={isNight ? "fill-white/10" : "fill-slate-400"}>BEDROOM</text>
-          <text x="260" y="120" fontSize="6" className={isNight ? "fill-white/10" : "fill-slate-400"}>STUDY</text>
-          <text x="110" y="240" fontSize="6" className={isNight ? "fill-white/10" : "fill-slate-400"}>KITCHEN</text>
-          <text x="260" y="240" fontSize="6" className={isNight ? "fill-white/10" : "fill-slate-400"}>LIVING</text>
+          {/* Labels */}
+          <text x="110" y="145" fontSize="6" fontWeight="800" className={isNight ? "fill-white/30" : "fill-slate-400"} textAnchor="middle" letterSpacing="1">BEDROOM</text>
+          <text x="290" y="165" fontSize="6" fontWeight="800" className={isNight ? "fill-white/30" : "fill-slate-400"} textAnchor="middle" letterSpacing="1">STUDY</text>
         </svg>
 
-        {/* Solar Panels Structure ABOVE House */}
-        <div className="absolute -top-16 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center">
-          <div className="flex gap-2 bg-solar-navy/20 p-2 rounded-xl backdrop-blur-sm border border-white/10">
+        {/* Solar Panels Structure ABOVE House with Grid Detail */}
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30">
+          <div className="flex gap-1.5 bg-black/40 p-2 rounded-lg backdrop-blur-md border border-white/5 shadow-2xl">
             {[...Array(6)].map((_, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 1 + (i * 0.1) }}
                 className={cn(
-                  "w-8 h-12 rounded-sm border flex flex-col gap-1 p-1 shadow-lg",
-                  isNight ? "bg-indigo-950 border-indigo-800" : "bg-blue-900 border-blue-700"
+                  "w-10 h-16 rounded-[1px] border relative overflow-hidden flex flex-col pt-1",
+                  isNight ? "bg-slate-900 border-indigo-500/30" : "bg-blue-950 border-blue-400/50"
                 )}
               >
-                <div className="flex-1 bg-white/5" />
-                <div className="flex-1 bg-white/5" />
+                {/* PV Cell Grid */}
+                <div className="flex-1 grid grid-cols-2 gap-[1px] opacity-20 px-1">
+                  {[...Array(8)].map((_, j) => (
+                    <div key={j} className="bg-white/40 h-2" />
+                  ))}
+                </div>
+                {/* Glass Sheen */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10" />
               </motion.div>
             ))}
           </div>
-          <div className="w-1 h-16 bg-slate-400/30" /> {/* Support pole */}
         </div>
 
         {/* Inverter and Battery Visuals */}
         <div className="absolute bottom-10 right-20 z-30 flex gap-4">
-          <motion.div 
+          <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             className={cn(
@@ -151,9 +176,9 @@ export default function HouseVisual({ appliances, evInfo }: HouseVisualProps) {
             )}
           >
             <Zap className="w-5 h-5 text-solar-electric" />
-            <span className="text-[6px] font-bold mt-1">INVERTER</span>
+            <span className={cn("text-[6px] font-bold mt-1", isNight ? "text-white" : "text-slate-700")}>INVERTER</span>
           </motion.div>
-          <motion.div 
+          <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2 }}
@@ -163,7 +188,7 @@ export default function HouseVisual({ appliances, evInfo }: HouseVisualProps) {
             )}
           >
             <Battery className="w-5 h-5 text-green-500" />
-            <span className="text-[6px] font-bold mt-1">BATTERY</span>
+            <span className={cn("text-[6px] font-bold mt-1", isNight ? "text-white" : "text-slate-700")}>BATTERY</span>
           </motion.div>
         </div>
 
@@ -213,9 +238,9 @@ export default function HouseVisual({ appliances, evInfo }: HouseVisualProps) {
             )}>
               <Car className={cn("w-6 h-6", isNight ? "text-blue-400" : "text-solar-electric")} />
               <div className="flex flex-col">
-                <span className="text-[8px] font-bold text-solar-electric">EV CHARGING</span>
+                <span className={cn("text-[8px] font-bold", isNight ? "text-blue-400" : "text-solar-electric")}>EV CHARGING</span>
                 <div className="w-12 h-1 bg-slate-200 rounded-full overflow-hidden">
-                  <motion.div 
+                  <motion.div
                     className="h-full bg-green-500"
                     animate={{ width: ['0%', '100%'] }}
                     transition={{ duration: 3, repeat: Infinity }}

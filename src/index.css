@@ -84,3 +84,27 @@
 .solar-border {
   @apply border border-solar-text/10;
 }
+
+@keyframes aurora {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(5%, 5%) scale(1.1); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+.animate-aurora {
+  animation: aurora 20s ease-infinite;
+}
+
+.glass-card-hover {
+  @apply transition-all duration-300 hover:border-solar-electric/40 hover:shadow-2xl hover:shadow-solar-electric/10 hover:-translate-y-0.5;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-solar-electric/20 rounded-full hover:bg-solar-electric/40 transition-colors;
+}
