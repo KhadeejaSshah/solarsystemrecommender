@@ -48,10 +48,10 @@ export default function SolarHouse3D({ appliances, evInfo, isDark = true }: Sola
           color={isDark ? "#8ab4cc" : "#fff4e0"}
           castShadow
           shadow-mapSize={[4096, 4096]}
-          shadow-camera-left={-40}
-          shadow-camera-right={40}
-          shadow-camera-top={40}
-          shadow-camera-bottom={-40}
+          shadow-camera-left={-70}
+          shadow-camera-right={70}
+          shadow-camera-top={70}
+          shadow-camera-bottom={-100}
           shadow-bias={-0.0001}
         />
 
@@ -128,7 +128,7 @@ export default function SolarHouse3D({ appliances, evInfo, isDark = true }: Sola
 
             <ContactShadows
               opacity={0.6}
-              scale={60}
+              scale={150}
               blur={2.5}
               far={10}
               resolution={1024}
@@ -178,12 +178,12 @@ const FarmEstate = ({ isDark }: { isDark: boolean }) => {
       </mesh>
 
       {/* Vineyard Rows with Bollard Lights */}
-      <group position={[8, 0, -2]}>
+      <group position={[8, 0, -12]}>
         {[...Array(8)].map((_, i) => (
           <group key={i}>
             <VineyardRow position={[i * 3, 0, 0]} length={40} isDark={isDark} />
             {isDark && i % 2 === 0 && (
-              <BollardLight position={[i * 3 + 1.5, 0, 10]} />
+              <BollardLight position={[ -2, 0, i*3+2.5]} />
             )}
           </group>
         ))}
@@ -196,33 +196,79 @@ const FarmEstate = ({ isDark }: { isDark: boolean }) => {
       </mesh>
      
       {/* Path Bollards along road */}
-      {isDark && (
+      {/* {isDark && (
         <group>
-          {[8, 16, 24].map(z => (
+          {[8, 16, 24, 36, 48, 56,64,72,80].map(z => (
             <BollardLight key={z} position={[-8.5, 0, z]} />
           ))}
+          {[8,16, 24, 36,48,56,64,72,80].map(z => (
+            <BollardLight key={z} position={[-3.5, 0, z]} />
+          ))}
         </group>
-      )}
+      )} */}
     </group>
   );
 };
 
 const BollardLight = ({ position }: { position: [number, number, number] }) => {
-  const goldenLight = "#fcb450ff";
+  const goldenLight = "#fcb450";
+  
   return (
     <group position={position}>
-      <mesh position={[0, 0.4, 0]}>
+      {/* 1. The Bollard Post */}
+      <mesh position={[0, 0.4, 0]} castShadow>
         <cylinderGeometry args={[0.1, 0.1, 0.8, 8]} />
         <meshStandardMaterial color="#222222" />
       </mesh>
+
+      {/* 2. The Glowing Bulb */}
       <mesh position={[0, 0.8, 0]}>
         <sphereGeometry args={[0.08, 16, 16]} />
-        <meshStandardMaterial color={goldenLight} emissive={goldenLight} emissiveIntensity={5} />
+        <meshStandardMaterial 
+          color={goldenLight} 
+          emissive={goldenLight} 
+          emissiveIntensity={10} 
+        />
       </mesh>
-      <pointLight intensity={2} distance={8} color={goldenLight} />
+
+      {/* 3. THE FIX: THE WHITE LIGHT POOL ON GROUND */}
+      {/* This mesh creates the "shadow/pool" effect for EVERY light */}
+      <mesh 
+        rotation={[-Math.PI / 2, 0, 0]} 
+        position={[-0.4, 0.03, 0]} // Slightly above ground to avoid flickering
+      >
+        <circleGeometry args={[0.5, 32]} /> {/* Size of the light pool */}
+        <meshBasicMaterial 
+          color="#ffffff" 
+          transparent 
+          opacity={0.15} // Adjust this for how bright you want the "white shadow"
+          depthWrite={false} // Prevents weird layering issues
+        />
+      </mesh>
+
+      {/* 4. Small Ambient Glow (Optional, kept low to avoid light limits) */}
+      <pointLight intensity={0.5} distance={5} color={goldenLight} />
     </group>
   );
 };
+
+
+// const BollardLight = ({ position }: { position: [number, number, number] }) => {
+//   const goldenLight = "#fcb450ff";
+//   return (
+//     <group position={position}>
+//       <mesh position={[0, 0.4, 0]}>
+//         <cylinderGeometry args={[0.1, 0.1, 0.8, 8]} />
+//         <meshStandardMaterial color="#222222" />
+//       </mesh>
+//       <mesh position={[0, 0.8, 0]}>
+//         <sphereGeometry args={[0.08, 16, 16]} />
+//         <meshStandardMaterial color={goldenLight} emissive={goldenLight} emissiveIntensity={5} />
+//       </mesh>
+//       <pointLight intensity={2} distance={7} color={goldenLight}/>
+//     </group>
+//   );
+// };
 
 const VineyardRow = ({ position, length, isDark }: any) => {
   const posts = Math.floor(length / 2.5);
