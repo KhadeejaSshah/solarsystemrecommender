@@ -143,7 +143,7 @@ export default function SolarHouse3D({ appliances, evInfo, isDark = true }: Sola
         <h2 className="text-white font-black text-4xl tracking-tighter drop-shadow-2xl transition-all duration-300 group-hover:scale-105">SolarNest</h2>
         <div className="flex items-center gap-2 mt-1">
           <div className="h-[2px] w-12 bg-yellow-400 shadow-[0_0_10px_#facc15]" />
-          <span className="text-[10px] text-white/40 uppercase font-bold tracking-[0.4em]">Agricultural Ed.</span>
+          <span className="text-[10px] text-white/40 uppercase font-bold tracking-[0.4em]">SOLAR BUILDER.</span>
         </div>
       </div>
 

@@ -164,27 +164,27 @@ export default function ResultDashboard({ data }: ResultDashboardProps) {
           </div>
 
           {/* Right: Summary & Insights */}
-          <div className="flex-1 flex flex-col justify-between p-8 bg-solar-card/80 rounded-r-[2.5rem] min-w-[350px]">
+          <div className="flex-1 flex flex-col gap-4 justify-between p-8 bg-solar-card/80 rounded-r-[2.5rem] min-w-[350px]">
             {/* System Summary */}
-            <div className="mb-6">
+            <div className="rounded-2xl bg-white/10 backdrop-blur-md shadow-lg p-5 mb-0">
               <h2 className="text-xl font-bold mb-2">System Summary</h2>
               <ul className="text-xs opacity-80 space-y-1">
-                <li><b>Load:</b> {totalLoad}W</li>
-                <li><b>Backup:</b> {data.backupPreference}</li>
-                <li><b>EV:</b> {data.evInfo.status}</li>
-                <li><b>Panels:</b> {panelCount} x 550W</li>
+                <li><b> ⚡ Load:</b> {totalLoad}W</li>
+                <li><b> 🛡️ Backup:</b> {data.backupPreference}</li>
+                <li><b> 🔌 EV:</b> {data.evInfo.status}</li>
+                <li><b> ☀️ Panels:</b> {panelCount} x 550W</li>
               </ul>
             </div>
             {/* AI Insights */}
-            <div className="mb-6">
+            <div className="rounded-2xl bg-white/10 backdrop-blur-md shadow-lg p-5 mb-0">
               <h3 className="text-xs font-bold uppercase tracking-wider mb-1">AI Insights</h3>
-              <div className="text-[10px] leading-relaxed opacity-70">
+              <div className="text-sm leading-relaxed opacity-70">
                 {loadingAi ? <div>Loading...</div> : <Markdown>{aiInsights}</Markdown>}
               </div>
             </div>
             {/* Volatility */}
-            <div className="mb-6">
-              <h3 className="text-xs font-bold uppercase tracking-wider mb-1">Volatility</h3>
+            <div className="rounded-2xl bg-white/10 backdrop-blur-md shadow-lg p-5 mb-0">
+              <h3 className="text-sm font-bold uppercase tracking-wider mb-1">Volatility</h3>
               <div className="flex items-center justify-between text-[10px]">
                 <span className="opacity-60">Stability</span>
                 <span className="font-bold text-green-500">8.4/10</span>
@@ -192,25 +192,19 @@ export default function ResultDashboard({ data }: ResultDashboardProps) {
               <div className="w-full h-1 bg-solar-text/5 rounded-full overflow-hidden mb-1">
                 <motion.div initial={{ width: 0 }} animate={{ width: '84%' }} className="h-full bg-solar-orange" />
               </div>
-              <p className="text-[9px] leading-tight opacity-50">
+              <p className="text-xs leading-tight opacity-50">
                 Solar provides 84% more cost stability than grid-only over 10 years.
               </p>
             </div>
-
-
-
-
-
-
             {/* Next Steps */}
-            <div>
+            <div className="rounded-2xl bg-white/10 backdrop-blur-md shadow-lg p-5 mb-0 flex flex-col">
               <h3 className="text-lg font-bold mb-2">Next Steps</h3>
-              <ol className="space-y-2 text-xs opacity-70">
+              <ol className="space-y-2 text-sm opacity-70 mb-4">
                 <li>1. Review your AI-generated blueprint and technical specs.</li>
                 <li>2. Get a detailed quotation based on current market rates.</li>
                 <li>3. Schedule a free site survey with our expert engineers.</li>
               </ol>
-              <button className="btn-primary w-full py-4 mt-4">Book Free Site Visit</button>
+              <button className="btn-primary w-full py-4 mt-auto">Book Free Site Visit</button>
             </div>
           </div>
         </div>

@@ -51,7 +51,7 @@
 
 @layer components {
   .glass-card {
-    @apply bg-solar-card backdrop-blur-xl border border-solar-border shadow-xl;
+    @apply bg-solar-surface/90 backdrop-blur-xl border border-solar-border shadow-xl;
   }
 
   .btn-primary {
