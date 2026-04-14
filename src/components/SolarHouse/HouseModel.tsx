@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
+import { SolarPanelModel } from './SolarPanelModel';
 
 // Procedural texture utilities
 function makeTex(size: number, fn: (ctx: CanvasRenderingContext2D, s: number) => void) {
@@ -42,31 +43,9 @@ export const useHouseMaterials = (isDark = false) => {
       }
     });
 
-    // Solar panel texture
-    const solarTex = makeTex(512, (ctx, s) => {
-      ctx.fillStyle = '#06132b';
-      ctx.fillRect(0, 0, s, s);
-      const cols = 6, rows = 12;
-      const cw = s / cols, rh = s / rows;
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const x = c * cw + 1.5, y = r * rh + 1.5, w = cw - 3, h = rh - 3;
-          const grd = ctx.createLinearGradient(x, y, x + w, y + h);
-          grd.addColorStop(0, '#10254c');
-          grd.addColorStop(0.5, '#081a38');
-          grd.addColorStop(1, '#040d1f');
-          ctx.fillStyle = grd;
-          ctx.fillRect(x, y, w, h);
-          ctx.fillStyle = 'rgba(255,255,255,0.05)';
-          ctx.fillRect(x + w / 2 - 1, y, 2, h);
-        }
-      }
-    });
-
     return {
       wall: new THREE.MeshStandardMaterial({ map: wallTex, color: 0xe0e4e8, roughness: 0.9, metalness: 0.05 }),
       roof: new THREE.MeshStandardMaterial({ map: roofTex, color: 0x5a6678, roughness: 0.85, metalness: 0.1 }),
-      solar: new THREE.MeshStandardMaterial({ map: solarTex, roughness: 0.05, metalness: 0.6 }),
       glass: new THREE.MeshStandardMaterial({ color: 0x88bbdd, roughness: 0.02, metalness: 0.3, transparent: true, opacity: 0.45 }),
       glassWarm: new THREE.MeshStandardMaterial({ color: 0xffcc66, roughness: 0.02, metalness: 0.1, transparent: true, opacity: 0.6, emissive: 0xffaa33, emissiveIntensity: isDark ? 2.5 : 0 }),
       trim: new THREE.MeshStandardMaterial({ color: 0x1a1c21, roughness: 0.4, metalness: 0.5 }),
@@ -177,11 +156,18 @@ export const HouseModel = ({ solarPanels = 10, isDark = false }: { solarPanels?:
       <FlatRoof position={[1, 7.4, 0]} args={[8.2, 0.4, 6.2]} material={M.roof} trimMaterial={M.trim} />
       <FlatRoof position={[-4, 5.4, 0]} args={[4.7, 0.4, 5.7]} material={M.roof} trimMaterial={M.trim} />
 
-      {/* Solar Panel Array (Main Roof) */}
-      <SolarPanelArray position={[1, 7.8, 0]} panels={solarPanels} material={M.solar} frameMaterial={M.trim} />
+      {/* GLTF Solar Panels */}
+      <GLTFSolarArray
+        position={[1, 7.6, 0]}
+        width={7.8}
+        depth={5.8}
+      />
 
-      {/* Solar Panel Array (Garage Roof) - ADDED */}
-      <SolarPanelArray position={[-4, 5.8, 0]} panels={Math.ceil(solarPanels / 2)} material={M.solar} frameMaterial={M.trim} />
+      <GLTFSolarArray
+        position={[-4, 5.6, 0]}
+        width={4.2}
+        depth={5.2}
+      />
 
       {/* Battery & Inverter (Wall Mounted) */}
       <group position={[0.4, 1.2, 3.2]}>
@@ -196,6 +182,38 @@ export const HouseModel = ({ solarPanels = 10, isDark = false }: { solarPanels?:
           <meshStandardMaterial color="#00ff88" emissive="#00ff88" emissiveIntensity={2.0} />
         </mesh>
       </group>
+    </group>
+  );
+};
+
+const GLTFSolarArray = ({ position, width, depth }: { position: [number, number, number], width: number, depth: number }) => {
+  // Panel dimensions (based on a typical model scale)
+  const pW = 2.5;
+  const pD = 1.5;
+  const gap = 0.1;
+  const cols = Math.floor(width / (pW + gap));
+  const rows = Math.floor(depth / (pD + gap));
+
+  const startX = -(cols * (pW + gap) - gap) / 2;
+  const startZ = -(rows * (pD + gap) - gap) / 2;
+
+  const panels = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      panels.push(
+        <SolarPanelModel
+          key={`${r}-${c}`}
+          position={[startX + c * (pW + gap) + 1, 0.1, startZ + r * (pD + gap)]}
+          scale={0.015} // Adjust scale as needed
+          rotation={[0, 0, 0]}
+        />
+      );
+    }
+  }
+
+  return (
+    <group position={position}>
+      {panels}
     </group>
   );
 };
@@ -291,27 +309,6 @@ const DetailedWindow = ({ position, rotation = [0, 0, 0], args = [1.8, 1.3], mat
       <mesh position={[0, 0, -0.05]} material={materials.glassWarm}>
         <boxGeometry args={[w - 0.1, h - 0.1, 0.02]} />
       </mesh>
-    </group>
-  );
-};
-
-const SolarPanelArray = ({ position, panels, material, frameMaterial }: any) => {
-  const panelWidth = 1.05;
-  const panelHeight = 0.85;
-  const gap = 0.08;
-
-  return (
-    <group position={position} rotation={[-0.1, 0, 0]}>
-      {[...Array(Math.min(24, panels))].map((_, i) => (
-        <group key={i} position={[(i % 6 - 2.5) * (panelWidth + gap), Math.floor(i / 6) * (panelHeight + gap) - 1.5, 0.2]}>
-          <mesh material={material} castShadow>
-            <boxGeometry args={[panelWidth, 0.05, panelHeight]} />
-          </mesh>
-          <mesh material={frameMaterial}>
-            <boxGeometry args={[panelWidth + 0.06, 0.08, panelHeight + 0.06]} />
-          </mesh>
-        </group>
-      ))}
     </group>
   );
 };

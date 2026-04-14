@@ -63,8 +63,8 @@ export default function ApplianceStaging({ onComplete, onChange }: ApplianceStag
                   animate={{ scale: 1, opacity: 1 }}
                   className="flex justify-center"
                 >
-                  <div className="w-48 h-48 rounded-[2.5rem] flex items-center justify-center bg-solar-card shadow-2xl border-4 border-solar-electric/10 relative group p-10 text-solar-text transition-all hover:border-solar-electric/30">
-                    {getApplianceIcon(currentAppliance.id, "w-full h-full drop-shadow-xl")}
+                  <div className="w-48 h-48 rounded-[2.5rem] flex items-center justify-center bg-solar-card shadow-2xl border-4 border-solar-electric/10 relative group p-10 text-black transition-all hover:border-solar-electric/30">
+                    {getApplianceIcon(currentAppliance.id, "w-full h-full drop-shadow-xl fill-black")}
                     <div className="absolute inset-0 bg-gradient-to-tr from-solar-electric/5 to-transparent rounded-[2rem] pointer-events-none" />
                   </div>
                 </motion.div>
@@ -171,23 +171,11 @@ export default function ApplianceStaging({ onComplete, onChange }: ApplianceStag
                   )}
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-solar-text/5">
-                  <button 
-                    onClick={handleNext}
-                    className={cn(
-                      "w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2",
-                      currentCategorySelected.length > 0
-                        ? "bg-solar-electric text-white shadow-lg shadow-solar-electric/20"
-                        : "bg-solar-text/5 text-solar-text/40 hover:bg-solar-text/10"
-                    )}
-                  >
-                    {currentIdx === APPLIANCES_LIST.length - 1 ? 'Finalize List' : 'Next Appliance'}
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
+                <div className="mt-6 pt-4 border-t border-solar-text/5 flex-shrink-0">
                   {currentCategorySelected.length === 0 && (
                     <button 
                       onClick={handleNext}
-                      className="w-full mt-2 text-[10px] uppercase tracking-widest text-solar-text/30 hover:text-solar-text/60 transition-colors"
+                      className="w-full text-[10px] uppercase tracking-widest text-solar-text/30 hover:text-solar-text/60 transition-colors"
                     >
                       Skip this appliance
                     </button>
@@ -210,6 +198,27 @@ export default function ApplianceStaging({ onComplete, onChange }: ApplianceStag
           </StepWrapper>
         </motion.div>
       </AnimatePresence>
+
+      {/* Floating Bottom Right Navigation */}
+      <div className="absolute bottom-4 right-4 md:bottom-8 md:right-8 flex flex-col items-end gap-3">
+        <button 
+          onClick={handleNext}
+          className={cn(
+            "px-8 py-4 rounded-2xl font-black transition-all flex items-center gap-3 shadow-2xl group",
+            currentCategorySelected.length > 0
+              ? "bg-solar-electric text-white scale-110 shadow-solar-electric/30 hover:translate-y-[-4px]"
+              : "bg-solar-navy/80 backdrop-blur-md text-solar-text/40 border border-white/5 hover:bg-solar-navy"
+          )}
+        >
+          <span className="uppercase tracking-[0.2em] text-xs">
+            {currentIdx === APPLIANCES_LIST.length - 1 ? 'Complete Setup' : 'Next Appliance'}
+          </span>
+          <ChevronRight className={cn(
+            "w-5 h-5 transition-transform",
+            currentCategorySelected.length > 0 ? "group-hover:translate-x-1" : ""
+          )} />
+        </button>
+      </div>
     </div>
   );
 }
