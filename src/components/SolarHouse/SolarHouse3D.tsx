@@ -140,14 +140,14 @@ export default function SolarHouse3D({ appliances, evInfo, isDark = true }: Sola
 
       {/* Floating UI Branding */}
       <div className="absolute top-10 left-10 pointer-events-none group">
-        <h2 className="text-white font-black text-4xl tracking-tighter drop-shadow-2xl transition-all duration-300 group-hover:scale-105">SolarNest</h2>
+        <h2 className="text-white font-black text-4xl tracking-tighter drop-shadow-2xl transition-all duration-300 group-hover:scale-105">SolarForge</h2>
         <div className="flex items-center gap-2 mt-1">
           <div className="h-[2px] w-12 bg-yellow-400 shadow-[0_0_10px_#facc15]" />
-          <span className="text-[10px] text-white/40 uppercase font-bold tracking-[0.4em]">SOLAR BUILDER.</span>
+          <span className="text-[10px] text-white/40 uppercase font-bold tracking-[0.4em]">Design. Size. Power</span>
         </div>
       </div>
 
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 px-8 py-3 bg-black/60 backdrop-blur-xl rounded-2xl border border-white/5 z-50 pointer-events-none">
+      {/* <div className="absolute bottom-10 left-1/2 -translate-x-1/2 px-8 py-3 bg-black/60 backdrop-blur-xl rounded-2xl border border-white/5 z-50 pointer-events-none">
         <div className="flex items-center gap-4">
           <div className={`w-3 h-3 rounded-full animate-pulse ${!isDark ? 'bg-yellow-400 shadow-[0_0_20px_#facc15]' : 'bg-blue-400 shadow-[0_0_20px_#60a5fa]'}`} />
           <div className="flex flex-col">
@@ -157,7 +157,7 @@ export default function SolarHouse3D({ appliances, evInfo, isDark = true }: Sola
             </span>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

@@ -155,6 +155,14 @@ export default function ResultDashboard({ data }: ResultDashboardProps) {
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                   {/* Solar Harvesting Active */}
+                                  {/* Solar Harvesting or Emergency Storage */}
+                <div className="col-span-2">
+                  <span className="opacity-60">
+                    {isDark ? "Emergency Storage" : "Solar Harvesting"}
+                  </span>
+                  <br />
+                  
+                </div>
                   {/* <HouseVisual appliances={data.appliances} evInfo={data.evInfo} isDark={isDark} /> */}
 
                 </div>
@@ -202,7 +210,7 @@ export default function ResultDashboard({ data }: ResultDashboardProps) {
                   initial={{ opacity: 0, y: 20, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                  className="absolute bottom-24 left-8 z-50 w-96 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 shadow-2xl"
+                  className="absolute top-28 right-12 z-50 w-96 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 shadow-2xl"
                 >
                   <div className="flex items-center justify-between mb-5">
                     <h3 className="text-lg font-bold">Your Appliances</h3>
@@ -262,11 +270,12 @@ export default function ResultDashboard({ data }: ResultDashboardProps) {
                 <div><span className="opacity-60">Inverter</span><br /><b>{inverterSize} kW</b></div>
                 <div><span className="opacity-60">Panels</span><br /><b>{panelCount} × 550W</b></div>
                 <div><span className="opacity-60">Est. Annual Production</span><br /><b>{estimatedAnnualProduction} kWh</b></div>
+
               </div>
             </div>
 
             {/* Financial Snapshot */}
-            <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-md">
+            {/* <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-md">
               <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-green-400" /> Financials
               </h3>
@@ -288,7 +297,8 @@ export default function ResultDashboard({ data }: ResultDashboardProps) {
                   <span className="font-bold">₨{lifetimeValue.toLocaleString('en-PK')}</span>
                 </div>
               </div>
-            </div>
+            </div> */}
+            
 
             {/* AI Insights */}
             <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-md">
