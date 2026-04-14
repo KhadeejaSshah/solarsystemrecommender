@@ -28,11 +28,11 @@ export default function SolarHouse3D({ appliances, evInfo, isDark = true }: Sola
         <color attach="background" args={[skyColor]} />
         <fog attach="fog" args={[fogColor, 30, 200]} />
 
-        <PerspectiveCamera makeDefault position={[30, 16, 40]} fov={32} />
+        <PerspectiveCamera makeDefault position={[-28, 7, 24]} fov={32} />
         <OrbitControls
           enablePan={false}
           minDistance={20}
-          maxDistance={100}
+          maxDistance={50}
           maxPolarAngle={Math.PI / 2.1}
           autoRotate={false}
           target={[0, 2, 0]}
@@ -178,7 +178,7 @@ const FarmEstate = ({ isDark }: { isDark: boolean }) => {
       </mesh>
 
       {/* Vineyard Rows with Bollard Lights */}
-      <group position={[15, 0, -5]}>
+      <group position={[8, 0, -2]}>
         {[...Array(8)].map((_, i) => (
           <group key={i}>
             <VineyardRow position={[i * 3, 0, 0]} length={40} isDark={isDark} />
@@ -194,12 +194,7 @@ const FarmEstate = ({ isDark }: { isDark: boolean }) => {
         <planeGeometry args={[8, 100]} />
         <meshStandardMaterial color={isDark ? "#2a1e12" : "#4a3a2a"} roughness={1.0} />
       </mesh>
-      {/* made street lights all across the road*/}
-      <group>
-        {[...Array(8)].map((_, i) => (
-          <BollardLight key={i} position={[-8.5, 0, i * 8]} />
-        ))}
-      </group>
+     
       {/* Path Bollards along road */}
       {isDark && (
         <group>
