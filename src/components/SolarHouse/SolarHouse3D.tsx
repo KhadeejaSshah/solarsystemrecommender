@@ -194,7 +194,12 @@ const FarmEstate = ({ isDark }: { isDark: boolean }) => {
         <planeGeometry args={[8, 100]} />
         <meshStandardMaterial color={isDark ? "#2a1e12" : "#4a3a2a"} roughness={1.0} />
       </mesh>
-
+      {/* made street lights all across the road*/}
+      <group>
+        {[...Array(8)].map((_, i) => (
+          <BollardLight key={i} position={[-8.5, 0, i * 8]} />
+        ))}
+      </group>
       {/* Path Bollards along road */}
       {isDark && (
         <group>
@@ -208,7 +213,7 @@ const FarmEstate = ({ isDark }: { isDark: boolean }) => {
 };
 
 const BollardLight = ({ position }: { position: [number, number, number] }) => {
-  const goldenLight = "#ffaa33";
+  const goldenLight = "#fcb450ff";
   return (
     <group position={position}>
       <mesh position={[0, 0.4, 0]}>

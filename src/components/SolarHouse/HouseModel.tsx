@@ -182,6 +182,11 @@ export const HouseModel = ({ solarPanels = 10, isDark = false }: { solarPanels?:
           <meshStandardMaterial color="#00ff88" emissive="#00ff88" emissiveIntensity={2.0} />
         </mesh>
       </group>
+
+      {/* Wall Lamps - 4 sides */}
+      <WallLamp position={[5.2, 6.5, 2.85]} isDark={isDark} />   {/* Front wall */}
+      <WallLamp position={[-6.35, 4.8, 2.55]} isDark={isDark} />  {/* Back wall */}
+      <WallLamp position={[0.7, 3.5, 3.1]} isDark={isDark} />      {/* Right wall */}
     </group>
   );
 };
@@ -312,3 +317,46 @@ const DetailedWindow = ({ position, rotation = [0, 0, 0], args = [1.8, 1.3], mat
     </group>
   );
 };
+
+const SolarPanelArray = ({ position, panels, material, frameMaterial }: any) => {
+  const panelWidth = 1.05;
+  const panelHeight = 0.85;
+  const gap = 0.08;
+
+  return (
+    <group position={position} rotation={[-0.1, 0, 0]}>
+      {[...Array(Math.min(24, panels))].map((_, i) => (
+        <group key={i} position={[(i % 6 - 2.5) * (panelWidth + gap), Math.floor(i / 6) * (panelHeight + gap) - 1.5, 0.2]}>
+          <mesh material={material} castShadow>
+            <boxGeometry args={[panelWidth, 0.05, panelHeight]} />
+          </mesh>
+          <mesh material={frameMaterial}>
+            <boxGeometry args={[panelWidth + 0.06, 0.08, panelHeight + 0.06]} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+};
+
+// Add this above your HouseModel component
+function WallLamp({ position, isDark }: { position: [number, number, number], isDark: boolean }) {
+  return (
+    <group position={position}>
+      {/* Lamp body */}
+      <mesh>
+        <cylinderGeometry args={[0.08, 0.08, 0.18, 16]} />
+        <meshStandardMaterial color="#888" metalness={0.7} roughness={0.3} />
+      </mesh>
+      {/* Lamp glass */}
+      <mesh position={[0, 0.13, 0]}>
+        <sphereGeometry args={[0.09, 16, 16]} />
+        <meshStandardMaterial color="#ffe066" emissive="#ffe066" emissiveIntensity={isDark ? 2 : 0} transparent opacity={0.7} />
+      </mesh>
+      {/* Light */}
+      {isDark && (
+        <pointLight color="#ffe066" intensity={1.5} distance={2} />
+      )}
+    </group>
+  );
+}
