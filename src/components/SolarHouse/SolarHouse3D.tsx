@@ -7,6 +7,7 @@ import { ApplianceMarkers } from './ApplianceMarkers';
 import { EnergyFlow } from './EnergyFlow';
 import { EVCar } from './EVCar';
 import { Appliance, EVInfo } from '../../types';
+import { cn } from '../../lib/utils';
 
 interface SolarHouse3DProps {
   appliances: Appliance[];
@@ -105,12 +106,13 @@ export default function SolarHouse3D({ appliances, evInfo, isDark = true }: Sola
 
               <ApplianceMarkers appliances={appliances} />
 
-              <EnergyFlow
-                isSolarActive={!isDark}
-                isBatteryDischarging={true}
-                hasEV={hasEV}
-              />
-            </group>
+            <EnergyFlow
+              isSolarActive={!isDark}
+              isBatteryDischarging={true}
+              hasEV={hasEV}
+              appliances={appliances}
+            />
+          </group>
 
             {hasEV && (
               <EVCar
@@ -140,10 +142,16 @@ export default function SolarHouse3D({ appliances, evInfo, isDark = true }: Sola
 
       {/* Floating UI Branding */}
       <div className="absolute top-10 left-10 pointer-events-none group">
-        <h2 className="text-white font-black text-4xl tracking-tighter drop-shadow-2xl transition-all duration-300 group-hover:scale-105">SolarNest</h2>
+        <h2 className={cn(
+          "font-black text-4xl tracking-tighter drop-shadow-2xl transition-all duration-300 group-hover:scale-105",
+          isDark ? "text-white" : "text-solar-navy"
+        )}>SolarNest</h2>
         <div className="flex items-center gap-2 mt-1">
           <div className="h-[2px] w-12 bg-yellow-400 shadow-[0_0_10px_#facc15]" />
-          <span className="text-[10px] text-white/40 uppercase font-bold tracking-[0.4em]">SOLAR BUILDER.</span>
+          <span className={cn(
+            "text-[10px] uppercase font-bold tracking-[0.4em]",
+            isDark ? "text-white/40" : "text-solar-navy/40"
+          )}>SOLAR BUILDER.</span>
         </div>
       </div>
 
@@ -194,7 +202,7 @@ const FarmEstate = ({ isDark }: { isDark: boolean }) => {
         <planeGeometry args={[8, 100]} />
         <meshStandardMaterial color={isDark ? "#2a1e12" : "#4a3a2a"} roughness={1.0} />
       </mesh>
-     
+
       {/* Path Bollards along road */}
       {isDark && (
         <group>
