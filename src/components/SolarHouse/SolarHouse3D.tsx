@@ -16,15 +16,15 @@ interface SolarHouse3DProps {
 
 export default function SolarHouse3D({ appliances, evInfo, isDark = true }: SolarHouse3DProps) {
   const hasEV = evInfo.status !== 'none';
-  
+
   return (
     <div className="w-full h-full min-h-[600px] relative rounded-[2.5rem] overflow-hidden bg-black">
       <Canvas shadows dpr={[1, 2]}>
         <color attach="background" args={[isDark ? '#020408' : '#87ceeb']} />
         {isDark && <fog attach="fog" args={['#020408', 40, 120]} />}
-        
+
         <PerspectiveCamera makeDefault position={[22, 14, 25]} fov={38} />
-        <OrbitControls 
+        <OrbitControls
           enablePan={false}
           minDistance={15}
           maxDistance={50}
@@ -35,13 +35,13 @@ export default function SolarHouse3D({ appliances, evInfo, isDark = true }: Sola
 
         {/* Global Lighting */}
         <ambientLight intensity={isDark ? 0.05 : 0.4} color={isDark ? "#4466aa" : "#ffffff"} />
-        
+
         {/* Main Light (Sun or Moon) */}
-        <directionalLight 
-          position={[20, 30, 15]} 
-          intensity={isDark ? 0.8 : 4.0} 
+        <directionalLight
+          position={[20, 30, 15]}
+          intensity={isDark ? 0.8 : 4.0}
           color={isDark ? "#8ab4cc" : "#fff4e0"}
-          castShadow 
+          castShadow
           shadow-mapSize={[2048, 2048]}
           shadow-camera-left={-20}
           shadow-camera-right={20}
@@ -56,7 +56,7 @@ export default function SolarHouse3D({ appliances, evInfo, isDark = true }: Sola
             <pointLight position={[0, 3.5, 1.5]} intensity={1.5} distance={10} color="#ffcc55" />
             <pointLight position={[-2.5, 3.5, 1.2]} intensity={1.2} distance={8} color="#ffcc55" />
             <pointLight position={[2.5, 3.5, 1.2]} intensity={1.2} distance={8} color="#ffcc55" />
-            
+
             {/* Street Lamp Glow */}
             <pointLight position={[-6.5, 4.2, 3.5]} intensity={2.5} distance={12} color="#ffee66" />
           </group>
@@ -77,24 +77,24 @@ export default function SolarHouse3D({ appliances, evInfo, isDark = true }: Sola
 
         <Suspense fallback={null}>
           <group position={[0, -2, 0]}>
-            <HouseModel 
-              solarPanels={Math.ceil(appliances.length * 1.5)} 
-              isDark={isDark} 
+            <HouseModel
+              solarPanels={Math.ceil(appliances.length * 1.5)}
+              isDark={isDark}
             />
-            
+
             <ApplianceMarkers appliances={appliances} />
-            
-            <EnergyFlow 
-              isSolarActive={!isDark} 
-              isBatteryDischarging={true} 
-              hasEV={hasEV} 
+
+            <EnergyFlow
+              isSolarActive={!isDark}
+              isBatteryDischarging={true}
+              hasEV={hasEV}
             />
 
             {hasEV && (
-              <EVCar 
-                position={[-5.8, 0.05, 6.2]} 
-                rotation={[0, -Math.PI / 1.1, 0]} 
-                isDark={isDark} 
+              <EVCar
+                position={[-4.5, 0.8, 6.8]}
+                rotation={[0, +Math.PI + 0.01 / 1.1, 0]}
+                isDark={isDark}
               />
             )}
 
@@ -108,28 +108,28 @@ export default function SolarHouse3D({ appliances, evInfo, isDark = true }: Sola
                 <cylinderGeometry args={[0.04, 0.04, 0.8, 8]} />
                 <meshStandardMaterial color="#444444" metalness={0.8} />
               </mesh>
-              <mesh position={[0.8, 4.1, 0]} material={new THREE.MeshStandardMaterial({ 
-                color: isDark ? "#ffee66" : "#ffffff", 
-                emissive: "#ffee66", 
-                emissiveIntensity: isDark ? 2 : 0 
+              <mesh position={[0.8, 4.1, 0]} material={new THREE.MeshStandardMaterial({
+                color: isDark ? "#ffee66" : "#ffffff",
+                emissive: "#ffee66",
+                emissiveIntensity: isDark ? 2 : 0
               })}>
                 <sphereGeometry args={[0.15, 16, 16]} />
               </mesh>
             </group>
-            
+
             {/* Realistic Ground */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
               <planeGeometry args={[100, 100]} />
               <meshStandardMaterial color="#222222" roughness={1} />
             </mesh>
-            
-            <ContactShadows 
-              opacity={0.6} 
-              scale={30} 
-              blur={2} 
-              far={10} 
-              resolution={512} 
-              color={isDark ? "#000000" : "#112200"} 
+
+            <ContactShadows
+              opacity={0.6}
+              scale={30}
+              blur={2}
+              far={10}
+              resolution={512}
+              color={isDark ? "#000000" : "#112200"}
             />
           </group>
         </Suspense>
