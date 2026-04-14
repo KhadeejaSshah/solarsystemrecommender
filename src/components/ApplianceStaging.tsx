@@ -1,10 +1,9 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import StepWrapper from './StepWrapper';
+import { useState, useRef, useEffect } from 'react';
+import { motion } from 'motion/react';
+import { Plus, Minus, Trash2, ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { APPLIANCES_LIST, Appliance } from '../types';
-import { Plus, Minus, Check, ChevronRight } from 'lucide-react';
-import { cn } from '../lib/utils';
 import { getApplianceIcon } from './ApplianceIcons';
+import { cn } from '../lib/utils';
 
 interface ApplianceStagingProps {
   onComplete: (appliances: Appliance[]) => void;
@@ -12,213 +11,292 @@ interface ApplianceStagingProps {
 }
 
 export default function ApplianceStaging({ onComplete, onChange }: ApplianceStagingProps) {
-  const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedAppliances, setSelectedAppliances] = useState<Appliance[]>([]);
-  const [quantity, setQuantity] = useState(1);
-  const [selectedOption, setSelectedOption] = useState<any>(null);
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [selectedVariants, setSelectedVariants] = useState<Record<string, any>>({});
 
-  const currentAppliance = APPLIANCES_LIST[currentIdx];
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
 
-  const handleAdd = () => {
+  const updateQuantity = (id: string, newQty: number) => {
+    setQuantities(prev => ({ ...prev, [id]: Math.max(1, newQty) }));
+  };
+
+  const updateVariant = (id: string, variant: any) => {
+    setSelectedVariants(prev => ({ ...prev, [id]: variant }));
+  };
+
+  const addAppliance = (baseAppliance: any) => {
+    const qty = quantities[baseAppliance.id] || 1;
+    const variant = selectedVariants[baseAppliance.id];
+
     const newAppliance: Appliance = {
-      ...currentAppliance,
-      quantity,
-      wattage: selectedOption ? selectedOption : currentAppliance.wattage,
-      selectedOption: selectedOption
+      ...baseAppliance,
+      quantity: qty,
+      wattage: variant ? variant.value : baseAppliance.wattage,
+      selectedOption: variant?.value || null,
+      variantLabel: variant?.label || baseAppliance.name,
     };
-    const newList = [...selectedAppliances, newAppliance];
-    setSelectedAppliances(newList);
-    onChange?.(newList);
-    setQuantity(1);
-    setSelectedOption(null);
-  };
 
-  const handleRemove = (index: number) => {
-    const newList = selectedAppliances.filter((_, i) => i !== index);
-    setSelectedAppliances(newList);
-    onChange?.(newList);
-  };
+    const existingIndex = selectedAppliances.findIndex(a =>
+      a.id === baseAppliance.id && a.selectedOption === newAppliance.selectedOption
+    );
 
-  const handleNext = () => {
-    if (currentIdx < APPLIANCES_LIST.length - 1) {
-      setCurrentIdx(prev => prev + 1);
-      setQuantity(1);
-      setSelectedOption(null);
+    let updatedList: Appliance[] = [...selectedAppliances];
+
+    if (existingIndex !== -1) {
+      updatedList[existingIndex].quantity += qty;
     } else {
-      onComplete(selectedAppliances);
+      updatedList.push(newAppliance);
     }
+
+    setSelectedAppliances(updatedList);
+    onChange?.(updatedList);
   };
 
-  const currentCategorySelected = selectedAppliances.filter(a => a.id === currentAppliance.id);
+  const removeAppliance = (index: number) => {
+    const updated = selectedAppliances.filter((_, i) => i !== index);
+    setSelectedAppliances(updated);
+    onChange?.(updated);
+  };
+
+  const totalSelected = selectedAppliances.reduce((sum, app) => sum + app.quantity, 0);
+  const totalWattage = selectedAppliances.reduce((sum, app) => sum + (app.wattage * app.quantity), 0);
+
+  // Scroll with arrows
+  const scroll = (direction: 'left' | 'right') => {
+    if (!carouselRef.current) return;
+    const scrollAmount = 350; // Good step for 3-card view
+    carouselRef.current.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth',
+    });
+  };
+
+  // Mouse drag support
+  useEffect(() => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+
+    const onMouseDown = (e: MouseEvent) => {
+      setIsDragging(true);
+      setStartX(e.pageX - carousel.offsetLeft);
+      setScrollLeft(carousel.scrollLeft);
+    };
+
+    const onMouseLeave = () => setIsDragging(false);
+    const onMouseUp = () => setIsDragging(false);
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const x = e.pageX - carousel.offsetLeft;
+      const walk = (x - startX) * 2; // Scroll speed
+      carousel.scrollLeft = scrollLeft - walk;
+    };
+
+    carousel.addEventListener('mousedown', onMouseDown);
+    carousel.addEventListener('mouseleave', onMouseLeave);
+    carousel.addEventListener('mouseup', onMouseUp);
+    carousel.addEventListener('mousemove', onMouseMove);
+
+    return () => {
+      carousel.removeEventListener('mousedown', onMouseDown);
+      carousel.removeEventListener('mouseleave', onMouseLeave);
+      carousel.removeEventListener('mouseup', onMouseUp);
+      carousel.removeEventListener('mousemove', onMouseMove);
+    };
+  }, [isDragging, startX, scrollLeft]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[500px] w-full max-w-4xl">
-      <AnimatePresence mode="wait">
-        <motion.div key={currentAppliance.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex flex-col items-center">
-          <StepWrapper direction="right" className="text-center w-full">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
-              <div className="space-y-8">
-                <motion.div
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="flex justify-center"
-                >
-                  <div className="w-48 h-48 rounded-[2.5rem] flex items-center justify-center bg-solar-card shadow-2xl border-4 border-solar-electric/10 relative group p-10 text-black transition-all hover:border-solar-electric/30">
-                    {getApplianceIcon(currentAppliance.id, "w-full h-full drop-shadow-xl fill-black")}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-solar-electric/5 to-transparent rounded-[2rem] pointer-events-none" />
-                  </div>
-                </motion.div>
-                
-                <div>
-                  <h2 className="text-3xl font-display font-bold text-solar-text mb-2">
-                    {currentAppliance.name}
-                  </h2>
-                  <p className="text-solar-text/50 font-medium">Configure and add to your list</p>
-                </div>
+    <div className="flex h-full gap-8 p-6 max-w-7xl mx-auto">
+      {/* LEFT SIDEBAR - Your Appliances (Live Profile) */}
+      {/* <div className="w-96 bg-solar-navy/70 backdrop-blur-xl border border-white/10 rounded-3xl p-6 flex flex-col">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold mb-1">Your Appliances</h2>
+          <p className="text-solar-text/60 text-sm">Live summary</p>
+        </div>
 
-                <div className="space-y-6">
-                  {/* Quantity Selector */}
-                  <div className="flex flex-col items-center gap-3">
-                    <span className="text-[10px] uppercase tracking-widest text-solar-electric font-bold">Quantity</span>
-                    <div className="flex items-center gap-6">
-                      <button 
-                        onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                        className="p-2 rounded-full bg-solar-card border-2 border-solar-electric/20 text-solar-electric hover:bg-solar-electric hover:text-white transition-all shadow-md"
-                      >
-                        <Minus className="w-5 h-5" />
-                      </button>
-                      <span className="text-3xl font-display font-bold w-10 text-solar-text">{quantity}</span>
-                      <button 
-                        onClick={() => setQuantity(q => q + 1)}
-                        className="p-2 rounded-full bg-solar-card border-2 border-solar-electric/20 text-solar-electric hover:bg-solar-electric hover:text-white transition-all shadow-md"
-                      >
-                        <Plus className="w-5 h-5" />
-                      </button>
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
+          {selectedAppliances.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center py-12 text-solar-text/40">
+              <div className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center mb-6">
+                <Plus className="w-10 h-10" />
+              </div>
+              <p className="text-lg font-medium">Your list is empty</p>
+              <p className="text-sm mt-2">Add appliances from the center</p>
+            </div>
+          ) : (
+            selectedAppliances.map((app, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white/5 rounded-2xl p-4 flex gap-4 group"
+              >
+                <div className="w-12 h-12 flex-shrink-0 bg-white/10 rounded-xl flex items-center justify-center">
+                  {getApplianceIcon(app.id, "w-7 h-7")}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{app.quantity}× {app.variantLabel || app.name}</div>
+                  <div className="text-xs text-solar-text/60">
+                    {app.wattage}W × {app.quantity} = {app.wattage * app.quantity}W
+                  </div>
+                </div>
+                <button
+                  onClick={() => removeAppliance(index)}
+                  className="p-2 text-red-400/70 hover:text-red-400 hover:bg-white/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </motion.div>
+            ))
+          )}
+        </div>
+
+        {selectedAppliances.length > 0 && (
+          <div className="mt-6 pt-6 border-t border-white/10">
+            <div className="flex justify-between mb-1 text-sm">
+              <span className="text-solar-text/60">Total items</span>
+              <span className="font-semibold">{totalSelected}</span>
+            </div>
+            <div className="flex justify-between mb-6 text-sm">
+              <span className="text-solar-text/60">Total load</span>
+              <span className="font-semibold text-solar-electric">{totalWattage}W</span>
+            </div>
+
+            <button
+              onClick={() => onComplete(selectedAppliances)}
+              className="btn-primary w-full py-4 text-base font-semibold flex items-center justify-center gap-2"
+            >
+              Continue <Check className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+      </div> */}
+
+      {/* CENTER - Carousel with 3 visible cards */}
+      
+      <div className="flex-1 flex flex-col min-w-0">
+        <div className="mb-8">
+          <h1 className="text-4xl font-display font-bold mb-2">What appliances do you use?</h1>
+          <p className="text-solar-text/60 text-lg">Choose appliances • Pick variant • Adjust quantity</p>
+        </div>
+       
+
+        {/* Arrow Controls */}
+        <div className="ml-auto flex items-center justify-between mb-4 px-2">
+          <div className="flex gap-3">
+            <button
+              onClick={() => scroll('left')}
+              className="p-3 bg-solar-navy/80 hover:bg-solar-navy border border-white/10 rounded-2xl transition-all active:scale-95"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => scroll('right')}
+              className="p-3 bg-solar-navy/80 hover:bg-solar-navy border border-white/10 rounded-2xl transition-all active:scale-95"
+            >
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Carousel */}
+        <div className="relative flex-1">
+          {/* Fade gradients to show scrollable area */}
+          <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[#0a0f1c] to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#0a0f1c] to-transparent z-10 pointer-events-none" />
+
+          <div
+            ref={carouselRef}
+            className={cn(
+              " flex gap-6 overflow-x-auto pb-10 snap-x snap-mandatory",
+              "scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+              isDragging ? "cursor-grabbing" : "cursor-grab"
+            )}
+          >
+            {APPLIANCES_LIST.map((appliance) => {
+              const qty = quantities[appliance.id] || 1;
+              const selectedVariant = selectedVariants[appliance.id];
+              const currentWattage = selectedVariant ? selectedVariant.value : appliance.wattage;
+
+              return (
+                <motion.div
+                  key={appliance.id}
+                  whileHover={{ y: -6 }}
+                  className="min-w-[310px] bg-solar-card rounded-3xl p-7 border border-white/10 hover:border-solar-electric/40 transition-all snap-start flex-shrink-0"
+                >
+                  <div className="flex justify-center mb-7">
+                    <div className="w-24 h-24">
+                      {getApplianceIcon(appliance.id, "w-full h-full drop-shadow-md")}
                     </div>
                   </div>
 
-                  {/* Options Selector */}
-                  {currentAppliance.options && (
-                    <div className="flex flex-col items-center gap-3 w-full">
-                      <span className="text-[10px] uppercase tracking-widest text-solar-electric font-bold">Select Type / Capacity</span>
-                      <div className="grid grid-cols-1 gap-2 w-full max-w-xs">
-                        {currentAppliance.options.map((opt) => (
-                          <button
-                            key={opt.label}
-                            onClick={() => setSelectedOption(opt.value)}
-                            className={cn(
-                              "px-4 py-2 rounded-xl border text-sm font-medium transition-all",
-                              selectedOption === opt.value 
-                                ? "bg-solar-electric text-white border-solar-electric shadow-lg shadow-solar-electric/20" 
-                                : "bg-solar-card text-solar-text border-solar-border hover:border-solar-electric/50"
-                            )}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
+                  <h3 className="text-2xl font-semibold text-center mb-2">{appliance.name}</h3>
+                  <p className="text-center text-solar-text/60 mb-7 text-sm">
+                    {currentWattage}W base load
+                  </p>
+
+                  {appliance.options && (
+                    <div className="flex flex-wrap gap-2 justify-center mb-8">
+                      {appliance.options.map((opt: any) => (
+                        <button
+                          key={opt.label}
+                          onClick={() => updateVariant(appliance.id, opt)}
+                          className={cn(
+                            "px-4 py-1.5 text-xs rounded-full border transition-all",
+                            selectedVariant?.value === opt.value
+                              ? "bg-solar-electric text-white border-solar-electric"
+                              : "border-white/20 hover:border-white/40"
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
                     </div>
                   )}
 
-                  <button 
-                    onClick={handleAdd} 
-                    className="btn-primary w-full max-w-xs flex items-center justify-center gap-2 py-4"
-                  >
-                    <Plus className="w-5 h-5" />
-                    Add to List
-                  </button>
-                </div>
-              </div>
-
-              {/* Summary of current category */}
-              <div className="glass-card p-6 text-left min-h-[300px] flex flex-col">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-solar-electric mb-4 flex items-center justify-between">
-                  Added {currentAppliance.name}s
-                  <span className="bg-solar-electric/10 text-solar-electric px-2 py-0.5 rounded text-[10px]">
-                    {currentCategorySelected.length} Items
-                  </span>
-                </h3>
-                
-                <div className="flex-1 space-y-3 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
-                  {currentCategorySelected.map((app, idx) => (
-                    <motion.div 
-                      initial={{ x: 20, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      key={idx} 
-                      className="flex items-center justify-between p-3 bg-solar-navy/50 rounded-xl border border-solar-border group"
-                    >
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-solar-text">
-                          {app.quantity}x {app.options?.find(o => o.value === app.selectedOption)?.label || app.name}
-                        </span>
-                        <span className="text-[10px] text-solar-text/40 uppercase tracking-wider">
-                          {(app.wattage * app.quantity)}W Load
-                        </span>
-                      </div>
-                      <button 
-                        onClick={() => handleRemove(selectedAppliances.indexOf(app))}
-                        className="p-2 text-solar-text/20 hover:text-red-500 transition-colors"
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center bg-solar-navy/60 rounded-2xl p-1">
+                      <button
+                        onClick={() => updateQuantity(appliance.id, qty - 1)}
+                        className="p-3 hover:bg-white/10 rounded-xl transition-colors"
                       >
                         <Minus className="w-4 h-4" />
                       </button>
-                    </motion.div>
-                  ))}
-                  {currentCategorySelected.length === 0 && (
-                    <div className="flex flex-col items-center justify-center h-full text-solar-text/30 italic py-12">
-                      <Plus className="w-8 h-8 mb-2 opacity-20" />
-                      <p className="text-xs">No {currentAppliance.name.toLowerCase()}s added yet</p>
+                      <span className="w-12 text-center font-display font-bold text-2xl">{qty}</span>
+                      <button
+                        onClick={() => updateQuantity(appliance.id, qty + 1)}
+                        className="p-3 hover:bg-white/10 rounded-xl transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
                     </div>
-                  )}
-                </div>
 
-                <div className="mt-6 pt-4 border-t border-solar-text/5 flex-shrink-0">
-                  {currentCategorySelected.length === 0 && (
-                    <button 
-                      onClick={handleNext}
-                      className="w-full text-[10px] uppercase tracking-widest text-solar-text/30 hover:text-solar-text/60 transition-colors"
+                    <button
+                      onClick={() => addAppliance(appliance)}
+                      className="flex-1 btn-primary py-4 font-semibold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-transform"
                     >
-                      Skip this appliance
+                      <Plus className="w-5 h-5" /> Add
                     </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-12 flex justify-center gap-1">
-              {APPLIANCES_LIST.map((_, i) => (
-                <div 
-                  key={i} 
-                  className={cn(
-                    "h-1 rounded-full transition-all duration-500",
-                    i === currentIdx ? "w-8 bg-solar-electric" : "w-2 bg-solar-text/10"
-                  )}
-                />
-              ))}
-            </div>
-          </StepWrapper>
-        </motion.div>
-      </AnimatePresence>
-
-      {/* Floating Bottom Right Navigation */}
-      <div className="absolute bottom-4 right-4 md:bottom-8 md:right-8 flex flex-col items-end gap-3">
-        <button 
-          onClick={handleNext}
-          className={cn(
-            "px-8 py-4 rounded-2xl font-black transition-all flex items-center gap-3 shadow-2xl group",
-            currentCategorySelected.length > 0
-              ? "bg-solar-electric text-white scale-110 shadow-solar-electric/30 hover:translate-y-[-4px]"
-              : "bg-solar-navy/80 backdrop-blur-md text-solar-text/40 border border-white/5 hover:bg-solar-navy"
-          )}
-        >
-          <span className="uppercase tracking-[0.2em] text-xs">
-            {currentIdx === APPLIANCES_LIST.length - 1 ? 'Complete Setup' : 'Next Appliance'}
-          </span>
-          <ChevronRight className={cn(
-            "w-5 h-5 transition-transform",
-            currentCategorySelected.length > 0 ? "group-hover:translate-x-1" : ""
-          )} />
-        </button>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+         <button
+              onClick={() => onComplete(selectedAppliances)}
+              className="btn-primary w-40 py-4 text-base font-semibold flex items-center gap-2 ml-auto"
+            >
+              Continue <Check className="w-5 h-5" />
+            </button>
       </div>
+      
     </div>
+    
   );
 }
