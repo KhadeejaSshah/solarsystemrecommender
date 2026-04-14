@@ -113,9 +113,9 @@ export default function App() {
           "relative w-[40%] aspect-square opacity-[0.03] grayscale transition-opacity duration-500",
           theme === 'light' && "opacity-[0.5]"
         )}>
-          <img 
-            src="/logo.png" 
-            alt="" 
+          <img
+            src="/logo.png"
+            alt=""
             className="w-full h-full object-contain"
             onError={(e) => {
               e.currentTarget.src = "https://api.iconify.design/lucide:zap.svg?color=%232563EB";
@@ -128,7 +128,7 @@ export default function App() {
       <CursorGlow />
 
       {/* Theme Toggle */}
-      <button 
+      <button
         onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
         className="fixed top-8 right-8 p-3 rounded-full border border-solar-text/10 bg-solar-navy/50 backdrop-blur-md text-solar-text hover:bg-solar-navy transition-all z-[100] shadow-lg"
         aria-label="Toggle Theme"
@@ -138,7 +138,7 @@ export default function App() {
 
       {/* Global Back Button (except entry and analyzing) */}
       {step !== 'entry' && step !== 'analyzing' && (
-        <button 
+        <button
           onClick={handleBack}
           className="fixed top-8 left-8 p-3 rounded-full border border-solar-text/10 bg-solar-navy/50 backdrop-blur-md text-solar-text hover:bg-solar-navy transition-all z-[100] flex items-center gap-2 group shadow-lg"
         >
@@ -157,7 +157,7 @@ export default function App() {
         )}
 
         {step !== 'entry' && step !== 'result' && step !== 'analyzing' && (
-          <motion.div 
+          <motion.div
             key="journey"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -165,7 +165,7 @@ export default function App() {
             className="relative min-h-screen flex items-center justify-center p-4"
           >
             {/* Side Status */}
-            <div className="hidden lg:block fixed left-8 top-1/2 -translate-y-1/2 w-64 glass-card p-6 z-20 transition-colors duration-500">
+            <div className="hidden lg:block fixed left-8 top-133 -translate-y-1/2 w-64 glass-card p-6 z-20 transition-colors duration-500">
               <h3 className="text-sm font-bold uppercase tracking-widest text-solar-electric mb-4">Live Load Profile</h3>
               <div className="space-y-4">
                 <div className="flex justify-between items-end">
@@ -210,8 +210,8 @@ export default function App() {
               )}
               {step === 'appliances' && (
                 <motion.div key="apps" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex justify-center">
-                  <ApplianceStaging 
-                    onComplete={handleAppliances} 
+                  <ApplianceStaging
+                    onComplete={handleAppliances}
                     onChange={(apps) => updateData({ appliances: apps })}
                   />
                 </motion.div>
@@ -244,8 +244,8 @@ export default function App() {
                 <span className="text-[10px] uppercase tracking-[0.3em] text-white/20 font-bold">Step</span>
                 <div className="flex gap-1">
                   {journeySteps.map((s, i) => (
-                    <div 
-                      key={s} 
+                    <div
+                      key={s}
                       className={cn(
                         "h-1 rounded-full transition-all duration-500",
                         i <= currentProgressIdx ? "w-8 bg-solar-orange" : "w-2 bg-white/10"
