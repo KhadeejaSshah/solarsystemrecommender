@@ -72,7 +72,30 @@ export const MicrowaveIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-export const getApplianceIcon = (id: string, className?: string) => {
+export function getApplianceIcon(id: string, className = "", isDark = true) {
+  // Map appliance IDs to image filenames
+  const iconMap: Record<string, string> = {
+    fan: isDark ? "frontend/public/assets/fann.png" : "frontend/public/assets/fann.png",
+    fridge: isDark ? "frontend/public/assets/blackfridge.png" : "frontend/public/assets/fridge.png",
+    lights: isDark ? "frontend/public/assets/lightbulb.png" : "frontend/public/assets/lightbulb.png",
+    microwave: isDark ? "frontend/public/assets/micro.png" : "frontend/public/assets/micro.png",
+    motor: isDark ? "frontend/public/assets/watermotor.png" : "frontend/public/assets/watermotor.png",
+    ac: isDark ? "frontend/public/assets/ac.png" : "frontend/public/assets/ac.png",
+    iron: isDark ? "frontend/public/assets/iron.png" : "frontend/public/assets/iron.png",
+  };
+
+  if (iconMap[id]) {
+    return (
+      <img
+        src={iconMap[id]}
+        alt={id}
+        className={className}
+        style={{ objectFit: "contain", width: "100%", height: "100%" }}
+        draggable={false}
+      />
+    );
+  }
+
   switch (id) {
     case 'fan': return <FanIcon className={className} />;
     case 'ac': return <ACIcon className={className} />;
