@@ -110,8 +110,8 @@ export default function App() {
       {/* Persistent Background Logo */}
       <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
         <div className={cn(
-          "relative w-[40%] aspect-square opacity-[0.03] grayscale transition-opacity duration-500",
-          theme === 'light' && "opacity-[0.5]"
+          "relative w-[40%] aspect-square opacity-[0.03] transition-opacity duration-500",
+          theme === 'light' && "opacity-[0.10]"
         )}>
           <img
             src="/logo.png"

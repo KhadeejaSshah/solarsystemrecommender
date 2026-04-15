@@ -178,7 +178,7 @@ const FarmEstate = ({ isDark }: { isDark: boolean }) => {
       </mesh>
 
       {/* Vineyard Rows with Bollard Lights */}
-      <group position={[8, 0, -12]}>
+      <group position={[8, 0, 0]}>
         {[...Array(8)].map((_, i) => (
           <group key={i}>
             <VineyardRow position={[i * 3, 0, 0]} length={40} isDark={isDark} />
