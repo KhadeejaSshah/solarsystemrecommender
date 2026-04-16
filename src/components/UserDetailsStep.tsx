@@ -1,91 +1,126 @@
 import { useState } from 'react';
-import { motion } from 'motion/react';
-import StepWrapper from './StepWrapper';
+import { motion } from 'framer-motion';
 import { UserDetails } from '../types';
-import { User, Mail, MapPin, Phone } from 'lucide-react';
 
 interface UserDetailsStepProps {
-  onComplete: (details: UserDetails) => void;
+  onComplete: (details: UserDetails & { city: string }) => void;
 }
 
+const CITIES = [
+  "Karachi", "Lahore", "Islamabad", "Rawalpindi", "Peshawar", 
+  "Quetta", "Faisalabad", "Multan", "Sialkot", "Other"
+];
+
 export default function UserDetailsStep({ onComplete }: UserDetailsStepProps) {
-  const [details, setDetails] = useState<UserDetails>({
+  const [details, setDetails] = useState({
     name: '',
-    email: '',
     address: '',
     phone: '',
+    city: ''
   });
 
-  const isValid = details.name && details.email && details.address && details.phone;
+  // Phone is no longer optional, all fields required
+  const isValid = details.name && details.address && details.phone && details.city;
 
   return (
-    <div className="flex flex-col items-center">
-      <StepWrapper direction="top">
-        <h2 className="text-3xl font-display font-bold text-solar-text mb-2 text-center">
-          Personal Details
-        </h2>
-        <p className="text-solar-text/50 mb-8 text-center">Let's start by getting to know you.</p>
+    <div className="min-h-screen bg-[#0f172a] flex flex-col items-center pt-12 px-6 font-sans">
+      {/* Progress Trail */}
+      <div className="flex items-center gap-3 mb-16">
+        <div className="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_10px_#22d3ee]"></div>
+        <div className="w-16 h-[1px] bg-slate-800"></div>
+        <div className="w-2 h-2 rounded-full bg-slate-800"></div>
+        <div className="w-16 h-[1px] bg-slate-800"></div>
+        <div className="w-2 h-2 rounded-full bg-slate-800"></div>
+        <div className="w-16 h-[1px] bg-slate-800"></div>
+        <div className="w-2 h-2 rounded-full bg-slate-800"></div>
+      </div>
 
-        <div className="space-y-4">
-          <InputGroup 
-            icon={User} 
-            placeholder="Full Name" 
-            value={details.name} 
-            onChange={(v) => setDetails(d => ({ ...d, name: v }))} 
-          />
-          <InputGroup 
-            icon={Mail} 
-            placeholder="Email Address" 
-            type="email"
-            value={details.email} 
-            onChange={(v) => setDetails(d => ({ ...d, email: v }))} 
-          />
-          <InputGroup 
-            icon={Phone} 
-            placeholder="Phone Number" 
-            value={details.phone} 
-            onChange={(v) => setDetails(d => ({ ...d, phone: v }))} 
-          />
-          <div className="relative group">
-            <div className="absolute top-4 left-4 text-solar-text/30 group-focus-within:text-solar-electric transition-colors">
-              <MapPin className="w-5 h-5" />
-            </div>
-            <textarea
-              placeholder="Installation Address"
-              value={details.address}
-              onChange={(e) => setDetails(d => ({ ...d, address: e.target.value }))}
-              className="w-full bg-solar-input border border-solar-text/10 rounded-2xl py-4 pl-12 pr-4 text-solar-text placeholder:text-solar-text/20 focus:outline-none focus:border-solar-electric focus:ring-1 focus:ring-solar-electric transition-all min-h-[100px] resize-none"
+      <div className="w-full max-w-md">
+        <header className="mb-12">
+          <h1 className="text-5xl font-black text-white tracking-tighter italic uppercase mb-2">
+            Your Details
+          </h1>
+          <p className="text-slate-500 text-lg">
+            Quick setup — no account needed.
+          </p>
+        </header>
+
+        <div className="space-y-8">
+          {/* Full Name */}
+          <div className="space-y-3">
+            <label className="text-[10px] font-bold text-slate-500 tracking-[0.2em] uppercase">Full Name</label>
+            <input
+              type="text"
+              placeholder="Ahmed Hassan"
+              value={details.name}
+              onChange={(e) => setDetails(d => ({ ...d, name: e.target.value }))}
+              className="w-full bg-slate-900/50 border border-slate-800 rounded-2xl py-5 px-6 text-white placeholder:text-slate-700 focus:outline-none focus:border-cyan-500/50 transition-all text-lg"
             />
           </div>
 
-          <div className="pt-4">
-            <button 
+          {/* Property Address */}
+          <div className="space-y-3">
+            <label className="text-[10px] font-bold text-slate-500 tracking-[0.2em] uppercase">Property Address</label>
+            <input
+              type="text"
+              placeholder="House 42, Block C, DHA"
+              value={details.address}
+              onChange={(e) => setDetails(d => ({ ...d, address: e.target.value }))}
+              className="w-full bg-slate-900/50 border border-slate-800 rounded-2xl py-5 px-6 text-white placeholder:text-slate-700 focus:outline-none focus:border-cyan-500/50 transition-all text-lg"
+            />
+          </div>
+
+          {/* Phone Number */}
+          <div className="space-y-3">
+            <label className="text-[10px] font-bold text-slate-500 tracking-[0.2em] uppercase">Phone Number</label>
+            <input
+              type="tel"
+              placeholder="+92 300 1234567"
+              value={details.phone}
+              onChange={(e) => setDetails(d => ({ ...d, phone: e.target.value }))}
+              className="w-full bg-slate-900/50 border border-slate-800 rounded-2xl py-5 px-6 text-white placeholder:text-slate-700 focus:outline-none focus:border-cyan-500/50 transition-all text-lg"
+            />
+          </div>
+
+          {/* City Dropdown */}
+          <div className="space-y-3">
+            <label className="text-[10px] font-bold text-slate-500 tracking-[0.2em] uppercase">City</label>
+            <div className="relative">
+              <select
+                value={details.city}
+                onChange={(e) => setDetails(d => ({ ...d, city: e.target.value }))}
+                className="w-full bg-slate-900/50 border border-slate-800 rounded-2xl py-5 px-6 text-white appearance-none focus:outline-none focus:border-cyan-500/50 transition-all text-lg cursor-pointer"
+              >
+                <option value="" disabled className="bg-slate-900">Select City</option>
+                {CITIES.map(city => (
+                  <option key={city} value={city} className="bg-slate-900">{city}</option>
+                ))}
+              </select>
+              {/* Custom Arrow */}
+              <div className="absolute inset-y-0 right-6 flex items-center pointer-events-none">
+                <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Continue Button */}
+          <div className="pt-6">
+            <button
               disabled={!isValid}
-              onClick={() => onComplete(details)}
-              className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => onComplete(details as any)}
+              className={`w-full py-5 rounded-full font-bold tracking-widest uppercase transition-all flex items-center justify-center gap-2
+                ${isValid 
+                  ? 'bg-slate-800 text-white hover:bg-slate-700 cursor-pointer' 
+                  : 'bg-slate-900 text-slate-600 cursor-not-allowed'
+                }`}
             >
-              Continue
+              Continue →
             </button>
           </div>
         </div>
-      </StepWrapper>
-    </div>
-  );
-}
-
-function InputGroup({ icon: Icon, placeholder, value, onChange, type = "text" }: any) {
-  return (
-    <div className="relative group">
-      <div className="absolute inset-y-0 left-4 flex items-center text-solar-text/30 group-focus-within:text-solar-electric transition-colors">
-        <Icon className="w-5 h-5" />
       </div>
-      <input
-        type={type}
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-solar-input border border-solar-text/10 rounded-2xl py-4 pl-12 pr-4 text-solar-text placeholder:text-solar-text/20 focus:outline-none focus:border-solar-electric focus:ring-1 focus:ring-solar-electric transition-all"
-      />
     </div>
   );
 }
