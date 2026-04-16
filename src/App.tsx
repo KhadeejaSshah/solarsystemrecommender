@@ -7,18 +7,31 @@ import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import EntryScreen from './components/EntryScreen';
 import UserDetailsStep from './components/UserDetailsStep';
+import PathSelection from './components/PathSelection';
 import ApplianceStaging from './components/ApplianceStaging';
 import EVStep from './components/EVStep';
 import UsageBehaviorStep from './components/UsageBehavior';
 import BackupPreferenceStep from './components/BackupPreference';
 import OptionalBillStep from './components/OptionalBillStep';
+import ModernHome from './components/ModernHome';
 import AIAnalyzer from './components/AIAnalyzer';
 import ResultDashboard from './components/ResultDashboard';
 import { UserData, HouseType, Appliance, UsageBehavior, BackupPreference, UserDetails, EntryPath, EVInfo } from './types';
 import { cn } from './lib/utils';
 import { ChevronLeft, Sun, Moon } from 'lucide-react';
 
-type Step = 'entry' | 'user-details' | 'appliances' | 'ev-info' | 'usage' | 'backup' | 'optional-bill' | 'analyzing' | 'result';
+type Step =
+  | 'entry'
+  | 'user-details'
+  | 'path-selection'
+  | 'appliances'
+  | 'ev-info'
+  | 'usage'
+  | 'backup'
+  | 'optional-bill'
+  | 'analyzing'
+  | 'result'
+  | 'modern-home';
 
 export default function App() {
   const [step, setStep] = useState<Step>('entry');
@@ -39,25 +52,26 @@ export default function App() {
     setUserData(prev => ({ ...prev, ...newData }));
   };
 
-  const nextStep = (currentStep: Step): Step => {
-    switch (currentStep) {
-      case 'entry': return 'user-details';
-      case 'user-details': return 'appliances';
-      case 'appliances': return 'ev-info';
-      case 'ev-info': return 'usage';
-      case 'usage': return 'backup';
-      case 'backup': return 'optional-bill';
-      case 'optional-bill': return 'analyzing';
-      case 'analyzing': return 'result';
-      default: return 'entry';
-    }
-  };
+  // normalize entryPath values (handle variations like "modern-home" / "modernhome")
+  const normalizeEntryPath = (p?: EntryPath | string | undefined) =>
+    String(p ?? '').replace(/[-\s]/g, '').toLowerCase();
 
   const handleStart = () => setStep('user-details');
 
+  // After user details we now go to path selection
   const handleUserDetails = (details: UserDetails) => {
     updateData({ details });
-    setStep('appliances');
+    setStep('path-selection');
+  };
+
+  // path selection handler - set entryPath and jump to the correct next step
+  const handlePathSelection = (path: EntryPath) => {
+    updateData({ entryPath: path });
+    const np = normalizeEntryPath(path);
+    if (np === 'bill') setStep('optional-bill');
+    else if (np === 'appliances') setStep('appliances');
+    else if (np === 'modernhome') setStep('modern-home');
+    else setStep('appliances');
   };
 
   const handleAppliances = (apps: Appliance[]) => {
@@ -67,7 +81,13 @@ export default function App() {
 
   const handleEVInfo = (info: EVInfo) => {
     updateData({ evInfo: info });
-    setStep('usage');
+    // If the path is bill -> after EV step we analyze & show result
+    if (normalizeEntryPath(userData.entryPath) === 'bill') {
+      setStep('analyzing');
+    } else {
+      // appliances / modern-home path -> continue to usage
+      setStep('usage');
+    }
   };
 
   const handleUsage = (behavior: UsageBehavior) => {
@@ -77,12 +97,25 @@ export default function App() {
 
   const handleBackup = (pref: BackupPreference) => {
     updateData({ backupPreference: pref });
-    setStep('optional-bill');
+    // Appliances & modernhome go straight to analysis after backup
+    const np = normalizeEntryPath(userData.entryPath);
+    if (np === 'appliances' || np === 'modernhome') {
+      setStep('analyzing');
+    } else {
+      // fallback: optional-bill path (if any) or analyze
+      setStep('optional-bill');
+    }
   };
 
+  // Optional bill: for 'bill' path we want to collect bill then go to EV step.
+  // For other flows this could directly trigger analysis.
   const handleOptionalBill = (data: { monthlyUnits?: number; monthlyBill?: number }) => {
     updateData(data);
-    setStep('analyzing');
+    if (normalizeEntryPath(userData.entryPath) === 'bill') {
+      setStep('ev-info');
+    } else {
+      setStep('analyzing');
+    }
   };
 
   const handleAnalysisComplete = () => {
@@ -91,9 +124,25 @@ export default function App() {
 
   const handleBack = () => {
     if (step === 'result') {
-      setStep('optional-bill');
+      setStep('analyzing');
       return;
     }
+
+    // compute dynamic journey steps based on selected path
+    const base = ['user-details', 'path-selection'] as Step[];
+    let journeySteps: Step[] = base.slice();
+
+    const np = normalizeEntryPath(userData.entryPath);
+    if (np === 'bill') {
+      journeySteps = [...base, 'optional-bill', 'ev-info'];
+    } else if (np === 'appliances') {
+      journeySteps = [...base, 'appliances', 'ev-info', 'usage', 'backup'];
+    } else if (np === 'modernhome') {
+      journeySteps = [...base, 'modern-home', 'usage', 'backup'];
+    } else {
+      journeySteps = [...base, 'appliances', 'ev-info', 'usage', 'backup'];
+    }
+
     const currentIndex = journeySteps.indexOf(step);
     if (currentIndex > 0) {
       setStep(journeySteps[currentIndex - 1]);
@@ -102,7 +151,18 @@ export default function App() {
     }
   };
 
-  const journeySteps: Step[] = ['user-details', 'appliances', 'ev-info', 'usage', 'backup', 'optional-bill'];
+  // compute progress steps for indicator (dynamic)
+  const progressBase = ['user-details', 'path-selection'] as Step[];
+  let journeySteps = progressBase.slice();
+  if (userData.entryPath === 'bill') {
+    journeySteps = [...progressBase, 'optional-bill', 'ev-info'];
+  } else if (userData.entryPath === 'appliances') {
+    journeySteps = [...progressBase, 'appliances', 'ev-info', 'usage', 'backup'];
+  } else if (userData.entryPath === 'modernhome') {
+    journeySteps = [...progressBase, 'modern-home', 'usage', 'backup'];
+  } else {
+    journeySteps = [...progressBase, 'appliances', 'ev-info', 'usage', 'backup'];
+  }
   const currentProgressIdx = journeySteps.indexOf(step);
 
   return (
@@ -208,6 +268,16 @@ export default function App() {
                   <UserDetailsStep onComplete={handleUserDetails} />
                 </motion.div>
               )}
+
+              {step === 'path-selection' && (
+                <motion.div key="path" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex justify-center">
+                  <PathSelection
+                    onSelect={(p: EntryPath) => handlePathSelection(p)}
+                    currentPath={userData.entryPath as EntryPath | undefined}
+                  />
+                </motion.div>
+              )}
+
               {step === 'appliances' && (
                 <motion.div key="apps" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex justify-center">
                   <ApplianceStaging
@@ -216,6 +286,16 @@ export default function App() {
                   />
                 </motion.div>
               )}
+
+              {step === 'modern-home' && (
+                <motion.div key="modern" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex justify-center">
+                  <ModernHome
+                    onComplete={() => setStep('usage')}
+                    onChange={(patch) => updateData(patch)}
+                  />
+                </motion.div>
+              )}
+
               {step === 'ev-info' && (
                 <motion.div key="ev" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex justify-center">
                   <EVStep onComplete={handleEVInfo} />

@@ -1,5 +1,21 @@
 import React from 'react';
 
+
+export type ApplianceOption = {
+  id: string;  name: string;
+};
+
+export const APPLIANCE_LIST: ApplianceOption[] = [
+  { id: 'fan', name: 'Fan' },
+  { id: 'ac', name: 'AC' },
+  { id: 'fridge', name: 'Fridge' },
+  { id: 'lights', name: 'Lights' },
+  { id: 'motor', name: 'Water motor' },
+  { id: 'tv', name: 'TV' },
+  { id: 'iron', name: 'Iron' },
+  { id: 'microwave', name: 'Microwave' },
+];
+
 export const FanIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <circle cx="12" cy="12" r="2" fill="currentColor" />
