@@ -208,7 +208,7 @@ export default function ApplianceStaging({ onComplete, onChange }: ApplianceStag
                                       "w-full px-4 py-3 rounded-xl text-left text-sm transition-all",
                                       selectedVariant?.value === opt.value
                                         ? "bg-solar-electric text-white"
-                                        : "hover:bg-gray-10 dark:hover:/10 text-gray-700 dark:text-white/70"
+                                        : "hover:bg-gray-10 dark:hover:/0 text-gray-10 dark:text-white/70"
                                     )}
                                   >
                                     {opt.label} ({opt.value}W)
