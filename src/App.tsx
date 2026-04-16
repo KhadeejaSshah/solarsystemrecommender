@@ -10,11 +10,14 @@ import UserDetailsStep from './components/UserDetailsStep';
 import PathSelection from './components/PathSelection';
 import ApplianceStaging from './components/ApplianceStaging';
 import EVStep from './components/EVStep';
+import HousingSelection from './components/HousingSelection';
+
 import UsageBehaviorStep from './components/UsageBehavior';
 import BackupPreferenceStep from './components/BackupPreference';
 import OptionalBillStep from './components/OptionalBillStep';
 import ModernHome from './components/ModernHome';
 import AIAnalyzer from './components/AIAnalyzer';
+
 import ResultDashboard from './components/ResultDashboard';
 import { UserData, HouseType, Appliance, UsageBehavior, BackupPreference, UserDetails, EntryPath, EVInfo } from './types';
 import { cn } from './lib/utils';
@@ -23,6 +26,7 @@ import { ChevronLeft, Sun, Moon } from 'lucide-react';
 type Step =
   | 'entry'
   | 'user-details'
+  | 'housing'
   | 'path-selection'
   | 'appliances'
   | 'ev-info'
@@ -61,6 +65,13 @@ export default function App() {
   // After user details we now go to path selection
   const handleUserDetails = (details: UserDetails) => {
     updateData({ details });
+    // go to housing selection first
+    setStep('housing');
+  };
+
+  const handleHousingSelection = (house: HouseType) => {
+    updateData({ houseType: house });
+    // after housing selection go to path selection
     setStep('path-selection');
   };
 
@@ -151,8 +162,8 @@ export default function App() {
     }
   };
 
-  // compute progress steps for indicator (dynamic)
-  const progressBase = ['user-details', 'path-selection'] as Step[];
+  // compute progress steps for indicator (dynamic) — include housing between details and path
+  const progressBase = ['user-details', 'housing', 'path-selection'] as Step[];
   let journeySteps = progressBase.slice();
   if (userData.entryPath === 'bill') {
     journeySteps = [...progressBase, 'optional-bill', 'ev-info'];
@@ -266,6 +277,12 @@ export default function App() {
               {step === 'user-details' && (
                 <motion.div key="details" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex justify-center">
                   <UserDetailsStep onComplete={handleUserDetails} />
+                </motion.div>
+              )}
+
+              {step === 'housing' && (
+                <motion.div key="housing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex justify-center">
+                  <HousingSelection onSelect={handleHousingSelection} />
                 </motion.div>
               )}
 
