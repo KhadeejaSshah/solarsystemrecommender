@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Appliance, APPLIANCES_LIST } from "../types";
 import { getApplianceIcon } from "./ApplianceIcons";
 
@@ -18,6 +18,8 @@ const MODERN_APPLIANCES = [
 
 type ModernHomeScreenProps = {
   onComplete: (selectedAppliances: Appliance[]) => void;
+  // optional onChange patch - App passes updateData via this
+  onChange?: (patch: { appliances: Appliance[] }) => void;
 };
 
 // --- Animated House Component ---
@@ -62,6 +64,9 @@ export default function ModernHome({ onComplete }: ModernHomeScreenProps) {
   const [selectedExisting, setSelectedExisting] = useState<
     Record<string, { quantity: number; selectedOption?: number }>
   >({});
+  // accept onChange from props
+  const propsAny: any = arguments[0];
+  const onChange = propsAny?.onChange as ModernHomeScreenProps["onChange"];
 
   const getExistingItemWattage = (item: Omit<Appliance, "quantity">, selectedOption?: number) =>
     item.options ? selectedOption ?? item.options[0]?.value : item.wattage;
@@ -90,6 +95,27 @@ export default function ModernHome({ onComplete }: ModernHomeScreenProps) {
         .filter(Boolean) as Appliance[],
     [selectedExisting]
   );
+
+  // keep App in sync: whenever selections change, push appliances patch
+  useEffect(() => {
+    if (!onChange) return;
+    const selectedAppliances = [
+      ...modernSelection.map((item) => ({
+        id: item.id,
+        name: item.name,
+        wattage: item.wattage,
+        quantity: 1,
+      })),
+      ...existingSelection.map((item) => ({
+        id: item.id,
+        name: item.name,
+        wattage: item.wattage,
+        quantity: item.quantity,
+        selectedOption: item.selectedOption,
+      })),
+    ];
+    onChange({ appliances: selectedAppliances });
+  }, [modernSelection, existingSelection, onChange]);
 
   const totalWattage =
     modernSelection.reduce((sum, item) => sum + item.wattage, 0) +
@@ -159,6 +185,8 @@ export default function ModernHome({ onComplete }: ModernHomeScreenProps) {
         selectedOption: item.selectedOption,
       })),
     ];
+    // ensure App gets the final patch as well
+    if (onChange) onChange({ appliances: selectedAppliances });
     onComplete(selectedAppliances);
   };
 

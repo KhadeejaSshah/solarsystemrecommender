@@ -176,6 +176,51 @@ export default function App() {
   }
   const currentProgressIdx = journeySteps.indexOf(step);
 
+  // Aggregate appliances from any nested arrays/objects in userData (handles ModernHome patches)
+  const aggregatedAppliances: Appliance[] = (() => {
+    const collected: Appliance[] = [];
+
+    const isAppliance = (obj: any): obj is Appliance =>
+      obj && typeof obj === 'object' && 'name' in obj && 'wattage' in obj && 'quantity' in obj;
+
+    const visit = (val: any) => {
+      if (val == null) return;
+      if (Array.isArray(val)) {
+        // try to consume appliance-like items in the array
+        for (const item of val) {
+          if (isAppliance(item)) {
+            collected.push(item);
+          } else {
+            // recurse into nested arrays/objects
+            visit(item);
+          }
+        }
+      } else if (typeof val === 'object') {
+        // recurse into object values
+        for (const v of Object.values(val)) {
+          visit(v);
+        }
+      }
+    };
+
+    // start traversal from the top-level userData
+    visit(userData);
+
+    // dedupe/merge by name+wattage (sum quantities)
+    const map = new Map<string, Appliance>();
+    for (const app of collected) {
+      const key = `${String(app.name).toLowerCase()}|${app.wattage}`;
+      const existing = map.get(key);
+      if (existing) {
+        existing.quantity = (existing.quantity || 0) + (app.quantity || 0);
+      } else {
+        map.set(key, { ...app });
+      }
+    }
+
+    return Array.from(map.values());
+  })();
+
   return (
     <div className="min-h-screen bg-solar-navy text-solar-text transition-colors duration-500 selection:bg-solar-orange/30 relative">
       {/* Persistent Background Logo */}
@@ -242,25 +287,26 @@ export default function App() {
                 <div className="flex justify-between items-end">
                   <span className="text-xs text-solar-text/60">Total Appliances</span>
                   <span className="text-xl font-display font-bold text-solar-text">
-                    {userData.appliances?.reduce((acc, app) => acc + app.quantity, 0) || 0}
+                    {aggregatedAppliances.reduce((acc, app) => acc + (app.quantity || 0), 0) || 0}
                   </span>
                 </div>
                 <div className="flex justify-between items-end">
                   <span className="text-xs text-solar-text/60">Estimated Peak Load</span>
                   <span className="text-xl font-display font-bold text-solar-electric">
-                    {((userData.appliances?.reduce((acc, app) => acc + (app.wattage * app.quantity), 0) || 0) / 1000).toFixed(1)} kW
+                    {((aggregatedAppliances.reduce((acc, app) => acc + ((app.wattage || 0) * (app.quantity || 0)), 0) || 0) / 1000).toFixed(1)} kW
                   </span>
                 </div>
                 <div className="pt-4 border-t border-solar-text/5">
                   <span className="text-[10px] uppercase tracking-widest block mb-2 text-solar-text/40">Selected Items</span>
                   <div className="max-h-48 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-                    {userData.appliances?.map((app, i) => (
-                      <div key={i} className="flex justify-between text-xs">
-                        <span className="truncate mr-2 text-solar-text/80">{app.name} x{app.quantity}</span>
-                        <span className="shrink-0 text-solar-text/40">{(app.wattage * app.quantity)}W</span>
-                      </div>
-                    ))}
-                    {(!userData.appliances || userData.appliances.length === 0) && (
+                    {aggregatedAppliances.length > 0 ? (
+                      aggregatedAppliances.map((app, i) => (
+                        <div key={i} className="flex justify-between text-xs">
+                          <span className="truncate mr-2 text-solar-text/80">{app.name} x{app.quantity}</span>
+                          <span className="shrink-0 text-solar-text/40">{(app.wattage * app.quantity)}W</span>
+                        </div>
+                      ))
+                    ) : (
                       <span className="text-xs italic text-solar-text/30">No items added yet</span>
                     )}
                   </div>
