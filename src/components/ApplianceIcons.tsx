@@ -95,9 +95,10 @@ export function getApplianceIcon(id: string, className = "", isDark = true) {
     fridge: isDark ? "frontend/public/assets/blackfridge.png" : "frontend/public/assets/fridge.png",
     lights: isDark ? "frontend/public/assets/lightbulb.png" : "frontend/public/assets/lightbulb.png",
     microwave: isDark ? "frontend/public/assets/micro.png" : "frontend/public/assets/micro.png",
-    motor: isDark ? "frontend/public/assets/watermotor.png" : "frontend/public/assets/watermotor.png",
+    motor: isDark ? "frontend/public/assets/motor.png" : "frontend/public/assets/motor.png",
     ac: isDark ? "frontend/public/assets/ac.png" : "frontend/public/assets/ac.png",
     iron: isDark ? "frontend/public/assets/iron.png" : "frontend/public/assets/iron.png",
+    tv: isDark ? "frontend/public/assets/ledtv.png" : "frontend/public/assets/ledtv.png",
   };
 
   if (iconMap[id]) {
