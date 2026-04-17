@@ -135,28 +135,28 @@ export default function App() {
 
   const handleBack = () => {
     if (step === 'result') {
-      setStep('analyzing');
+      setStep('entry');
       return;
     }
 
     // compute dynamic journey steps based on selected path
-    const base = ['user-details', 'path-selection'] as Step[];
-    let journeySteps: Step[] = base.slice();
+    const base = ['user-details', 'housing', 'path-selection'] as Step[];
+    let backSteps: Step[] = base.slice();
 
     const np = normalizeEntryPath(userData.entryPath);
     if (np === 'bill') {
-      journeySteps = [...base, 'optional-bill', 'ev-info'];
+      backSteps = [...base, 'optional-bill', 'ev-info'];
     } else if (np === 'appliances') {
-      journeySteps = [...base, 'appliances', 'ev-info', 'usage', 'backup'];
+      backSteps = [...base, 'appliances', 'ev-info', 'usage', 'backup'];
     } else if (np === 'modernhome') {
-      journeySteps = [...base, 'modern-home', 'usage', 'backup'];
+      backSteps = [...base, 'modern-home', 'ev-info', 'usage', 'backup'];
     } else {
-      journeySteps = [...base, 'appliances', 'ev-info', 'usage', 'backup'];
+      backSteps = [...base, 'appliances', 'ev-info', 'usage', 'backup'];
     }
 
-    const currentIndex = journeySteps.indexOf(step);
+    const currentIndex = backSteps.indexOf(step);
     if (currentIndex > 0) {
-      setStep(journeySteps[currentIndex - 1]);
+      setStep(backSteps[currentIndex - 1]);
     } else if (step === 'user-details') {
       setStep('entry');
     }
@@ -165,12 +165,13 @@ export default function App() {
   // compute progress steps for indicator (dynamic) — include housing between details and path
   const progressBase = ['user-details', 'housing', 'path-selection'] as Step[];
   let journeySteps = progressBase.slice();
-  if (userData.entryPath === 'bill') {
+  const npProgress = normalizeEntryPath(userData.entryPath);
+  if (npProgress === 'bill') {
     journeySteps = [...progressBase, 'optional-bill', 'ev-info'];
-  } else if (userData.entryPath === 'appliances') {
+  } else if (npProgress === 'appliances') {
     journeySteps = [...progressBase, 'appliances', 'ev-info', 'usage', 'backup'];
-  } else if (userData.entryPath === 'modernhome') {
-    journeySteps = [...progressBase, 'modern-home', 'usage', 'backup'];
+  } else if (npProgress === 'modernhome') {
+    journeySteps = [...progressBase, 'modern-home', 'ev-info', 'usage', 'backup'];
   } else {
     journeySteps = [...progressBase, 'appliances', 'ev-info', 'usage', 'backup'];
   }
@@ -353,7 +354,7 @@ export default function App() {
               {step === 'modern-home' && (
                 <motion.div key="modern" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex justify-center">
                   <ModernHome
-                    onComplete={() => setStep('usage')}
+                    onComplete={() => setStep('ev-info')}
                     onChange={(patch) => updateData(patch)}
                   />
                 </motion.div>

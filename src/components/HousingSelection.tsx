@@ -96,7 +96,6 @@ export default function HousingSelection({ onSelect }: { onSelect: (house: House
 
       {/* ── Header ── */}
       <div className="hs-header">
-        <span className="hs-eyebrow">Solar Sizing Wizard · Step 1 of 4</span>
         <h1 className="hs-page-title">What type of home are you powering?</h1>
         <p className="hs-page-sub">
           We'll match you to the right Smart Solar Package — engineered for your scale.

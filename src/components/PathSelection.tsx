@@ -87,7 +87,6 @@ export default function PathSelectionStep({ onSelect }: { onSelect: (path: Entry
 
       {/* ── Header ── */}
       <div className="ps-header">
-        <span className="ps-eyebrow">Solar Sizing Wizard · Step 2 of 4</span>
         <h1 className="ps-title display">How would you like to size your system?</h1>
         <p className="ps-sub">Choose the path that fits your household best.</p>
       </div>

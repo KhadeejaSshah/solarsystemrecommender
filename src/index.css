@@ -3,6 +3,7 @@
 @plugin "@tailwindcss/typography";
 
 :root {
+  color-scheme: dark;
   --solar-navy: #0F172A;
   --solar-text: #F8FAFC;
   --solar-card: rgba(255, 255, 255, 0.05);
@@ -11,9 +12,24 @@
   --solar-gradient: radial-gradient(circle at top right, #1E293B, #0F172A, #020617);
   --solar-surface: #1E293B;
   --solar-input: #1E293B;
+
+  /* Generic tokens used by inline-CSS components */
+  --fg: #F8FAFC;
+  --muted: rgba(248, 250, 252, 0.5);
+  --surface: #1E293B;
+  --input-bg: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.1);
+  --card: rgba(255, 255, 255, 0.05);
+  --accent: #0EA5E9;
+  --p-alpha: rgba(14,165,233,0.3);
+
+  /* Card specific */
+  --card-bg: #1E293B;
+  --card-bg-subtle: rgba(30, 41, 59, 0.8);
 }
 
 .light {
+  color-scheme: light;
   --solar-navy: #F8FAFC;
   --solar-text: #0F172A;
   --solar-card: rgba(255, 255, 255, 0.9);
@@ -22,6 +38,20 @@
   --solar-gradient: radial-gradient(circle at top right, #F5F7FA, #E4E7EB, #D1D5DB);
   --solar-surface: #FFFFFF;
   --solar-input: #FFFFFF;
+
+  /* Generic tokens — light mode overrides */
+  --fg: #0F172A;
+  --muted: rgba(15, 23, 42, 0.5);
+  --surface: #FFFFFF;
+  --input-bg: rgba(15, 23, 42, 0.04);
+  --border: rgba(15, 23, 42, 0.12);
+  --card: rgba(255, 255, 255, 0.95);
+  --accent: #0EA5E9;
+  --p-alpha: rgba(14,165,233,0.2);
+
+  /* Card specific */
+  --card-bg: #FFFFFF;
+  --card-bg-subtle: rgba(255, 255, 255, 0.8);
 }
 
 @theme {
@@ -38,6 +68,9 @@
   --color-solar-border: var(--solar-border);
   --color-solar-surface: var(--solar-surface);
   --color-solar-input: var(--solar-input);
+  --color-card-bg: var(--card-bg);
+  --color-card-bg-subtle: var(--card-bg-subtle);
+
 
   --background-image-solar-gradient: var(--solar-gradient);
   --background-image-deep-void: linear-gradient(to bottom, var(--solar-navy), #000);

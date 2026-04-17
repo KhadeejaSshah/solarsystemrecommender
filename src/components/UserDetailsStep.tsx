@@ -133,7 +133,6 @@ export default function UserDetailsStep({ onComplete }: UserDetailsStepProps) {
 
       {/* ── Header ── */}
       <div className="uds-header">
-        <span className="uds-eyebrow">Solar Sizing Wizard · Step 1 of 4</span>
         <h1 className="uds-title display">Your Details</h1>
         <p className="uds-sub">Select your city on the interactive map to continue.</p>
       </div>
@@ -304,15 +303,15 @@ const CSS = `
   cursor: pointer;
   appearance: none;
 
-  background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http://www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22/%3E%3C/svg%3E');
+  background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http://www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236B7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22/%3E%3C/svg%3E');
   background-repeat: no-repeat;
   background-position: right 16px center;
   background-size: 1em;
 }
-/* 🔥 Dropdown options (THIS is what you are missing) */
+/* Dropdown options */
 .uds-select option {
-  background-color: var(--surface, #1e1e1e);
-  color: var(--fg);
+  background-color: var(--surface, #fff);
+  color: var(--fg, #000);
 }
 
 .uds-footer { grid-column: 1 / -1; max-width: 340px; margin: 40px auto 0; padding-top: 24px; border-top: 1px solid var(--border, rgba(128,128,128,0.15)); width: 100%; }

@@ -27,7 +27,7 @@ export interface UserDetails {
   phone: string;
 }
 
-export type EntryPath = 'appliances';
+export type EntryPath = 'appliances' | 'bill' | 'modern-home';
 export type UsageBehavior = 'day-heavy' | 'night-heavy' | 'balanced';
 export type BackupPreference = number | 'full'; // number of hours or 'full'
 

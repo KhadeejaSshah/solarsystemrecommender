@@ -30,7 +30,7 @@ const HouseScene = ({ modernCount, totalWattage }: { modernCount: number; totalW
 
   return (
     <div className="house-container">
-      <svg viewBox="0 0 500 300" className="house-svg">
+      <svg viewBox="0 0 500 300" className="house-svg" style={{ color: "var(--muted)" }}>
         {/* Ground */}
         <line x1="0" y1="260" x2="500" y2="260" stroke="#1e3560" strokeWidth="2" />
         {/* House Frame */}
@@ -200,20 +200,20 @@ export default function ModernHome({ onComplete }: ModernHomeScreenProps) {
           background: inherit;
           font-family: Inter, sans-serif;
         }
-        .display { font-size: 64px; font-weight: 900; letter-spacing: -2px; margin: 0; }
-        .muted { color: rgba(255,255,255,0.72); font-size: 16px; margin-bottom: 30px; }
+        .display { font-size: 64px; font-weight: 900; letter-spacing: -2px; margin: 0; color: var(--fg); }
+        .muted { color: var(--muted); font-size: 16px; margin-bottom: 30px; }
         .trail { display: flex; align-items: center; gap: 8px; margin-bottom: 40px; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.12); }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
         .dot.active, .dot.done { background: #00c2bb; box-shadow: 0 0 10px #00c2bb; }
-        .line { height: 1px; width: 60px; background: rgba(255,255,255,0.12); }
+        .line { height: 1px; width: 60px; background: var(--border); }
         .line.done { background: #00c2bb; }
         .layout { display: grid; grid-template-columns: 1fr 380px; gap: 60px; align-items: start; }
         .scroll { max-height: 520px; overflow-y: auto; padding-right: 15px; }
         .scroll::-webkit-scrollbar { width: 4px; }
-        .scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+        .scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
         .card {
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.08);
+          background: var(--input-bg);
+          border: 1px solid var(--border);
           border-radius: 20px;
           padding: 30px 20px;
           text-align: center;
@@ -253,8 +253,8 @@ export default function ModernHome({ onComplete }: ModernHomeScreenProps) {
           font-weight: 900;
         }
         .chip {
-          background: rgba(255,255,255,0.02);
-          border: 1px solid rgba(255,255,255,0.08);
+          background: var(--input-bg);
+          border: 1px solid var(--border);
           border-radius: 14px;
           padding: 12px 16px;
           display: flex;
@@ -272,8 +272,8 @@ export default function ModernHome({ onComplete }: ModernHomeScreenProps) {
           height: 24px;
           border-radius: 6px;
           border: none;
-          background: #1e293b;
-          color: white;
+          background: var(--surface);
+          color: var(--fg);
           cursor: pointer;
           font-weight: bold;
         }
@@ -292,8 +292,8 @@ export default function ModernHome({ onComplete }: ModernHomeScreenProps) {
         .fade-in { animation: fadeIn 0.5s ease-in forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .sidebar-box {
-          background: rgba(255,255,255,0.02);
-          border: 1px solid rgba(255,255,255,0.06);
+          background: var(--input-bg);
+          border: 1px solid var(--border);
           border-radius: 24px;
           padding: 24px;
         }
@@ -316,7 +316,7 @@ export default function ModernHome({ onComplete }: ModernHomeScreenProps) {
           align-items: center;
           gap: 10px;
           margin-top: 60px;
-          color: rgba(255,255,255,0.55);
+          color: var(--muted);
           font-size: 11px;
           font-weight: 800;
           letter-spacing: 2px;
@@ -325,7 +325,7 @@ export default function ModernHome({ onComplete }: ModernHomeScreenProps) {
           width: 35px;
           height: 4px;
           border-radius: 2px;
-          background: rgba(255,255,255,0.12);
+          background: var(--border);
         }
         .step-bar.active { background: #f59e0b; }
       `}</style>
@@ -355,9 +355,9 @@ export default function ModernHome({ onComplete }: ModernHomeScreenProps) {
                       {selectedModern[item.id] && <div className="check">✓</div>}
                       <div style={{ fontSize: 34, marginBottom: 10 }}>{item.icon}</div>
                       <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{item.name}</div>
-                      <div style={{ fontSize: 11, color: "#8a8f98", marginBottom: 10 }}>Replaces: {item.replaces}</div>
+                      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 10 }}>Replaces: {item.replaces}</div>
                       <div style={{ fontSize: 11, color: "#00f2a1", fontWeight: 600 }}>✓ {item.benefit}</div>
-                      <div style={{ marginTop: 12, fontSize: 10, color: "#4b5563" }}>{item.wattage}W · {item.hours}h/day</div>
+                      <div style={{ marginTop: 12, fontSize: 10, color: "var(--muted)" }}>{item.wattage}W · {item.hours}h/day</div>
                     </div>
                   ))}
                 </div>
@@ -383,7 +383,7 @@ export default function ModernHome({ onComplete }: ModernHomeScreenProps) {
                       </span>
                       <div>
                         <div style={{ fontWeight: 700, fontSize: 15 }}>{item.name}</div>
-                        <div style={{ fontSize: 11, color: "#4b5563" }}>
+                        <div style={{ fontSize: 11, color: "var(--muted)" }}>
                           {item.options
                             ? `${getExistingOptionLabel(item, selectedOption)}`
                             : `${item.wattage}W load`}
@@ -403,9 +403,9 @@ export default function ModernHome({ onComplete }: ModernHomeScreenProps) {
                           style={{
                             marginLeft: 12,
                             borderRadius: 10,
-                            border: "1px solid rgba(255,255,255,0.12)",
-                            background: "rgba(255,255,255,0.04)",
-                            color: "white",
+                            border: "1px solid var(--border)",
+                            background: "var(--input-bg)",
+                            color: "var(--fg)",
                             padding: "6px 10px",
                             fontSize: 12,
                           }}
@@ -432,21 +432,21 @@ export default function ModernHome({ onComplete }: ModernHomeScreenProps) {
           <div className="sidebar-box">
             <div style={{ color: "#f59e0b", fontWeight: 800, fontSize: 13, marginBottom: 16 }}>✨ SELECTED MODERN ITEMS</div>
             {modernSelection.length === 0 ? (
-              <div style={{ textAlign: "center", color: "#4b5563", padding: "20px 0", fontSize: 13 }}>Select items on the left</div>
+              <div style={{ textAlign: "center", color: "var(--muted)", padding: "20px 0", fontSize: 13 }}>Select items on the left</div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {modernSelection.map((item) => (
                   <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14 }}>
                     <span>{item.icon}</span>
                     <span style={{ flex: 1 }}>{item.name}</span>
-                    <span style={{ color: "#4b5563", fontSize: 12 }}>{item.wattage}W</span>
+                    <span style={{ color: "var(--muted)", fontSize: 12 }}>{item.wattage}W</span>
                   </div>
                 ))}
               </div>
             )}
 
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", marginTop: 20, paddingTop: 15, display: "flex", justifyContent: "space-between" }}>
-              <span style={{ color: "#4b5563", fontSize: 12 }}>Total Load Est.</span>
+            <div style={{ borderTop: "1px solid var(--border)", marginTop: 20, paddingTop: 15, display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "var(--muted)", fontSize: 12 }}>Total Load Est.</span>
               <span style={{ fontWeight: 800, color: "#00c2bb" }}>{(totalWattage / 1000).toFixed(1)} kW</span>
             </div>
           </div>
