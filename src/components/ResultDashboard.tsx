@@ -1,9 +1,21 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { useState, useEffect, useMemo } from 'react';
+import { motion } from 'motion/react';
 import { UserData, PAKISTAN_CONSTANTS } from '../types';
-import { 
-  Settings, X, Trash2, TrendingUp, Share2, Download, 
-  User, MapPin, Leaf, Zap, Battery, Sun, Home 
+import {
+  Sun,
+  Zap,
+  Battery,
+  TrendingDown,
+  Leaf,
+  Download,
+  Share2,
+  Cpu,
+  ChevronRight,
+  User,
+  MapPin,
+  TrendingUp,
+  ShieldCheck,
+  CalendarDays
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import HouseVisual from './HouseVisual';
@@ -19,209 +31,286 @@ export default function ResultDashboard({ data }: ResultDashboardProps) {
   const [loadingAi, setLoadingAi] = useState(true);
   const [isDark, setIsDark] = useState(true);
 
-  const [appliances, setAppliances] = useState(data.appliances);
-  const [showAppliancesPanel, setShowAppliancesPanel] = useState(false);
+  useEffect(() => {
+    setIsDark(!document.documentElement.classList.contains('light'));
+    const observer = new MutationObserver(() => {
+      setIsDark(!document.documentElement.classList.contains('light'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
-  // Calculations
-  const totalWattage = appliances.reduce((acc, app) => acc + (app.wattage * app.quantity), 0);
+  // calculations
+  const totalWattage = data.appliances.reduce((acc, app) => acc + (app.wattage * app.quantity), 0);
   const evLoad = data.evInfo.status !== 'none' ? (data.evInfo.batterySize || 40) * 1000 : 0;
-  const totalLoad = Math.round(totalWattage + (evLoad / 10));
+  const totalLoad = totalWattage + (evLoad / 10);
 
-  const systemSizeKW = Math.ceil((totalLoad * 1.25) / 1000);
-  const panelCount = Math.ceil((systemSizeKW * 1000) / 550);
-  const batteryKWh = 5.0;
-  const inverterSize = systemSizeKW;
+  const systemSizeKW = Math.ceil((totalLoad * 1.2) / 1000); // 20% buffer
+  const panelCount = Math.ceil((systemSizeKW * 1000) / 550); // 550W panels
+  const batteryKWh = data.backupPreference === 'full' ? systemSizeKW * 2 : typeof data.backupPreference === 'number' ? systemSizeKW * (data.backupPreference / 4) : systemSizeKW;
 
-  const estimatedAnnualProduction = Math.round(systemSizeKW * 1450);
-  const monthlySavings = Math.round(estimatedAnnualProduction / 12 * PAKISTAN_CONSTANTS.TARIFF_RATE);
-  const paybackYears = (45677 / 45).toFixed(1); // Note: you'll need to define estimatedCost & annualSavings if not already
-
-  // Live metrics
-  const [currentProduction, setCurrentProduction] = useState(systemSizeKW * 0.65);
-  const [batterySOC, setBatterySOC] = useState(78);
-
-  const removeAppliance = (index: number) => {
-    const updated = [...appliances];
-    updated.splice(index, 1);
-    setAppliances(updated);
-  };
-
-  const resetAppliances = () => setAppliances([...data.appliances]);
-
-  // ... (keep your existing useEffects for dark mode, AI, and live simulation)
+  useEffect(() => {
+    async function fetchAiInsights() {
+      try {
+        const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || '';
+        if (!apiKey) {
+          setAiInsights("• Switch to net-metering to maximize your ROI.<br/><br/>• Use heavy appliances during peak sun hours (10 AM - 3 PM).<br/>• Your system will offset approximately 5 tons of CO2 annually.");
+          setLoadingAi(false);
+          return;
+        }
+        const genAI = new GoogleGenAI({ apiKey });
+        const prompt = `
+          As a solar expert in Pakistan, provide 3 concise, high-impact bullet points for this user:
+          - Name: ${data.details?.name}
+          - System: ${systemSizeKW}kW with ${panelCount} panels
+          - Load: ${totalLoad}W (includes EV status: ${data.evInfo.status})
+          - Backup: ${data.backupPreference}
+          Focus on appliance management, net metering benefits, and environmental impact.
+        `;
+        const response = await genAI.models.generateContent({
+          model: "gemini-3-flash-preview",
+          contents: prompt,
+        });
+        setAiInsights(response.text || "• Switch to net-metering to maximize your ROI.\n• Use heavy appliances during peak sun hours (10 AM - 3 PM).\n• Your system will offset approximately 5 tons of CO2 annually.");
+      } catch (error) {
+        setAiInsights("• Switch to net-metering to maximize your ROI.\n• Use heavy appliances during peak sun hours (10 AM - 3 PM).\n• Your system will offset approximately 5 tons of CO2 annually.");
+      } finally {
+        setLoadingAi(false);
+      }
+    }
+    fetchAiInsights();
+  }, [data, systemSizeKW, panelCount, totalLoad]);
 
   return (
-    <div className="h-screen p-4 md:p-8 pt-20 flex flex-col overflow-hidden bg-solar-navy text-solar-text">
-      <div className="max-w-[1480px] mx-auto w-full flex-1 flex flex-col gap-6 min-h-0">
+    <div className={cn(
+      "h-screen p-4 md:p-6 pt-20 flex flex-col overflow-hidden transition-all duration-700",
+      isDark ? "bg-[#050a14] text-white" : "bg-solar-navy text-solar-text"
+    )}>
+      <div className="max-w-[1800px] mx-auto w-full flex-1 flex flex-col gap-6 min-h-0">
 
         {/* Header */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
-          <div>
-            <motion.h1 initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="text-3xl font-display font-bold">
-              Your Solar System
-            </motion.h1>
-            <div className="flex items-center gap-4 mt-1 text-xs opacity-60">
-              <span className="flex items-center gap-1"><User className="w-3 h-3" /> {data.details?.name}</span>
-              <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {data.details?.address}</span>
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 px-4">
+          <div className="pl-16 md:pl-28 flex flex-col gap-0.5 transition-all">
+            <div className="flex items-center gap-3">
+              <motion.h1
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                className="text-4xl font-display font-black tracking-tighter"
+              >
+                System Blueprint
+              </motion.h1>
+              <div className="px-2.5 py-1 rounded-lg bg-solar-electric/10 text-solar-electric text-[10px] font-black uppercase tracking-widest border border-solar-electric/20">
+                AI OPTIMIZED
+              </div>
+            </div>
+            <div className="flex items-center gap-4 mt-1 text-xs font-bold opacity-30">
+              <span className="flex items-center gap-1.5"><User className="w-3.5 h-3.5" /> {data.details?.name}</span>
+              <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> {data.details?.address || 'Site A102'}</span>
             </div>
           </div>
-
-          <div className="flex gap-3">
-            <button className="px-4 py-2 flex items-center gap-2 text-sm rounded-2xl border border-solar-border hover:bg-white/5 transition-all">
+          <div className="flex gap-3 md:pr-16 transition-all duration-700">
+            <button className={cn(
+              "px-5 py-2.5 flex items-center gap-2 text-xs font-black uppercase tracking-widest rounded-2xl border transition-all",
+              isDark ? "bg-white/5 border-white/10 hover:bg-white/10" : "bg-black/5 border-black/10 hover:bg-black/10"
+            )}>
               <Share2 className="w-4 h-4" /> Share
             </button>
-            <button className="btn-primary px-5 py-2 flex items-center gap-2 text-sm">
-              <Download className="w-4 h-4" /> Download Proposal
+            <button className="btn-primary px-8 py-2.5 flex items-center gap-2 text-xs font-black uppercase tracking-widest shadow-xl shadow-solar-electric/20">
+              <Download className="w-4 h-4" /> Export Proposal
             </button>
           </div>
         </header>
 
-        {/* Main Content */}
-        <div className="flex-1 flex gap-8 rounded-[2.5rem] bg-gradient-to-br from-solar-navy to-solar-card shadow-2xl overflow-hidden">
+        {/* 3-Column Layout Workspace */}
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-6 min-h-0 overflow-y-auto md:overflow-hidden p-2">
 
-          {/* LEFT SIDE - House Visual (Kept Larger) */}
-          <div className="flex-[1.28] flex flex-col gap-6 bg-solar-navy/90 rounded-l-[2.5rem] overflow-hidden p-9 relative">
-
-            {/* House Visual */}
-            <div className="relative flex-1 rounded-3xl overflow-hidden border border-white/10">
-              <HouseVisual appliances={appliances} evInfo={data.evInfo} isDark={isDark} />
-
-              {/* Appliances Button - Top Right of House */}
-              <button
-                onClick={() => setShowAppliancesPanel(!showAppliancesPanel)}
-                className="absolute top-6 right-6 z-50 flex items-center gap-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/20 rounded-2xl px-5 py-2.5 transition-all"
-              >
-                <Settings className="w-4 h-4" />
-                <span className="text-sm font-medium">Your Appliances</span>
-                <div className="bg-white/20 px-2 py-0.5 rounded-full text-xs font-mono">{appliances.length}</div>
-              </button>
-
-              {/* Live Status Bar */}
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-xl rounded-2xl px-8 py-3 flex items-center gap-8 text-xs z-40 border border-white/10">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                  {isDark ? "Emergency Storage" : "Solar Harvesting"}
+          {/* COLUMN 1: System Metrics (25%) */}
+          <div className="md:col-span-3 flex flex-col gap-4">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-2 px-4">Core Architecture</h3>
+            <div className="flex-1 flex flex-col gap-4">
+              <ModernSpecItem
+                icon={Sun}
+                label="Solar Capacity"
+                value={`${systemSizeKW}`}
+                unit="kW PV"
+                subtext={`Using ${panelCount}x 550W Panels`}
+                isDark={isDark}
+              />
+              <ModernSpecItem
+                icon={Battery}
+                label="Storage Cluster"
+                value={`${batteryKWh.toFixed(1)}`}
+                unit="kWh"
+                subtext={`Lithium-ion LFP Battery`}
+                isDark={isDark}
+              />
+              <ModernSpecItem
+                icon={Zap}
+                label="Inverter Matrix"
+                value={`${systemSizeKW}`}
+                unit="kW"
+                subtext="Phase-Synchronized Pure Sine"
+                isDark={isDark}
+              />
+              <div className={cn(
+                "mt-auto p-6 rounded-[2rem] border flex flex-col gap-4",
+                isDark ? "bg-white/5 border-white/5" : "bg-black/5 border-black/5"
+              )}>
+                <div className="flex items-center gap-3">
+                  <ShieldCheck className="w-6 h-6 text-green-500" />
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-wider opacity-40">Grid Independence</div>
+                    <div className="text-xl font-display font-black">94.8%</div>
+                  </div>
                 </div>
-                <div>Producing: <span className="font-mono font-bold">{currentProduction.toFixed(1)} kW</span></div>
-                <div>Battery: <span className="font-mono font-bold">{batterySOC.toFixed(1)}%</span></div>
-                <div className="text-solar-orange">Grid: Exporting</div>
-              </div>
-
-              {/* Day/Night Toggle */}
-              <div className="absolute bottom-6 right-6 flex gap-2 z-40">
-                <button onClick={() => setIsDark(true)} className={cn("px-5 py-2 rounded-full text-xs font-bold tracking-widest", isDark ? "bg-solar-orange text-white" : "bg-white/10 text-white/60")}>NIGHT</button>
-                <button onClick={() => setIsDark(false)} className={cn("px-5 py-2 rounded-full text-xs font-bold tracking-widest", !isDark ? "bg-solar-orange text-white" : "bg-white/10 text-white/60")}>DAY</button>
               </div>
             </div>
           </div>
 
-          {/* RIGHT SIDEBAR - Compact & Icon-Rich */}
-          <div className="flex-[0.82] flex flex-col gap-5 p-9 bg-solar-card/90 rounded-r-[2.5rem] overflow-y-auto h-full max-h-full min-h-0">
-            {/* System Summary */}
-            <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-md">
-              <h2 className="flex items-center gap-2 text-lg font-bold mb-5">
-                <Home className="w-5 h-5" /> System Summary
-              </h2>
-              <div className="grid grid-cols-2 gap-x-10 gap-y-5 text-sm">
-                <div className="flex items-center gap-3"><Zap className="w-4 h-4 opacity-70" /> <span><span className="opacity-60">Peak Load</span><br /><b>{totalLoad} W</b></span></div>
-                <div className="flex items-center gap-3"><Sun className="w-4 h-4 opacity-70" /> <span><span className="opacity-60">PV Capacity</span><br /><b>{systemSizeKW} kW</b></span></div>
-                <div className="flex items-center gap-3"><Battery className="w-4 h-4 opacity-70" /> <span><span className="opacity-60">Storage</span><br /><b>{batteryKWh} kWh</b></span></div>
-                <div className="flex items-center gap-3"><Zap className="w-4 h-4 opacity-70" /> <span><span className="opacity-60">Inverter</span><br /><b>{inverterSize} kW</b></span></div>
-                <div className="flex items-center gap-3"><Sun className="w-4 h-4 opacity-70" /> <span><span className="opacity-60">Panels</span><br /><b>{panelCount} × 550W</b></span></div>
-                <div className="flex items-center gap-3"><Leaf className="w-4 h-4 opacity-70" /> <span><span className="opacity-60">Est. Annual Production</span><br /><b>{estimatedAnnualProduction} kWh</b></span></div>
+          {/* COLUMN 2: SolarNest 3D View (50%) */}
+          <div className="md:col-span-6 relative flex flex-col">
+            <div className={cn(
+              "flex-1 relative rounded-[3rem] overflow-hidden border shadow-3xl",
+              isDark ? "bg-[#0a0f18] border-white/5" : "bg-white border-black/5 shadow-2xl"
+            )}>
+              <div className="absolute inset-0 z-0">
+                <HouseVisual appliances={data.appliances} evInfo={data.evInfo} isDark={isDark} />
               </div>
-            </div>
 
-            {/* Environmental Impact */}
-            <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-md flex items-start gap-4">
-              <div className="mt-1">
-                <Leaf className="w-8 h-8 text-emerald-400" />
-              </div>
-              <div>
-                <h3 className="font-bold mb-1">Environmental Impact</h3>
-                <p className="text-sm opacity-80">This system offsets approximately <b className="text-emerald-400">9.0 tons of CO₂</b> per year — equivalent to planting 150 trees.</p>
-              </div>
+
             </div>
+          </div>
+
+          {/* COLUMN 3: Summary & AI (25%) */}
+          <div className="md:col-span-3 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-2 px-4">Efficiency Report</h3>
+
+            {/* System Breakdown */}
+            <DashboardCard title="System Summary" icon={Cpu} isDark={isDark}>
+              <div className="grid grid-cols-2 gap-3">
+                <SummaryStat label="Net Load" value={`${totalLoad}W`} isDark={isDark} />
+                <SummaryStat label="Backup" value={`${data.backupPreference}`} isDark={isDark} />
+                <SummaryStat label="EV Status" value={data.evInfo.status} isDark={isDark} />
+                <SummaryStat label="Panels" value={`${panelCount} Un.`} isDark={isDark} />
+              </div>
+            </DashboardCard>
 
             {/* AI Insights */}
-            <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-md">
-              <h3 className="uppercase text-xs tracking-widest font-bold mb-3">AI Insights</h3>
-              <div className="text-sm leading-relaxed opacity-80">
-                {loadingAi ? "Generating insights..." : <Markdown>{aiInsights}</Markdown>}
+            <DashboardCard title="AI Intelligence" icon={TrendingUp} isDark={isDark}>
+              <div className="text-xs leading-relaxed opacity-60 font-medium">
+                {loadingAi ? (
+                  <div className="flex items-center gap-2 animate-pulse">
+                    <div className="w-2 h-2 rounded-full bg-solar-electric" />
+                    Analyzing load profiles...
+                  </div>
+                ) : <Markdown>{aiInsights}</Markdown>}
               </div>
-            </div>
+            </DashboardCard>
 
-            {/* Market Volatility */}
-            <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-md">
-              <h3 className="flex items-center gap-2 uppercase text-xs tracking-widest font-bold mb-3">
-                <TrendingUp className="w-4 h-4" /> Market Volatility
-              </h3>
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-xs font-medium opacity-70">Inflation Shield</span>
-                <span className="font-bold text-green-400">8.4 / 10</span>
+            {/* Stability Index */}
+            <DashboardCard title="Market Volatility" icon={TrendingUp} isDark={isDark}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold opacity-40 uppercase tracking-wider">Inflation Shield</span>
+                <span className="text-xs font-black text-green-500">8.4 / 10</span>
               </div>
-              <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                <motion.div initial={{ width: 0 }} animate={{ width: '84%' }} className="h-full bg-green-500 rounded-full" />
+              <div className="w-full h-1.5 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: '84%' }}
+                  transition={{ duration: 1.5, delay: 0.5 }}
+                  className="h-full bg-green-500 rounded-full"
+                />
               </div>
-              <p className="text-xs mt-4 opacity-60">Solar provides 84% more cost stability than grid-only over 10 years.</p>
-            </div>
+              <p className="text-[9px] mt-2 leading-tight opacity-40 italic">
+                Solar provides 84% more cost stability than grid-only over a 10-year period.
+              </p>
+            </DashboardCard>
 
-            {/* Next Steps */}
-            <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-md mt-auto">
-              <h3 className="text-lg font-bold mb-4">Next Steps</h3>
-              <ol className="space-y-4 text-sm">
-                <li className="flex gap-3 items-start"><span className="font-mono text-solar-orange font-bold mt-0.5">01</span> Review your adjusted blueprint</li>
-                <li className="flex gap-3 items-start"><span className="font-mono text-solar-orange font-bold mt-0.5">02</span> Download detailed proposal</li>
-                <li className="flex gap-3 items-start"><span className="font-mono text-solar-orange font-bold mt-0.5">03</span> Book free site survey</li>
-              </ol>
-              <button className="btn-primary w-full py-4 mt-6 text-base font-semibold">Book Free Site Visit</button>
+            {/* Next Action */}
+            <div className={cn(
+              "mt-auto p-6 rounded-[2.5rem] border flex flex-col gap-4",
+              isDark ? "bg-solar-electric/10 border-solar-electric/20" : "bg-solar-electric/5 border-solar-electric/10"
+            )}>
+              <div className="text-xs font-black uppercase tracking-wider text-solar-electric flex items-center gap-2">
+                <ChevronRight className="w-4 h-4" /> Recommended Action
+              </div>
+              <p className="text-[11px] font-medium opacity-60 leading-relaxed">
+                Schedule a site survey to finalize structural mounting points and wiring routes.
+              </p>
+              <button className="w-full py-4 bg-solar-electric text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] transition-transform shadow-lg shadow-solar-electric/20">
+                Book Engineering Survey
+              </button>
             </div>
           </div>
+
         </div>
       </div>
+    </div>
+  );
+}
 
-      {/* Appliances Panel */}
-      <AnimatePresence>
-        {showAppliancesPanel && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60"
-            onClick={() => setShowAppliancesPanel(false)}
-          >
-            <motion.div
-              onClick={e => e.stopPropagation()}
-              className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 w-full max-w-md"
-            >
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold">Your Appliances</h3>
-                <button onClick={() => setShowAppliancesPanel(false)}><X className="w-6 h-6" /></button>
-              </div>
+function ModernSpecItem({ icon: Icon, label, value, unit, subtext, isDark }: any) {
+  return (
+    <motion.div
+      initial={{ y: 20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      className={cn(
+        "p-6 rounded-[2.5rem] border transition-all hover:-translate-y-1 duration-300",
+        isDark ? "bg-white/5 border-white/5 hover:bg-white/10" : "bg-white border-black/5 shadow-xl hover:shadow-2xl"
+      )}
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className={cn(
+          "w-12 h-12 rounded-2xl flex items-center justify-center",
+          isDark ? "bg-solar-electric/20" : "bg-solar-electric/10"
+        )}>
+          <Icon className="w-6 h-6 text-solar-electric" />
+        </div>
+      </div>
+      <div>
+        <p className={cn(
+          "text-[10px] font-black uppercase tracking-[0.2em] mb-1",
+          isDark ? "text-white/30" : "text-solar-text/40"
+        )}>{label}</p>
+        <div className="flex items-baseline gap-2">
+          <span className="text-4xl font-display font-black tracking-tighter">{value}</span>
+          <span className="text-sm font-black text-solar-electric">{unit}</span>
+        </div>
+        <p className={cn(
+          "text-[10px] font-bold mt-2",
+          isDark ? "text-white/30" : "text-solar-text/40"
+        )}>{subtext}</p>
+      </div>
+    </motion.div>
+  );
+}
 
-              <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
-                {appliances.map((app, index) => (
-                  <div key={index} className="flex justify-between items-center bg-white/5 rounded-2xl p-4">
-                    <div>
-                      <div className="font-medium">{app.name}</div>
-                      <div className="text-xs opacity-60">{app.quantity} × {app.wattage}W = {app.wattage * app.quantity}W</div>
-                    </div>
-                    <button onClick={() => removeAppliance(index)} className="text-red-400 hover:bg-white/10 p-2 rounded-xl">
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
+function DashboardCard({ title, icon: Icon, children, isDark }: any) {
+  return (
+    <div className={cn(
+      "p-6 rounded-[2.5rem] border",
+      isDark ? "bg-white/5 border-white/5" : "bg-white border-black/5 shadow-sm"
+    )}>
+      <div className="flex items-center gap-3 mb-4">
+        <Icon className="w-4 h-4 text-solar-electric" />
+        <h4 className={cn(
+          "text-[10px] font-black uppercase tracking-widest",
+          isDark ? "text-white/40" : "text-solar-text/50"
+        )}>{title}</h4>
+      </div>
+      {children}
+    </div>
+  );
+}
 
-              {appliances.length !== data.appliances.length && (
-                <button onClick={resetAppliances} className="text-solar-orange text-sm hover:underline mt-6 block w-full text-center">
-                  Reset to original
-                </button>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+function SummaryStat({ label, value, isDark }: any) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className={cn(
+        "text-[9px] font-black uppercase tracking-tighter",
+        isDark ? "text-white/30" : "text-solar-text/40"
+      )}>{label}</span>
+      <span className="text-xs font-bold whitespace-nowrap overflow-hidden text-ellipsis">{value}</span>
     </div>
   );
 }

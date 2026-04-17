@@ -1,103 +1,110 @@
 import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { Line } from '@react-three/drei';
+import { Appliance } from '../../types';
+import { SLOT_MAP, FALLBACK_SLOTS } from './ApplianceMarkers';
 
 interface FlowProps {
   start: [number, number, number];
   end: [number, number, number];
   color: string;
   speed?: number;
-  count?: number;
   active?: boolean;
 }
 
-const FlowParticles = ({ start, end, color, speed = 1, count = 20, active = true }: FlowProps) => {
-  const points = useRef<THREE.Points>(null);
-  
-  const particles = useMemo(() => {
-    const pos = new Float32Array(count * 3);
-    const progress = new Float32Array(count);
-    for (let i = 0; i < count; i++) {
-      progress[i] = Math.random();
-    }
-    return { pos, progress };
-  }, [count]);
+const FlowLine = ({ start, end, color, speed = 1, active = true }: FlowProps) => {
+  const lineRef = useRef<any>(null);
+
+  // Create Manhattan Waypoints: X -> Z -> Y
+  const points = useMemo(() => {
+    return [
+      new THREE.Vector3(...start),
+      new THREE.Vector3(end[0], start[1], start[2]),
+      new THREE.Vector3(end[0], start[1], end[2]),
+      new THREE.Vector3(...end),
+    ];
+  }, [start, end]);
 
   useFrame((state, delta) => {
-    if (!points.current || !active) return;
-    
-    for (let i = 0; i < count; i++) {
-      particles.progress[i] += delta * speed * (0.8 + Math.random() * 0.4);
-      if (particles.progress[i] > 1) particles.progress[i] = 0;
-      
-      const t = particles.progress[i];
-      // Quadratic bezier curve or simple lerp
-      const currentX = start[0] + (end[0] - start[0]) * t;
-      const currentY = start[1] + (end[1] - start[1]) * t + Math.sin(t * Math.PI * 0.5) * 0.5;
-      const currentZ = start[2] + (end[2] - start[2]) * t;
-      
-      particles.pos[i * 3] = currentX;
-      particles.pos[i * 3 + 1] = currentY;
-      particles.pos[i * 3 + 2] = currentZ;
+    if (lineRef.current && active) {
+      // Correctly target the material's dashOffset for animation
+      lineRef.current.material.dashOffset -= delta * speed * 5;
     }
-    
-    points.current.geometry.attributes.position.needsUpdate = true;
   });
 
+  if (!active) return null;
+
   return (
-    <points ref={points}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={count}
-          array={particles.pos}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <pointsMaterial
-        size={0.12}
-        color={color}
-        transparent
-        opacity={0.6}
-        blending={THREE.AdditiveBlending}
-        sizeAttenuation
-      />
-    </points>
+    <Line
+      ref={lineRef}
+      points={points}
+      color={color}
+      lineWidth={4.5}
+      dashed
+      dashScale={5}
+      dashArray={[0.2, 0.2]}
+      transparent={false}
+      opacity={1}
+    />
   );
 };
 
-export const EnergyFlow = ({ isSolarActive = true, isBatteryDischarging = true, hasEV = false }: { isSolarActive?: boolean, isBatteryDischarging?: boolean, hasEV?: boolean }) => {
+export const EnergyFlow = ({
+  isSolarActive = true,
+  isBatteryDischarging = true,
+  hasEV = false,
+  appliances = []
+}: {
+  isSolarActive?: boolean,
+  isBatteryDischarging?: boolean,
+  hasEV?: boolean,
+  appliances?: Appliance[]
+}) => {
+  // Global World Positions (Transformed from Local House space)
+  // These were manually perfected by the user
+  const INVERTER_POS: [number, number, number] = [0.4, 1, 3.2];
+  const SOLAR_START: [number, number, number] = [0, 8, 1];
+  const EV_POS: [number, number, number] = [-4.5, 0.7, 6.0];
+
   return (
     <group>
-      {/* Solar to Battery */}
-      <FlowParticles
-        start={[1, 7.5, 1]}
-        end={[0.6, 2.8, 3.1]}
+      {/* Solar to Inverter/Battery */}
+      <FlowLine
+        start={SOLAR_START}
+        end={INVERTER_POS}
         color="#fbbf24"
-        speed={0.8}
-        count={25}
+        speed={1.0}
         active={isSolarActive}
       />
-      
-      {/* Battery to House */}
-      <FlowParticles
-        start={[0.6, 1, 3.1]}
-        end={[1.5, 1.2, 0.5]}
-        color="#3b82f6"
-        speed={1.5}
-        count={20}
-        active={isBatteryDischarging}
-      />
 
-      {/* Battery to EV */}
-      {hasEV && (
-        <FlowParticles
-          start={[0.6, 0.5, 3.1]}
-          end={[-5.5, 0.2, 5.5]}
+      {/* Inverter to Main Load (Appliances) */}
+      {isBatteryDischarging && appliances.map((app, idx) => {
+        const localPos = SLOT_MAP[app.id] || FALLBACK_SLOTS[idx % FALLBACK_SLOTS.length];
+
+        // Use local coordinates directly as we are within the rotated house group
+        const endPoint: [number, number, number] = [localPos[0], localPos[1], localPos[2]];
+
+        return (
+          <FlowLine
+            key={`flow-${app.id}-${idx}`}
+            start={INVERTER_POS}
+            end={endPoint}
+            color="#00f2ff" // High-visibility Electric Cyan
+            speed={1.5}
+            active={true}
+          />
+        );
+      })}
+
+      {/* Inverter to EV Car */}
+      {hasEV && isBatteryDischarging && (
+        <FlowLine
+          start={INVERTER_POS}
+          end={EV_POS}
           color="#10b981"
-          speed={1.2}
-          count={15}
-          active={isBatteryDischarging}
+          speed={2.0}
+          active={true}
         />
       )}
     </group>

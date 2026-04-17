@@ -9,22 +9,22 @@ interface ApplianceMarkersProps {
   appliances: Appliance[];
 }
 
-// Precise 3D coordinate mapping based on updated HouseModel
-const SLOT_MAP: Record<string, [number, number, number]> = {
-  fridge: [2.5, 1.2, 1.8],    // Kitchen area Ground
-  microwave: [3.8, 1.5, 1.8], // Kitchen counter Ground
-  tv: [0.5, 1.5, -1.8],       // Living Room Ground
-  lights: [1, 3.2, 0],          // Main House Ceiling
-  ac: [1.8, 5.5, 2.5],        // Bedroom 2nd Floor
-  fan: [0.8, 6.4, 0],          // 2nd Floor Ceiling
-  iron: [3.5, 4.2, -1.2],     // Laundry/Study 2nd Floor
-  motor: [-4.2, 0.4, 2.0],    // Garage / Utility area
+// Precise 3D coordinate mapping based on exterior wall surfaces (Local Space)
+export const SLOT_MAP: Record<string, [number, number, number]> = {
+  fridge: [2.8, 1.2, 3.01],    // Kitchen wall Exterior (Front)
+  microwave: [4.2, 1.8, 3.01], // Kitchen wall Exterior (Front)
+  tv: [5.01, 1.5, -1.2],       // Living Room wall Exterior (Right)
+  lights: [1, 6.5, 3.01],         // Front Facade High
+  ac: [5.01, 5.2, 1.8],        // Upper Floor Side wall (Right)
+  fan: [-0.5, 6.2, 3.01],       // Front Facade High
+  iron: [5.01, 3.8, -1.8],     // Side wall (Right)
+  motor: [-4.2, 0.8, 2.85],    // Garage Exterior (Front)
 };
 
-const FALLBACK_SLOTS: [number, number, number][] = [
-  [0, 2, 0],
-  [-1, 2, 0],
-  [1, 2, 0],
+export const FALLBACK_SLOTS: [number, number, number][] = [
+  [0, 2, 3.01],
+  [-1, 2, 3.01],
+  [1, 2, 3.01],
 ];
 
 export const ApplianceMarkers = ({ appliances }: ApplianceMarkersProps) => {
@@ -37,28 +37,12 @@ export const ApplianceMarkers = ({ appliances }: ApplianceMarkersProps) => {
           
           return (
             <group key={`${app.id}-${i}`} position={[x, y, z]}>
-              {/* Vertical Pin / Line connecting marker to interior */}
-              <mesh position={[0, 0.6, 0]}>
-                <cylinderGeometry args={[0.015, 0.005, 1.2, 6]} />
-                <meshStandardMaterial 
-                  color="#ffffff" 
-                  transparent 
-                  opacity={0.3} 
-                  emissive="#ffffff" 
-                  emissiveIntensity={0.5} 
-                />
-              </mesh>
-
-              {/* Base Glow at the tip which points to the room */}
-              <mesh position={[0, 0, 0]}>
-                <sphereGeometry args={[0.04, 12, 12]} />
-                <meshStandardMaterial color="#fbbf24" emissive="#fbbf24" emissiveIntensity={1} />
-              </mesh>
+              {/* Removed Interior Pin - Now Wall Mounted */}
 
               <Html
-                position={[0, 1.2, 0]}
+                position={[0, 0, 0]}
                 center
-                distanceFactor={12}
+                distanceFactor={10}
                 className="pointer-events-none select-none"
               >
                 <motion.div
@@ -73,7 +57,7 @@ export const ApplianceMarkers = ({ appliances }: ApplianceMarkersProps) => {
                     <div className="absolute inset-0 bg-white/40 rounded-2xl animate-ping opacity-20" />
                     
                     <div className="relative w-14 h-14 bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.25)] flex items-center justify-center border border-white/40 overflow-hidden">
-                      <div className="w-9 h-9 text-solar-navy transition-transform group-hover:scale-110 duration-300">
+                      <div className="w-9 h-9 text-[#0f172a] transition-transform group-hover:scale-110 duration-300">
                         {getApplianceIcon(app.id)}
                       </div>
                       
@@ -83,7 +67,7 @@ export const ApplianceMarkers = ({ appliances }: ApplianceMarkersProps) => {
                   </div>
 
                   {/* Quantity and Label */}
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-solar-navy/80 backdrop-blur-md rounded-full border border-white/10 shadow-lg">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#0f172a]/90 backdrop-blur-md rounded-full border border-white/10 shadow-lg">
                     {app.quantity > 1 && (
                       <span className="text-[10px] font-black text-solar-orange leading-none">{app.quantity}x</span>
                     )}
