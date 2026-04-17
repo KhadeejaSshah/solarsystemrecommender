@@ -1,4 +1,4 @@
-export type HouseType = 'house';
+export type HouseType = 'house' | 'apartment' | 'estate';
 
 export interface Appliance {
   id: string;

@@ -18,7 +18,7 @@ import {
   CalendarDays
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
-import HouseVisual from './HouseVisual';
+import SolarHouse3D from './SolarHouse/SolarHouse3D';
 import Markdown from 'react-markdown';
 import { cn } from '../lib/utils';
 
@@ -174,7 +174,7 @@ export default function ResultDashboard({ data }: ResultDashboardProps) {
               isDark ? "bg-[#0a0f18] border-white/5" : "bg-white border-black/5 shadow-2xl"
             )}>
               <div className="absolute inset-0 z-0">
-                <HouseVisual appliances={data.appliances} evInfo={data.evInfo} isDark={isDark} />
+                <SolarHouse3D appliances={data.appliances} evInfo={data.evInfo} isDark={isDark} />
               </div>
 
 

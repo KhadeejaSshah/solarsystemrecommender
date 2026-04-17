@@ -77,15 +77,18 @@ function InteractiveMap({ selectedCity, onCitySelect }: InteractiveMapProps) {
     document.documentElement.classList.contains('dark') ||
     document.body.classList.contains('dark');
 
+  // Cast components to dynamic to bypass strict property checks in react-leaflet v5
+  const Comp: any = { MapContainer, TileLayer, Marker };
+
   return (
-    <MapContainer 
+    <Comp.MapContainer 
       center={pakistanCenter} 
       zoom={6} 
       style={{ height: '100%', width: '100%', borderRadius: '14px' }}
     >
       <ResizeMap />
 
-      <TileLayer
+      <Comp.TileLayer
         attribution='&copy; OpenStreetMap contributors'
         url={
           isDarkMode
@@ -95,7 +98,7 @@ function InteractiveMap({ selectedCity, onCitySelect }: InteractiveMapProps) {
       />
 
       {CITIES_DATA.map(city => (
-        <Marker
+        <Comp.Marker
           key={city.name}
           position={city.position}
           icon={createCustomIcon(selectedCity === city.name)}
@@ -104,9 +107,9 @@ function InteractiveMap({ selectedCity, onCitySelect }: InteractiveMapProps) {
           }}
         >
           <Popup>{city.name}</Popup>
-        </Marker>
+        </Comp.Marker>
       ))}
-    </MapContainer>
+    </Comp.MapContainer>
   );
 }
 
@@ -117,11 +120,12 @@ export default function UserDetailsStep({ onComplete }: UserDetailsStepProps) {
   const [details, setDetails] = useState({
     name: '',
     address: '',
+    email: '',
     phone: '',
     city: ''
   });
 
-  const isValid = details.name && details.address && details.phone && details.city;
+  const isValid = details.name && details.address && details.email && details.phone && details.city;
 
   const handleCitySelect = (city: string) => {
     setDetails(d => ({ ...d, city }));
@@ -143,6 +147,10 @@ export default function UserDetailsStep({ onComplete }: UserDetailsStepProps) {
           <div className="uds-input-group">
             <label className="uds-label">Full Name</label>
             <input type="text" placeholder="e.g., Ahmed Hassan" value={details.name} onChange={(e) => setDetails(d => ({ ...d, name: e.target.value }))} className="uds-input" />
+          </div>
+          <div className="uds-input-group">
+            <label className="uds-label">Email Address</label>
+            <input type="email" placeholder="e.g., ahmed@example.com" value={details.email} onChange={(e) => setDetails(d => ({ ...d, email: e.target.value }))} className="uds-input" />
           </div>
           <div className="uds-input-group">
             <label className="uds-label">Property Address</label>

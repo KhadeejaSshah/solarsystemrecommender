@@ -1,4 +1,5 @@
 import React from 'react';
+import { Car, Bike } from 'lucide-react';
 
 
 export type ApplianceOption = {
@@ -89,30 +90,7 @@ export const MicrowaveIcon = ({ className }: { className?: string }) => (
 );
 
 export function getApplianceIcon(id: string, className = "", isDark = true) {
-  // Map appliance IDs to image filenames
-  const iconMap: Record<string, string> = {
-    fan: isDark ? "frontend/public/assets/fann.png" : "frontend/public/assets/fann.png",
-    fridge: isDark ? "frontend/public/assets/blackfridge.png" : "frontend/public/assets/fridge.png",
-    lights: isDark ? "frontend/public/assets/lightbulb.png" : "frontend/public/assets/lightbulb.png",
-    microwave: isDark ? "frontend/public/assets/micro.png" : "frontend/public/assets/micro.png",
-    motor: isDark ? "frontend/public/assets/motor.png" : "frontend/public/assets/motor.png",
-    ac: isDark ? "frontend/public/assets/ac.png" : "frontend/public/assets/ac.png",
-    iron: isDark ? "frontend/public/assets/iron.png" : "frontend/public/assets/iron.png",
-    tv: isDark ? "frontend/public/assets/ledtv.png" : "frontend/public/assets/ledtv.png",
-  };
-
-  if (iconMap[id]) {
-    return (
-      <img
-        src={iconMap[id]}
-        alt={id}
-        className={className}
-        style={{ objectFit: "contain", width: "100%", height: "100%" }}
-        draggable={false}
-      />
-    );
-  }
-
+  // Using high-fidelity SVG components by default to ensure reliability and sharpness
   switch (id) {
     case 'fan': return <FanIcon className={className} />;
     case 'ac': return <ACIcon className={className} />;
@@ -122,6 +100,8 @@ export function getApplianceIcon(id: string, className = "", isDark = true) {
     case 'tv': return <TVIcon className={className} />;
     case 'iron': return <IronIcon className={className} />;
     case 'microwave': return <MicrowaveIcon className={className} />;
+    case 'tesla': return <Car className={className} />;
+    case 'bike': return <Bike className={className} />;
     default: return null;
   }
 };

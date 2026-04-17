@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Line } from '@react-three/drei';
 import { Appliance } from '../../types';
-import { SLOT_MAP, FALLBACK_SLOTS } from './ApplianceMarkers';
+import { SLOT_MAP, FALLBACK_SLOTS } from '../../config/applianceConfigs';
 
 interface FlowProps {
   start: [number, number, number];
@@ -42,8 +42,8 @@ const FlowLine = ({ start, end, color, speed = 1, active = true }: FlowProps) =>
       color={color}
       lineWidth={4.5}
       dashed
-      dashScale={5}
-      dashArray={[0.2, 0.2]}
+      dashSize={0.2}
+      gapSize={0.2}
       transparent={false}
       opacity={1}
     />
@@ -63,9 +63,10 @@ export const EnergyFlow = ({
 }) => {
   // Global World Positions (Transformed from Local House space)
   // These were manually perfected by the user
-  const INVERTER_POS: [number, number, number] = [0.4, 1, 3.2];
-  const SOLAR_START: [number, number, number] = [0, 8, 1];
-  const EV_POS: [number, number, number] = [-4.5, 0.7, 6.0];
+  // Synchronized with ModernHouseModel and FloatingBase coordinates
+  const INVERTER_POS: [number, number, number] = [5.1, 1.0, 0];    // Near Entrance / Wood Slat area
+  const SOLAR_START: [number, number, number] = [2.5, 4.7, -1];   // Center of Pitched Roof Solar Array
+  const EV_POS: [number, number, number] = [4, 0.2, 5];            // Driveway on Floating Island
 
   return (
     <group>

@@ -4,28 +4,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import * as THREE from 'three';
 import { Appliance } from '../../types';
 import { getApplianceIcon } from '../ApplianceIcons';
+import { SLOT_MAP, FALLBACK_SLOTS } from '../../config/applianceConfigs';
 
 interface ApplianceMarkersProps {
   appliances: Appliance[];
 }
 
-// Precise 3D coordinate mapping based on exterior wall surfaces (Local Space)
-export const SLOT_MAP: Record<string, [number, number, number]> = {
-  fridge: [2.8, 1.2, 3.01],    // Kitchen wall Exterior (Front)
-  microwave: [4.2, 1.8, 3.01], // Kitchen wall Exterior (Front)
-  tv: [5.01, 1.5, -1.2],       // Living Room wall Exterior (Right)
-  lights: [1, 6.5, 3.01],         // Front Facade High
-  ac: [5.01, 5.2, 1.8],        // Upper Floor Side wall (Right)
-  fan: [-0.5, 6.2, 3.01],       // Front Facade High
-  iron: [5.01, 3.8, -1.8],     // Side wall (Right)
-  motor: [-4.2, 0.8, 2.85],    // Garage Exterior (Front)
-};
-
-export const FALLBACK_SLOTS: [number, number, number][] = [
-  [0, 2, 3.01],
-  [-1, 2, 3.01],
-  [1, 2, 3.01],
-];
+// Data moved to src/config/applianceConfigs.ts to resolve HMR issues
 
 export const ApplianceMarkers = ({ appliances }: ApplianceMarkersProps) => {
   return (
@@ -57,7 +42,7 @@ export const ApplianceMarkers = ({ appliances }: ApplianceMarkersProps) => {
                     <div className="absolute inset-0 bg-white/40 rounded-2xl animate-ping opacity-20" />
                     
                     <div className="relative w-14 h-14 bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.25)] flex items-center justify-center border border-white/40 overflow-hidden">
-                      <div className="w-9 h-9 text-[#0f172a] transition-transform group-hover:scale-110 duration-300">
+                      <div className="w-8 h-8 text-[#0f172a] transition-transform group-hover:scale-110 duration-300 z-10">
                         {getApplianceIcon(app.id)}
                       </div>
                       

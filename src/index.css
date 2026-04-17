@@ -1,119 +1,96 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
-@plugin "@tailwindcss/typography";
-
-:root {
-  color-scheme: dark;
-  --solar-navy: #0F172A;
-  --solar-text: #F8FAFC;
-  --solar-card: rgba(255, 255, 255, 0.05);
-  --solar-border: rgba(255, 255, 255, 0.1);
-  --solar-glow: rgba(37, 99, 235, 0.1);
-  --solar-gradient: radial-gradient(circle at top right, #1E293B, #0F172A, #020617);
-  --solar-surface: #1E293B;
-  --solar-input: #1E293B;
-
-  /* Generic tokens used by inline-CSS components */
-  --fg: #F8FAFC;
-  --muted: rgba(248, 250, 252, 0.5);
-  --surface: #1E293B;
-  --input-bg: rgba(255, 255, 255, 0.06);
-  --border: rgba(255, 255, 255, 0.1);
-  --card: rgba(255, 255, 255, 0.05);
-  --accent: #0EA5E9;
-  --p-alpha: rgba(14,165,233,0.3);
-
-  /* Card specific */
-  --card-bg: #1E293B;
-  --card-bg-subtle: rgba(30, 41, 59, 0.8);
-}
-
-.light {
-  color-scheme: light;
-  --solar-navy: #F8FAFC;
-  --solar-text: #0F172A;
-  --solar-card: rgba(255, 255, 255, 0.9);
-  --solar-border: rgba(15, 23, 42, 0.1);
-  --solar-glow: rgba(37, 99, 235, 0.05);
-  --solar-gradient: radial-gradient(circle at top right, #F5F7FA, #E4E7EB, #D1D5DB);
-  --solar-surface: #FFFFFF;
-  --solar-input: #FFFFFF;
-
-  /* Generic tokens — light mode overrides */
-  --fg: #0F172A;
-  --muted: rgba(15, 23, 42, 0.5);
-  --surface: #FFFFFF;
-  --input-bg: rgba(15, 23, 42, 0.04);
-  --border: rgba(15, 23, 42, 0.12);
-  --card: rgba(255, 255, 255, 0.95);
-  --accent: #0EA5E9;
-  --p-alpha: rgba(14,165,233,0.2);
-
-  /* Card specific */
-  --card-bg: #FFFFFF;
-  --card-bg-subtle: rgba(255, 255, 255, 0.8);
-}
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Sora", sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
-
-  --color-solar-orange: #FF8C00;
-  --color-solar-navy: var(--solar-navy);
-  --color-solar-electric: #2563EB;
-  --color-solar-glow: var(--solar-glow);
-  --color-solar-text: var(--solar-text);
-  --color-solar-card: var(--solar-card);
-  --color-solar-border: var(--solar-border);
-  --color-solar-surface: var(--solar-surface);
-  --color-solar-input: var(--solar-input);
-  --color-card-bg: var(--card-bg);
-  --color-card-bg-subtle: var(--card-bg-subtle);
-
-
-  --background-image-solar-gradient: var(--solar-gradient);
-  --background-image-deep-void: linear-gradient(to bottom, var(--solar-navy), #000);
+  --color-solar-navy: #050a14;
+  --color-solar-emerald: #10b981;
+  --color-solar-electric: #00f2ff;
+  --color-solar-gold: #fbbf24;
+  --color-solar-text: #ffffff;
+  
+  --font-display: "Outfit", "Inter", sans-serif;
 }
 
 @layer base {
+  :root {
+    --fg: #ffffff;
+    --surface: #050a14;
+    --card: rgba(255, 255, 255, 0.03);
+    --border: rgba(255, 255, 255, 0.08);
+    --muted: rgba(255, 255, 255, 0.4);
+    --accent: #00f2ff;
+    --p-alpha: rgba(0, 242, 255, 0.15);
+  }
+
+  .light {
+    --fg: #0f172a;
+    --surface: #f1f5f9;
+    --card: rgba(0, 0, 0, 0.05);
+    --border: rgba(0, 0, 0, 0.12);
+    --muted: #475569;
+    --accent: #0284c7;
+    --p-alpha: rgba(2, 132, 199, 0.1);
+  }
+
   body {
-    @apply bg-solar-navy text-solar-text font-sans antialiased overflow-x-hidden;
+    @apply bg-solar-navy text-white font-sans antialiased selection:bg-solar-electric/30;
+    margin: 0;
+    overflow: hidden; /* Prevent scrolling for dashboard feel */
+  }
+
+  h1, h2, h3, .display {
+    @apply font-display tracking-tighter;
   }
 }
 
 @layer components {
+  .glass-panel {
+    @apply bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[2.5rem];
+  }
+
   .glass-card {
-    @apply bg-solar-surface/90 backdrop-blur-xl border border-solar-border shadow-xl;
+    @apply bg-white/[0.02] hover:bg-white/5 border border-white/5 hover:border-white/10 transition-all duration-500 rounded-3xl;
   }
 
   .btn-primary {
-    @apply px-8 py-3 bg-solar-electric text-white rounded-full font-bold tracking-wide 
-           hover:shadow-lg hover:shadow-solar-electric/30 transition-all duration-300 active:scale-95;
+    @apply bg-solar-electric text-black font-black uppercase tracking-widest px-8 py-4 rounded-2xl 
+           hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-solar-electric/20;
   }
 
-  .btn-secondary {
-    @apply px-8 py-3 bg-solar-card text-solar-text rounded-full font-bold tracking-wide 
-           hover:bg-solar-navy transition-all duration-300 active:scale-95 border border-solar-border shadow-sm;
+  .dashboard-grid {
+    @apply grid grid-cols-1 md:grid-cols-[1.2fr_1.8fr_1.2fr] h-[calc(100vh-80px)] w-full overflow-hidden;
+  }
+
+  .glow-emerald {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
   }
 }
 
 /* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
 }
-::-webkit-scrollbar-track {
-  background: #F5F7FA;
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
 }
-::-webkit-scrollbar-thumb {
-  background: #3A86FF;
-  border-radius: 10px;
-}
-
-.solar-glow-text {
-  text-shadow: 0 0 10px rgba(58, 134, 255, 0.2);
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-white/10 rounded-full;
 }
 
-.solar-border {
-  @apply border border-solar-text/10;
+/* Map Overrides */
+.leaflet-container {
+  background: transparent !important;
+}
+
+.marker-pin {
+  @apply shadow-xl;
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-solar-float {
+  animation: float 6s ease-in-out infinite;
 }
