@@ -83,9 +83,10 @@ export default function App() {
         </div>
       </header>
 
-      <main className="dashboard-grid relative z-10 pt-20">
+      <main className="dashboard-grid relative z-10 pt-20 min-h-0">
         {/* Left Panel: Inputs & Steps */}
         <motion.div
+          className="h-full min-h-0"
           initial={{ x: -100, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.8 }}
@@ -101,7 +102,7 @@ export default function App() {
         </motion.div>
 
         {/* Center Panel: High-Fidelity 3D Rotating Island */}
-        <div className="relative">
+        <div className="relative h-full min-h-0">
           <SolarHouse3D
             appliances={selectedAppliances}
             evInfo={{ status: evStatus }}
@@ -111,6 +112,7 @@ export default function App() {
 
         {/* Right Panel: Energy Hub */}
         <motion.div
+          className="h-full min-h-0"
           initial={{ x: 100, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.8 }}

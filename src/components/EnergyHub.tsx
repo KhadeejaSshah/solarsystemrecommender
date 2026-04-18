@@ -34,7 +34,7 @@ export default function EnergyHub({ interactionLevel, billUnits, selectedPlan = 
   const currentPlan = PLAN_DETAILS[selectedPlan] || PLAN_DETAILS.plus;
 
   return (
-    <div className="h-full flex flex-col p-6 gap-6 overflow-y-auto custom-scrollbar border-l border-[var(--border)] bg-[var(--surface)] backdrop-blur-3xl">
+    <div className="h-full min-h-0 flex flex-col p-6 gap-6 overflow-y-auto overscroll-contain custom-scrollbar border-l border-[var(--border)] bg-[var(--surface)] backdrop-blur-3xl">
       <div className="flex justify-between items-center mb-2">
         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-solar-electric">Solar Energy Hub</h3>
         <div className="px-2 py-0.5 rounded bg-[var(--card)] border border-[var(--border)] text-[8px] font-black opacity-40">STABLE</div>

@@ -60,17 +60,33 @@ export default function SolarHouse3D({ appliances, evInfo, isDark = true }: Sola
 
       {/* Premium UI Overlay */}
       <div className="absolute top-8 left-8 pointer-events-none transition-transform duration-500 group-hover:translate-x-2">
-        <div className="premium-glass p-6 rounded-3xl border-white/5 shadow-2xl">
+        <div
+          className={cn(
+            "premium-glass p-6 rounded-3xl shadow-2xl backdrop-blur-xl border",
+            isDark
+              ? "bg-slate-950/45 border-white/10"
+              : "bg-white/80 border-slate-900/10"
+          )}
+        >
           <div className="flex items-center gap-3 mb-1">
              <div className="w-2 h-2 rounded-full bg-solar-emerald animate-pulse" />
-             <h2 className="text-xl font-black tracking-tighter text-white">SolarNest VR</h2>
+             <h2 className={cn(
+               "text-xl font-black tracking-tighter",
+               isDark ? "text-white" : "text-slate-900"
+             )}>SolarNest VR</h2>
           </div>
-          <span className="text-[9px] font-bold uppercase tracking-[0.4em] text-white/30">Proprietary Simulation Engine</span>
+          <span className={cn(
+            "text-[9px] font-bold uppercase tracking-[0.4em]",
+            isDark ? "text-white/50" : "text-slate-700/80"
+          )}>Proprietary Simulation Engine</span>
         </div>
       </div>
 
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-1000">
-        <span className="text-[10px] font-black uppercase text-white/20 tracking-[0.6em]">Interactive 3D Orbital Model</span>
+        <span className={cn(
+          "text-[10px] font-black uppercase tracking-[0.6em]",
+          isDark ? "text-white/30" : "text-slate-700/80"
+        )}>Interactive 3D Orbital Model</span>
       </div>
     </div>
   );
@@ -80,7 +96,7 @@ function SceneContent({ appliances, evInfo, isDark }: any) {
   const hasEV = evInfo.status !== 'none';
   
   return (
-    <group position={[0, -5.5, 0]}>
+    <group position={[0, -5.2, 0]}>
       <Float speed={1.5} rotationIntensity={0.1} floatIntensity={0.5}>
         <Center top>
           {/* The Floating Rock Base Fragment */}
@@ -104,7 +120,7 @@ function SceneContent({ appliances, evInfo, isDark }: any) {
       </Float>
 
       <ContactShadows
-        position={[0, -4.0, 0]}
+        position={[0, -1.1, 0]}
         opacity={isDark ? 0.4 : 0.2}
         scale={40}
         blur={2.5}

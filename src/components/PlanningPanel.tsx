@@ -48,7 +48,7 @@ export default function PlanningPanel({
   const isSelected = (name: string) => appliances.some(a => a.name === name);
 
   return (
-    <div className="h-full flex flex-col p-6 gap-6 overflow-y-auto custom-scrollbar border-r border-[var(--border)] bg-[var(--surface)] backdrop-blur-3xl">
+    <div className="h-full min-h-0 flex flex-col p-6 gap-6 overflow-y-auto overscroll-contain custom-scrollbar border-r border-[var(--border)] bg-[var(--surface)] backdrop-blur-3xl">
       <div className="flex items-center gap-3 mb-2">
         <div className="w-8 h-8 rounded-lg bg-solar-emerald/20 flex items-center justify-center">
           <Settings className="w-4 h-4 text-solar-emerald" />
