@@ -4,7 +4,7 @@ import { Sun, Moon, Zap } from 'lucide-react';
 import PlanningPanel from './components/PlanningPanel';
 import SolarHouse3D from './components/SolarHouse/SolarHouse3D';
 import EnergyHub from './components/EnergyHub';
-import { Appliance, UserData } from './types';
+import { Appliance, APPLIANCES_LIST, UserData } from './types';
 import { cn } from './lib/utils';
 import { UI_NAME_TO_ID } from './config/applianceConfigs';
 
@@ -17,13 +17,27 @@ export default function App() {
   const [selectedPlan, setSelectedPlan] = useState<string>('plus');
   const [selectedAppliances, setSelectedAppliances] = useState<Appliance[]>([]);
   const [evStatus, setEvStatus] = useState<'own' | 'planning' | 'none'>('none');
+  const [billRandomOffsets, setBillRandomOffsets] = useState({
+    solar: 0,
+    storage: 0,
+    inverter: 0,
+  });
+  const [userName, setUserName] = useState<string>('');
+  const [userLocation, setUserLocation] = useState<string>('');
 
   useEffect(() => {
     document.documentElement.classList.toggle('light', theme === 'light');
   }, [theme]);
 
-  const handleFileUpload = (data: { monthlyUnits: number }) => {
+  const handleFileUpload = (data: { monthlyUnits: number; name?: string; location?: string }) => {
     setBillUnits(data.monthlyUnits);
+    setUserName(data.name || 'Khadeeja');
+    setUserLocation(data.location || 'Islamabad');
+    setBillRandomOffsets({
+      solar: Math.random() * 1.6 + 0.4,
+      storage: Math.random() * 2.8 + 1.2,
+      inverter: Math.random() * 1.2 + 0.3,
+    });
     setInteractionLevel('bill-uploaded');
   };
 
@@ -39,7 +53,15 @@ export default function App() {
       if (exists) {
         return prev.filter(a => a.id !== techId);
       }
-      return [...prev, { id: techId, name, wattage: 500, quantity: 1, icon: 'zap' }];
+
+      const applianceMeta = APPLIANCES_LIST.find(a => a.id === techId || a.name === name);
+      return [...prev, {
+        id: techId,
+        name,
+        wattage: applianceMeta?.wattage ?? 500,
+        quantity: 1,
+        icon: applianceMeta?.icon ?? 'zap'
+      }];
     });
     
     if (interactionLevel === 'bill-uploaded') {
@@ -64,7 +86,7 @@ export default function App() {
             "text-2xl font-display font-black tracking-tighter transition-colors duration-500",
             theme === 'light' ? "text-slate-900" : "text-white"
           )}>
-            SolarNest
+            SkyElectric
           </span>
         </div>
 
@@ -98,6 +120,8 @@ export default function App() {
             onPlanSelect={setSelectedPlan}
             appliances={selectedAppliances}
             onApplianceToggle={toggleAppliance}
+            userName={userName}
+            userLocation={userLocation}
           />
         </motion.div>
 
@@ -121,6 +145,8 @@ export default function App() {
             interactionLevel={interactionLevel}
             billUnits={billUnits}
             selectedPlan={selectedPlan}
+            appliances={selectedAppliances}
+            billRandomOffsets={billRandomOffsets}
           />
         </motion.div>
       </main>

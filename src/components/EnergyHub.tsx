@@ -2,11 +2,18 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { TrendingUp, Sun, Battery, Zap, Download, Info } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { Appliance } from '../types';
 
 interface EnergyHubProps {
   interactionLevel: 'initial' | 'bill-uploaded' | 'appliances-selected';
   billUnits: number;
   selectedPlan: string;
+  appliances: Appliance[];
+  billRandomOffsets: {
+    solar: number;
+    storage: number;
+    inverter: number;
+  };
 }
 
 const PLAN_DETAILS: Record<string, { name: string, hardware: string, system: string }> = {
@@ -27,10 +34,27 @@ const PLAN_DETAILS: Record<string, { name: string, hardware: string, system: str
   }
 };
 
-export default function EnergyHub({ interactionLevel, billUnits, selectedPlan = 'plus' }: EnergyHubProps) {
+export default function EnergyHub({
+  interactionLevel,
+  billUnits,
+  selectedPlan = 'plus',
+  appliances,
+  billRandomOffsets,
+}: EnergyHubProps) {
   const isFormed = interactionLevel !== 'initial';
   const isActive = interactionLevel === 'appliances-selected';
-  const systemSize = billUnits > 0 ? (billUnits / 100).toFixed(1) : '0.0';
+
+  const applianceLoadKw = appliances.reduce((sum, appliance) => {
+    return sum + ((appliance.wattage || 0) * (appliance.quantity || 1)) / 1000;
+  }, 0);
+
+  const demandLift = isActive ? applianceLoadKw : 0;
+  const baseSolar = billUnits > 0 ? billUnits / 100 : 0;
+  const solarKw = Math.max(0, baseSolar + billRandomOffsets.solar + demandLift * 0.45);
+  const storageKwh = Math.max(0, (solarKw * 2) + billRandomOffsets.storage + demandLift * 1.1);
+  const inverterKw = Math.max(0, solarKw + billRandomOffsets.inverter + demandLift * 0.3);
+
+  const systemSize = solarKw.toFixed(1);
   const currentPlan = PLAN_DETAILS[selectedPlan] || PLAN_DETAILS.plus;
 
   return (
@@ -59,8 +83,8 @@ export default function EnergyHub({ interactionLevel, billUnits, selectedPlan = 
       <div className={cn("space-y-4 transition-all duration-700", !isFormed && "opacity-20")}>
         {[
           { icon: Sun, label: "Solar Array", value: `${systemSize} kW`, sub: "Mono-PERC 550W Panels", active: isActive },
-          { icon: Battery, label: "Storage System", value: `${(parseFloat(systemSize) * 2).toFixed(1)} kWh`, sub: "LiFePO4 Active Cooling", active: isActive },
-          { icon: Zap, label: "Inverter Matrix", value: `${systemSize} kW`, sub: "Hybrid Pure Sine Wave", active: isActive }
+          { icon: Battery, label: "Storage System", value: `${storageKwh.toFixed(1)} kWh`, sub: "LiFePO4 Active Cooling", active: isActive },
+          { icon: Zap, label: "Inverter Matrix", value: `${inverterKw.toFixed(1)} kW`, sub: "Hybrid Pure Sine Wave", active: isActive }
         ].map((spec, i) => (
           <motion.div
             key={spec.label}
