@@ -9,18 +9,21 @@ import {
   Wind,
   Refrigerator,
   Tv,
-  Utensils
+  Utensils,
+  MapPin
 } from 'lucide-react';
 import { Appliance, APPLIANCES_LIST } from '../types';
 import { cn } from '../lib/utils';
 
 interface PlanningPanelProps {
   interactionLevel: 'initial' | 'bill-uploaded' | 'appliances-selected';
-  onFileUpload: (data: { monthlyUnits: number }) => void;
+  onFileUpload: (data: { monthlyUnits: number; name?: string; location?: string }) => void;
   selectedPlan: string;
   onPlanSelect: (plan: string) => void;
   appliances: Appliance[];
   onApplianceToggle: (name: string) => void;
+  userName: string;
+  userLocation: string;
 }
 
 export default function PlanningPanel({
@@ -29,7 +32,9 @@ export default function PlanningPanel({
   selectedPlan,
   onPlanSelect,
   appliances,
-  onApplianceToggle
+  onApplianceToggle,
+  userName,
+  userLocation
 }: PlanningPanelProps) {
   const [openSection, setOpenSection] = useState<string | null>(null);
 
@@ -42,7 +47,7 @@ export default function PlanningPanel({
   ];
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onFileUpload({ monthlyUnits: 1200 }); // Mocked for speed
+    onFileUpload({ monthlyUnits: 1200, name: 'Khadeeja', location: 'Islamabad' }); // Mocked for speed
   };
 
   const isSelected = (name: string) => appliances.some(a => a.name === name);
@@ -55,6 +60,36 @@ export default function PlanningPanel({
         </div>
         <h2 className="text-xl font-black tracking-tighter text-[var(--fg)]">Project Config</h2>
       </div>
+
+      {/* Personalized Greeting Banner */}
+      <AnimatePresence>
+        {interactionLevel !== 'initial' && (
+          <motion.div
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            className="p-5 rounded-2xl bg-gradient-to-r from-solar-emerald/10 to-solar-electric/10 border border-solar-emerald/20"
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-xl bg-solar-emerald/20 flex-shrink-0">
+                <MapPin className="w-5 h-5 text-solar-emerald" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-black text-[var(--fg)] mb-1">
+                  Hello, {userName}!
+                </h3>
+                <p className="text-[12px] text-[var(--muted)] leading-relaxed mb-2">
+                  Welcome to the future of smart energy. Let's design your perfect solar system for <span className="font-bold text-solar-emerald">{userLocation}</span>.
+                </p>
+                <div className="flex items-center gap-2 text-[11px] font-bold text-solar-electric">
+                  <MapPin className="w-3 h-3" />
+                  <span>{userLocation}</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Step 1: Bill Upload */}
       <section className="space-y-4">

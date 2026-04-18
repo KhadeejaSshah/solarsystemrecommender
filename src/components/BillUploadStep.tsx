@@ -4,7 +4,7 @@ import StepWrapper from './StepWrapper';
 import { Upload, FileText, CheckCircle2, Loader2 } from 'lucide-react';
 
 interface BillUploadStepProps {
-  onComplete: (units: number) => void;
+  onComplete: (data: { monthlyUnits: number; name?: string; location?: string }) => void;
 }
 
 export default function BillUploadStep({ onComplete }: BillUploadStepProps) {
@@ -18,7 +18,11 @@ export default function BillUploadStep({ onComplete }: BillUploadStepProps) {
     setTimeout(() => {
       setIsUploading(false);
       setIsDone(true);
-      setTimeout(() => onComplete(650), 1500); // Mock 650 units
+      setTimeout(() => onComplete({
+        monthlyUnits: 650,
+        name: 'Khadeeja',
+        location: 'Islamabad'
+      }), 1500);
     }, 3000);
   };
 
