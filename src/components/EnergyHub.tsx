@@ -132,8 +132,8 @@ export default function EnergyHub({
             <span className="text-[10px] font-bold uppercase tracking-widest">Meteorological Data</span>
           </div>
           <div className="p-4 premium-glass rounded-2xl border-solar-emerald/10 bg-solar-emerald/5">
-            <p className="text-[11px] font-bold text-solar-emerald mb-1">Lahore Region</p>
-            <p className="text-[9px] text-[var(--muted)] leading-relaxed">
+            <p className="text-[11px] font-bold text-solar-emerald mb-1"></p>
+            <p className="text-[9px] text-[var(--muted)] leading-relaxed">Islamabad Region
               Verified 5.2 kWh/m² daily irradiance. 1825 annual sun hours. 
               <span className="text-solar-electric font-bold ml-1">Optimal Tilt: 28° South.</span>
             </p>
