@@ -114,13 +114,23 @@ export default function PlanningPanel({ interactionLevel, onFileUpload, applianc
         {interactionLevel !== 'initial' && (
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="p-5 rounded-[2rem] bg-solar-emerald/10 border border-solar-emerald/20">
             <h3 className="text-lg font-black text-solar-emerald mb-1 italic">Welcome, {userData.name}!</h3>
-            <p className="text-[10px] font-bold opacity-60">Here is your personalized smart energy design for your property in <span className="text-white">{userData.city}</span>.</p>
+            <p className="text-[10px] font-bold opacity-60">Here is your personalized smart energy design for your property in <span className="text-green">{userData.city}</span>.</p>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Step 1: File Upload */}
       <section className="space-y-4">
+        <div className="text-[10px] font-black uppercase tracking-widest opacity-40 italic">01. Digital Onboarding</div>
+        <div className={cn("p-8 rounded-[2.5rem] border-2 border-dashed transition-all relative group", isScanning ? "animate-pulse border-solar-electric bg-solar-electric/5" : "border-solar-emerald/40 bg-solar-emerald/5")}>
+          <input type="file" accept=".png,.pdf" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={(e) => onFileUpload(e.target.files![0])} />
+          <div className="flex flex-col items-center gap-3 text-center">
+            {isScanning ? <Zap className="w-8 h-8 text-solar-electric animate-spin" /> : <FileText className="w-8 h-8 text-solar-emerald" />}
+            <p className="text-sm font-black italic">{isScanning ? "AI is Scanning..." : "Upload Utility Bill"}</p>
+          </div>
+        </div>
+      </section>
+      {/* <section className="space-y-4">
         <div className="text-[10px] font-black uppercase tracking-widest opacity-40 italic">01. Digital Onboarding</div>
         <div className={cn("p-8 rounded-[2.5rem] border-2 border-dashed transition-all relative group", isScanning ? "animate-pulse border-solar-electric" : "border-solar-emerald/40")}>
           <input type="file" accept=".png,.pdf" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={(e) => onFileUpload(e.target.files![0])} />
@@ -129,7 +139,7 @@ export default function PlanningPanel({ interactionLevel, onFileUpload, applianc
             <p className="text-sm font-black italic">{isScanning ? 'AI Scanning Bill...' : 'Upload Utility Bill'}</p>
           </div>
         </div>
-      </section>
+      </section> */}
 
 
 
