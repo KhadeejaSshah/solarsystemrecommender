@@ -85,7 +85,7 @@ function SceneContent({ appliances, evInfo, isDark, hasEVCar }: any) {
             
             {/* Render Tesla Model if selected */}
             {hasEVCar && (
-              <group position={[-6.5, 0.7, 0.9]} rotation={[0, -Math.PI / 2, 0]}>
+              <group position={[-5.7, 0.7, 0.9]} rotation={[0, -Math.PI / 2, 0]}>
                 <EVCar />
               </group>
             )}
