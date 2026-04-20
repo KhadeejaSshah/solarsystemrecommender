@@ -18,3 +18,13 @@ View your app in AI Studio: https://ai.studio/apps/d926abc6-664d-4c78-a3c4-5e118
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+
+
+
+
+install: npm install @react-three/postprocessing
+to run: 
+root: npm run dev
+cd backend:
+- uvicorn main:app --reload

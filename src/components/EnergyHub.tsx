@@ -148,10 +148,10 @@ export default function EnergyHub({ specs, interactionLevel }: any) {
       <button disabled={!isFormed} className="w-full h-16 mt-auto rounded-[2rem] bg-solar-emerald text-black font-black uppercase tracking-widest text-[11px] disabled:opacity-20 flex items-center justify-center gap-3 shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]">
         <Download className="w-5 h-5" /> Generate Proposal
       </button>
-      <div className="p-5 rounded-2xl bg-[var(--card)] border border-[var(--border)]">
+      {/* <div className="p-5 rounded-2xl bg-[var(--card)] border border-[var(--border)]">
         <p className="text-[9px] font-black opacity-40 uppercase mb-2">Tier Classification</p>
         <h4 className={cn("text-xl font-black italic", currentPkg?.color)}>{isFormed ? currentPkg?.name : "Awaiting Bill"}</h4>
-      </div>
+      </div> */}
       {/* Package Detail Modal Overlay */}
       <AnimatePresence>
         {showDetails && (

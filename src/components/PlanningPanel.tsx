@@ -130,21 +130,10 @@ export default function PlanningPanel({ interactionLevel, onFileUpload, applianc
           </div>
         </div>
       </section>
-      {/* <section className="space-y-4">
-        <div className="text-[10px] font-black uppercase tracking-widest opacity-40 italic">01. Digital Onboarding</div>
-        <div className={cn("p-8 rounded-[2.5rem] border-2 border-dashed transition-all relative group", isScanning ? "animate-pulse border-solar-electric" : "border-solar-emerald/40")}>
-          <input type="file" accept=".png,.pdf" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={(e) => onFileUpload(e.target.files![0])} />
-          <div className="flex flex-col items-center gap-3 text-center">
-            <FileText className={cn("w-8 h-8", isScanning ? "text-solar-electric animate-spin" : "text-solar-emerald")} />
-            <p className="text-sm font-black italic">{isScanning ? 'AI Scanning Bill...' : 'Upload Utility Bill'}</p>
-          </div>
-        </div>
-      </section> */}
-
-
+    
 
       {/* Step 2: Appliance Selection */}
-      <section className={cn(
+      {/* <section className={cn(
         "space-y-3 transition-all duration-700", 
         interactionLevel === 'initial' && "opacity-20 pointer-events-none grayscale"
       )}>
@@ -198,7 +187,115 @@ export default function PlanningPanel({ interactionLevel, onFileUpload, applianc
             </AnimatePresence>
           </div>
         ))}
-      </section>
+      </section> */}
+      {/* Step 2: Optional Appliance Journey */}
+<section
+  className={cn(
+    "space-y-4 transition-all duration-700",
+    interactionLevel === "initial" &&
+      "opacity-20 pointer-events-none grayscale"
+  )}
+>
+  <div className="flex items-center justify-between">
+    <div>
+      <div className="text-[10px] font-black uppercase tracking-widest opacity-40">
+        02. Optional Appliance Journey
+      </div>
+      <p className="text-[10px] opacity-40 font-bold uppercase">
+        Add appliances (Optional)
+      </p>
+    </div>
+  </div>
+
+  <div className="grid grid-cols-3 gap-3">
+    {categories.map((cat) => (
+      <div
+        key={cat.id}
+        className={cn(
+          "rounded-3xl border border-[var(--border)] transition-all overflow-hidden",
+          openSection === cat.id
+            ? "bg-[var(--card)] shadow-xl"
+            : "bg-transparent"
+        )}
+      >
+        {/* Icon Card */}
+        <button
+          onClick={() =>
+            setOpenSection(openSection === cat.id ? null : cat.id)
+          }
+          className="w-full p-4 flex flex-col items-center gap-2"
+        >
+          <cat.icon
+            className={cn(
+              "w-6 h-6 transition-all",
+              openSection === cat.id
+                ? "text-solar-emerald"
+                : "opacity-40"
+            )}
+          />
+
+          <p className="text-[10px] font-black text-center text-[var(--fg)]">
+            {cat.name}
+          </p>
+
+          <p className="text-[8px] uppercase opacity-40 font-bold">
+            {cat.items.filter(isSelected).length} selected
+          </p>
+        </button>
+
+        {/* Dropdown */}
+        <AnimatePresence>
+          {openSection === cat.id && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="px-3 pb-3 grid gap-2"
+            >
+              {cat.items.map((item) => {
+                const active = isSelected(item);
+
+                return (
+                  <button
+                    key={item}
+                    onClick={() => onApplianceToggle(item)}
+                    className={cn(
+                      "flex items-center justify-between p-3 rounded-2xl border transition-all text-left",
+                      active
+                        ? "bg-solar-emerald/10 border-solar-emerald/30 text-solar-emerald"
+                        : "bg-[var(--surface)] border-[var(--border)] opacity-60"
+                    )}
+                  >
+                    <span className="text-[10px] font-black">
+                      {item}
+                    </span>
+
+                    <div
+                      className={cn(
+                        "w-3 h-3 rounded-full border-2",
+                        active
+                          ? "bg-solar-emerald border-solar-emerald"
+                          : "border-white/10"
+                      )}
+                    />
+                  </button>
+                );
+              })}
+
+              {/* Close Button */}
+              <button
+                onClick={() => setOpenSection(null)}
+                className="text-[9px] uppercase font-bold opacity-40 hover:opacity-80 pt-2"
+              >
+                Close
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    ))}
+  </div>
+</section>
 
       {/* Investment Recovery - Hidden until upload */}
       <AnimatePresence>

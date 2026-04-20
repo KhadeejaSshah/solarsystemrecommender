@@ -1,14 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Sun, 
-  Moon, 
-  Zap, 
-  BarChart3, 
-  Globe, 
-  Leaf, 
-  TrendingDown, 
-  Wallet 
+  Sun, Moon, Zap, BarChart3, Globe, Leaf, 
+  TrendingDown, Wallet, FileText, Settings2, 
+  RefreshCcw, ChevronRight, CheckCircle2, Battery, PanelTop
 } from 'lucide-react';
 
 // Components
@@ -21,317 +16,260 @@ import { Appliance } from './types';
 import { UI_NAME_TO_ID } from './config/applianceConfigs';
 import { cn } from './lib/utils';
 
-/**
- * PRODUCTION URL LOGIC
- * Vite uses import.meta.env.VITE_API_URL. 
- * If you are running locally, it defaults to 127.0.0.1:8000.
- * On a live server, set VITE_API_URL in your hosting dashboard.
- */
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 export default function App() {
-  // Theme State
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  
-  // UI Interaction States
+  const isDark = theme === 'dark';
+
   const [interactionLevel, setInteractionLevel] = useState<'initial' | 'bill-uploaded' | 'appliances-selected'>('initial');
   const [isScanning, setIsScanning] = useState(false);
-  
-  // User & Bill Data (Scraped from Backend)
   const [billUnits, setBillUnits] = useState(0);
-  const [userData, setUserData] = useState({ 
-    name: '', 
-    city: '' 
-  });
-
-  // System Specification State (Calculated by Backend for Terminal Logging)
- // const [specs, setSpecs] = useState<any>(null);
-  const [specs, setSpecs] = useState<any>({
-      solarKw: 0,
-      storageKwh: 0,
-      inverterKw: 0,
-      packageId: 'lite',
-      gridImpact: 0,
-      carbonOffset: 0,
-      monthlySavings: 0
-  });
-
-  // Selected Appliances
+  const [userData, setUserData] = useState({ name: '', city: '' });
   const [selectedAppliances, setSelectedAppliances] = useState<Appliance[]>([]);
+  const [applianceJourneyActive, setApplianceJourneyActive] = useState(false);
+  const [specs, setSpecs] = useState<any>({
+    solarKw: 0, storageKwh: 0, inverterKw: 0, packageId: 'lite',
+    gridImpact: 0, carbonOffset: 0, monthlySavings: 0
+  });
 
-  // Effect to sync Dark Mode with Tailwind
-  useEffect(() => {
-    document.documentElement.classList.toggle('light', theme === 'light');
-  }, [theme]);
-
-  /**
-   * BACKEND CALCULATION CALL
-   * Triggers the Engineering Logic in Python so formulas print to the terminal.
-   */
-
-// Initialize with a skeleton object instead of null to prevent EnergyHub crash
-
-
+  // --- LOGIC FUNCTIONS ---
   const fetchSystemSpecs = async (units: number, apps: Appliance[]) => {
-  try {
-    const res = await fetch(`${API_BASE}/calculate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        units: units,       // Ensure keys match Backend CalculationRequest
-        appliances: apps 
-      }),
-    });
-    
-    if (!res.ok) {
-        console.error("Server Error:", res.status);
-        return;
-    }
+    try {
+      const res = await fetch(`${API_BASE}/calculate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ units, appliances: apps }),
+      });
+      if (res.ok) setSpecs(await res.json());
+    } catch (e) { console.error(e); }
+  };
 
-    const data = await res.json();
-    setSpecs(data);
-  } catch (e) {
-    console.error("Engineering Math Sync Error:", e);
-  }
-};
-
-  /**
-   * BILL UPLOAD HANDLER
-   * Sends file to LlamaParse/Gemini scraper and processes results.
-   */
   const handleFileUpload = async (file: File) => {
     setIsScanning(true);
     const formData = new FormData();
     formData.append('file', file);
-
     try {
-      const response = await fetch(`${API_BASE}/upload-bill`, {
-        method: 'POST',
-        body: formData,
-      });
-      
+      const response = await fetch(`${API_BASE}/upload-bill`, { method: 'POST', body: formData });
       const result = await response.json();
-      
-      if (result.success && result.data) {
-        const d = result.data;
-        
-        // Match keys exactly as printed in your backend terminal
-        const extractedUnits = Number(d.units_consumed) || 0;
-        setBillUnits(extractedUnits);
-        setUserData({
-          name: d.consumer_name || 'Valued Customer',
-          city: d.location || 'Islamabad'
-        });
-
+      if (result.success) {
+        setBillUnits(Number(result.data.units_consumed) || 0);
+        setUserData({ name: result.data.consumer_name || 'Customer', city: result.data.location || 'Islamabad' });
         setInteractionLevel('bill-uploaded');
-        
-        // Initial calculation call
-        fetchSystemSpecs(extractedUnits, []);
+        fetchSystemSpecs(Number(result.data.units_consumed), []);
       }
-    } catch (err) {
-      console.error("Scraper Connection Error:", err);
-      alert("Failed to connect to the Smart Scraper. Ensure the backend is running.");
-    } finally {
-      setIsScanning(false);
-    }
+    } finally { setIsScanning(false); }
   };
 
-  /**
-   * APPLIANCE TOGGLE LOGIC
-   * Recalculates system size in real-time.
-   */
   const toggleAppliance = (name: string) => {
     const techId = UI_NAME_TO_ID[name] || name.toLowerCase().replace(/\s+/g, '-');
-    
     setSelectedAppliances(prev => {
       const exists = prev.find(a => a.id === techId);
-      let newSelection;
-      
-      if (exists) {
-        newSelection = prev.filter(a => a.id !== techId);
-      } else {
-        newSelection = [...prev, { 
-          id: techId, 
-          name, 
-          wattage: 500, 
-          quantity: 1, 
-          icon: 'zap' 
-        }];
-      }
-      
-      // Call backend calculation to trigger Terminal Prints
+      const newSelection = exists ? prev.filter(a => a.id !== techId) : 
+        [...prev, { id: techId, name, wattage: 500, quantity: 1, icon: 'zap' }];
       fetchSystemSpecs(billUnits, newSelection);
       return newSelection;
     });
-
-    if (interactionLevel === 'bill-uploaded') {
-      setInteractionLevel('appliances-selected');
-    }
+    if (interactionLevel === 'bill-uploaded') setInteractionLevel('appliances-selected');
   };
 
-  const isFormed = interactionLevel !== 'initial';
-  const hasEVCar = selectedAppliances.some(a => a.id === 'tesla' || a.name === 'EV Car');
-
-  return (
-    <div className="h-screen w-full bg-[var(--surface)] text-[var(--fg)] overflow-hidden font-sans transition-colors duration-500 selection:bg-solar-emerald/30 relative">
-      
-      {/* Sleek Cursor Glow Effect */}
-      <CursorGlow />
-
-      <header className="h-20 px-8 flex justify-between items-center z-50 relative border-b border-[var(--border)] backdrop-blur-md bg-[var(--surface)]/50">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-solar-emerald/20 overflow-hidden bg-[var(--card)]">
-            <img src="/logo.png" alt="SKYELECTIC logo" className="w-full h-full object-contain" />
-          </div>
-          <div className="flex flex-col -gap-1">
-            <span className="text-xl font-black tracking-tighter uppercase italic">SKYELECTRIC</span>
-            <span className="text-[8px] font-bold tracking-[0.4em] text-solar-emerald">AI DESIGN SUITE</span>
-          </div>
-        </div>
-
-        <button 
-            onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
-            className="p-3 rounded-2xl bg-[var(--card)] border border-[var(--border)] hover:scale-110 active:scale-95 transition-all shadow-xl"
-        >
-            {theme === 'dark' ? <Sun className="w-5 h-5 text-solar-gold animate-pulse" /> : <Moon className="w-5 h-5 text-solar-electric" />}
-        </button>
-      </header>
-
-      <main className="h-[calc(100vh-80px)] grid grid-cols-[380px_1fr_400px] relative z-10">
-        
-        {/* LEFT: Inputs & User Context */}
-        <aside className="h-full overflow-hidden border-r border-[var(--border)]">
-          <PlanningPanel 
-            interactionLevel={interactionLevel}
-            onFileUpload={handleFileUpload}
-            appliances={selectedAppliances}
-            onApplianceToggle={toggleAppliance}
-            isScanning={isScanning}
-            userData={userData}
-          />
-        </aside>
-
-        {/* CENTER: 3D Visualization & Floating Impact Metrics */}
-        <section className="relative h-full flex flex-col items-center justify-center overflow-hidden">
-          
-          <AnimatePresence>
-            {isFormed && (
-              <motion.div 
-                initial={{ y: -20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                className="absolute top-8 flex gap-4 z-20"
-              >
-                <StatusBadge icon={Globe} label={`Region: ${userData.city}`} color="emerald" />
-                <StatusBadge icon={BarChart3} label="Status: Optimized" color="electric" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-          
-          <div className="w-full h-full cursor-grab active:cursor-grabbing">
-            <SolarHouse3D 
-                appliances={selectedAppliances} 
-                evInfo={{ status: hasEVCar ? 'own' : 'none' }} 
-                isDark={theme === 'dark'} 
-            />
-          </div>
-
-          <AnimatePresence>
-            {specs && (
-              <motion.div 
-                initial={{ y: 50, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                className="absolute bottom-10 px-10 py-5 rounded-[2.5rem] bg-[var(--card)] border border-[var(--border)] backdrop-blur-2xl flex gap-12 shadow-2xl z-20 border-white/5"
-              >
-                 <StatMini 
-                    label="Grid Impact" 
-                    value={`-${specs.gridImpact?.toFixed(0)}%`} 
-                    icon={TrendingDown} 
-                    color="text-solar-emerald" 
-                 />
-                 <div className="w-[1px] h-10 bg-[var(--border)]" />
-                 <StatMini 
-                    label="Carbon Offset" 
-                    value={`${specs.carbonOffset?.toFixed(1)} Tons`} 
-                    icon={Leaf} 
-                    color="text-solar-electric" 
-                 />
-                 <div className="w-[1px] h-10 bg-[var(--border)]" />
-                 <StatMini 
-                    label="Monthly Save" 
-                    value={`Rs. ${(specs.monthlySavings / 1000).toFixed(0)}k`} 
-                    icon={Wallet} 
-                    color="text-[var(--fg)]" 
-                 />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </section>
-
-        {/* RIGHT: System Specs & Packages */}
-        <aside className="h-full overflow-hidden border-l border-[var(--border)]">
-          <EnergyHub 
-            interactionLevel={interactionLevel}
-            specs={specs}
-          />
-        </aside>
-      </main>
-    </div>
-  );
-}
-
-/**
- * UI HELPER: Status Badge (Region/Status)
- */
-function StatusBadge({ icon: Icon, label, color }: any) {
-  const styles: any = {
-    emerald: 'text-solar-emerald bg-solar-emerald/10 border-solar-emerald/20',
-    electric: 'text-solar-electric bg-solar-electric/10 border-solar-electric/20'
+  const startOver = () => {
+    setInteractionLevel('initial');
+    setBillUnits(0);
+    setUserData({ name: '', city: '' });
+    setSelectedAppliances([]);
+    setApplianceJourneyActive(false);
+    setSpecs({ solarKw: 0, storageKwh: 0, inverterKw: 0, packageId: 'lite', gridImpact: 0, carbonOffset: 0, monthlySavings: 0 });
   };
-  return (
-    <div className={cn("flex items-center gap-2 px-4 py-2 rounded-full border text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-lg", styles[color])}>
-      <Icon className="w-3.5 h-3.5" />
-      {label}
-    </div>
-  );
-}
-
-/**
- * UI HELPER: Mini Stat (Bottom Impact Bar)
- */
-function StatMini({ label, value, icon: Icon, color }: any) {
-  return (
-    <div className="flex items-center gap-4">
-      <div className={cn("p-2 rounded-xl bg-white/5 shadow-inner", color)}>
-        <Icon className="w-5 h-5" />
-      </div>
-      <div>
-        <p className="text-[8px] font-black opacity-30 uppercase tracking-widest mb-0.5">{label}</p>
-        <p className={cn("text-lg font-black tracking-tighter leading-none", color)}>{value}</p>
-      </div>
-    </div>
-  );
-}
-
-/**
- * UI HELPER: Decorative Background Glow
- */
-function CursorGlow() {
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
-    const handleMove = (e: MouseEvent) => setMousePos({ x: e.clientX, y: e.clientY });
-    window.addEventListener('mousemove', handleMove);
-    return () => window.removeEventListener('mousemove', handleMove);
-  }, []);
+    document.documentElement.classList.toggle('light', theme === 'light');
+  }, [theme]);
 
   return (
-    <motion.div
-      className="fixed pointer-events-none z-0 w-[600px] h-[600px] rounded-full blur-[120px] opacity-20 bg-solar-emerald/30"
-      animate={{
-        x: mousePos.x - 300,
-        y: mousePos.y - 300,
-      }}
-      transition={{ type: 'spring', damping: 50, stiffness: 200 }}
-    />
+    <div className={cn("h-screen w-full overflow-hidden font-sans relative transition-colors duration-700", isDark ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-900")}>
+      
+      {/* LAYER 1: 3D BACKDROP */}
+      <div className="absolute inset-0 z-0">
+        <SolarHouse3D 
+          appliances={selectedAppliances} 
+          evInfo={{ status: selectedAppliances.some(a => a.name === 'EV Car') ? 'own' : 'none' }} 
+          isDark={isDark} 
+        />
+      </div>
+
+      {/* LAYER 2: TOP MIDDLE SYSTEM SPECS (FROSTED GLASS) */}
+      <AnimatePresence>
+        {specs.solarKw > 0 && (
+          <motion.div 
+            initial={{ y: -100, x: '-50%', opacity: 0 }}
+            animate={{ y: 24, x: '-50%', opacity: 1 }}
+            className={cn(
+              "absolute left-1/2 z-50 px-8 py-4 rounded-[2rem] border backdrop-blur-2xl shadow-2xl flex items-center gap-8 pointer-events-auto",
+              isDark ? "bg-slate-900/60 border-white/10" : "bg-white/70 border-black/5"
+            )}
+          >
+            {/* round off all values to 2 decimal place: */}
+            <QuickStat icon={Sun} label="PV SIZE" value={`${specs.solarKw.toFixed(2)} kW`} color="text-solar-gold" />
+            <div className="w-px h-8 bg-current opacity-10" />
+            <QuickStat icon={Battery} label="BATTERY" value={`${specs.storageKwh.toFixed(2)} kWh`} color="text-solar-emerald" />
+            <div className="w-px h-8 bg-current opacity-10" />
+            <QuickStat icon={Zap} label="INVERTER" value={`${specs.inverterKw.toFixed(2)} kW`} color="text-solar-electric" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* LAYER 3: FLOATING UI OVERLAY */}
+      <div className="relative z-10 h-full w-full flex flex-col pointer-events-none">
+        
+        {/* HEADER */}
+        <header className="h-20 px-10 flex justify-between items-center">
+          <div className={cn("flex items-center gap-4 py-3 px-6 rounded-3xl border backdrop-blur-xl mt-4 pointer-events-auto", isDark ? "bg-white/5 border-white/10" : "bg-white/60 border-black/5")}>
+            <div className="w-8 h-8 rounded-lg bg-solar-emerald flex items-center justify-center">
+               <img src="/logo.png" alt="L" className="w-5 h-5 invert" />
+            </div>
+            <h1 className="text-lg font-black tracking-tighter italic leading-none">SKYELECTRIC</h1>
+          </div>
+
+          <button 
+            onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+            className={cn("p-4 rounded-3xl border backdrop-blur-xl transition-all pointer-events-auto mt-4", isDark ? "bg-white/5 border-white/10" : "bg-white/60 border-black/5")}
+          >
+            {isDark ? <Sun size={20} className="text-solar-gold" /> : <Moon size={20} className="text-solar-electric" />}
+          </button>
+        </header>
+
+        <div className="flex-1 relative flex overflow-hidden">
+          {/* SIDEBAR (DATA PANEL) */}
+          <aside className={cn(
+            "w-[420px] m-8 rounded-[2.5rem] border backdrop-blur-2xl shadow-2xl flex flex-col overflow-hidden pointer-events-auto transition-colors duration-500",
+            isDark ? "bg-slate-900/40 border-white/10" : "bg-white/80 border-black/5 shadow-slate-200"
+          )}>
+            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+              <AnimatePresence mode="wait">
+                {interactionLevel === 'initial' && !applianceJourneyActive ? (
+                  <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} key="p1">
+                    <PlanningPanel 
+                       interactionLevel={interactionLevel}
+                       onFileUpload={handleFileUpload}
+                       isScanning={isScanning}
+                       userData={userData}
+                       appliances={selectedAppliances}
+                       onApplianceToggle={toggleAppliance}
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+                    {/* Bill Profile */}
+                    <div className={cn("p-6 rounded-3xl border", isDark ? "bg-white/5 border-white/10" : "bg-slate-50 border-slate-200")}>
+                      <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-4 text-left">
+                            <div className="w-10 h-10 rounded-xl bg-solar-emerald/20 flex items-center justify-center text-solar-emerald">
+                               <FileText size={20} />
+                            </div>
+                            <div>
+                               <h3 className={cn("font-black tracking-tight", isDark ? "text-white" : "text-slate-900")}>{userData.name}</h3>
+                               <p className={cn("text-[10px] uppercase font-bold tracking-widest", isDark ? "text-white/40" : "text-slate-400")}>{userData.city} • {billUnits} Units</p>
+                            </div>
+                         </div>
+                         <button onClick={startOver} className={cn("p-2 rounded-xl transition-colors", isDark ? "hover:bg-white/10 text-white/40" : "hover:bg-slate-200 text-slate-400")}><RefreshCcw size={16}/></button>
+                      </div>
+                    </div>
+
+                    {/* Load Config */}
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center px-2">
+                        <span className={cn("text-[10px] font-black uppercase tracking-[0.3em]", isDark ? "text-white/30" : "text-slate-400")}>Load Builder</span>
+                        <button onClick={() => setApplianceJourneyActive(!applianceJourneyActive)} className="text-xs font-bold text-solar-emerald">
+                          {applianceJourneyActive ? 'Close' : 'Modify'}
+                        </button>
+                      </div>
+                      {applianceJourneyActive ? (
+                        <ApplianceConfigurator selectedAppliances={selectedAppliances} onToggle={toggleAppliance} isDark={isDark} />
+                      ) : (
+                        <div className="h-12 rounded-2xl border border-dashed flex items-center justify-center">
+                          <p className="text-[10px] font-bold italic">Select appliances for precise sizing</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Injected EnergyHub */}
+                    <div className={cn("pt-6 border-t", isDark ? "border-white/5" : "border-slate-200")}>
+                       <EnergyHub interactionLevel={interactionLevel} specs={specs} isDark={isDark} />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </aside>
+
+          {/* BOTTOM IMPACT BAR */}
+          <AnimatePresence>
+            {specs.solarKw > 0 && (
+              <motion.div initial={{ y: 100 }} animate={{ y: -40 }} className="absolute bottom-0 left-1/2 -translate-x-1/2 pointer-events-auto">
+                <div className={cn("px-12 py-6 rounded-[3rem] border backdrop-blur-3xl flex gap-16 shadow-2xl", isDark ? "bg-slate-900/60 border-white/10" : "bg-white/80 border-black/5")}>
+                   <StatMini label="Savings" value={`${specs.gridImpact?.toFixed(0)}%`} icon={TrendingDown} color="text-solar-emerald" isDark={isDark} />
+                   <StatMini label="Carbon" value={`${specs.carbonOffset?.toFixed(1)}T`} icon={Leaf} color="text-solar-electric" isDark={isDark} />
+                   <StatMini label="Monthly" value={`Rs.${(specs.monthlySavings / 1000).toFixed(0)}k`} icon={Wallet} color={isDark ? "text-white" : "text-slate-900"} isDark={isDark} />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- SUB COMPONENTS ---
+
+function QuickStat({ icon: Icon, label, value, color }: any) {
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div className="flex items-center gap-2">
+        <Icon size={14} className={color} />
+        <span className="text-lg font-black tracking-tighter">{value}</span>
+      </div>
+      <span className="text-[8px] font-bold tracking-[0.2em] opacity-40 uppercase">{label}</span>
+    </div>
+  );
+}
+
+function StatMini({ label, value, icon: Icon, color, isDark }: any) {
+  return (
+    <div className="flex items-center gap-4 text-left">
+      <div className={cn("p-3 rounded-2xl", isDark ? "bg-white/5" : "bg-slate-100", color)}>
+        <Icon size={20} />
+      </div>
+      <div>
+        <p className={cn("text-[9px] font-black uppercase tracking-widest mb-0.5", isDark ? "text-white/30" : "text-slate-400")}>{label}</p>
+        <p className={cn("text-xl font-black tracking-tighter leading-none", color)}>{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function ApplianceConfigurator({ selectedAppliances, onToggle, isDark }: any) {
+  const APPS = [{ name: 'Fridge', icon: '❄️' }, { name: 'AC', icon: '💨' }, { name: 'EV Car', icon: '🚗' }, { name: 'LED Lights', icon: '💡' }];
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {APPS.map(cat => {
+        const isActive = selectedAppliances.some((a: any) => a.name === cat.name);
+        return (
+          <button key={cat.name} onClick={() => onToggle(cat.name)} className={cn(
+            "p-4 rounded-3xl border transition-all flex flex-col gap-2 relative",
+            isActive 
+              ? (isDark ? "bg-solar-emerald/10 border-solar-emerald/50" : "bg-solar-emerald/5 border-solar-emerald/30") 
+              : (isDark ? "bg-white/5 border-white/5" : "bg-slate-100 border-transparent")
+          )}>
+            <span className="text-xl">{cat.icon}</span>
+            <div className="text-left">
+               <p className={cn("text-[10px] font-black uppercase", isActive ? "text-solar-emerald" : (isDark ? "text-white" : "text-slate-700"))}>{cat.name}</p>
+               {isActive && <CheckCircle2 size={12} className="absolute top-3 right-3 text-solar-emerald" />}
+            </div>
+          </button>
+        );
+      })}
+    </div>
   );
 }
