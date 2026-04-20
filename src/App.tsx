@@ -7,6 +7,7 @@ import SolarHouse3D from './components/SolarHouse/SolarHouse3D';
 import { Appliance, APPLIANCES_LIST } from './types';
 import { UI_NAME_TO_ID } from './config/applianceConfigs';
 import { cn } from './lib/utils';
+import { calculateSystemSpecs } from './utils/solarMath';
 
 export default function App() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -15,24 +16,53 @@ export default function App() {
   const [billUnits, setBillUnits] = useState(0);
   const [userLocation, setUserLocation] = useState('Islamabad');
   const [billRandomOffsets, setBillRandomOffsets] = useState({ solar: 0, storage: 0, inverter: 0 });
+  const [specs, setSpecs] = useState<SolarSystemSpecs | null>(null);
 
   useEffect(() => {
     document.documentElement.classList.toggle('light', theme === 'light');
   }, [theme]);
+  // App.tsx logic update
+  const [isScanning, setIsScanning] = useState(false);
+  useEffect(() => {
+  if (interactionLevel !== 'initial') {
+    const newSpecs = calculateSystemSpecs(billUnits, selectedAppliances, billRandomOffsets);
+    setSpecs(newSpecs);
+  }
+}, [billUnits, selectedAppliances, interactionLevel]);
+  
+  const handleFileUpload = async (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
 
-  const handleFileUpload = (data: { monthlyUnits: number; name?: string; location?: string }) => {
-    setBillUnits(data.monthlyUnits);
-    setUserLocation(data.location || 'Islamabad');
-    setBillRandomOffsets({
-      solar: Math.random() * 1.6 + 0.4,
-      storage: Math.random() * 2.8 + 1.2,
-      inverter: Math.random() * 1.2 + 0.3,
+  try {
+    // Dynamically uses the server URL based on where it's hosted
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+    const response = await fetch(`${apiUrl}/upload-bill`, {
+      method: 'POST',
+      body: formData,
     });
-    setInteractionLevel('bill-uploaded');
-  };
-// 1. Calculate if the EV Car is selected
+    
+    const result = await response.json();
+    if (result.success) {
+       setBillUnits(result.data.units_consumed);
+       setInteractionLevel('bill-uploaded');
+    }
+  } catch (err) {
+    console.error("Upload failed");
+  }
+};
+
+
 const hasEVCar = selectedAppliances.some(a => a.id === 'tesla');
 const hasEVBike = selectedAppliances.some(a => a.id === 'bike');
+//
+
+
+
+
+
+
+//
 
 // 2. Update the SolarHouse3D component call in the return statement:
 <div className="w-full h-full">

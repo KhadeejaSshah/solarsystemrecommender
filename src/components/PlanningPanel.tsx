@@ -30,19 +30,32 @@ export default function PlanningPanel({
     { id: 'entertainment', name: 'Living & Tech', icon: Tv, items: ['LED TV', 'LED Lights'] },
     { id: 'ev', name: 'EV & Mobility', icon: Zap, items: ['EV Car', 'Electric Bike'] }
   ];
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const file = e.target.files?.[0];
+  if (!file) return;
 
-    const fileExt = file.name.split('.').pop()?.toLowerCase();
-    if (fileExt === 'png' || fileExt === 'pdf') {
-      onFileUpload({ monthlyUnits: 1200, name: 'Khadeeja', location: 'Islamabad' });
-    } else {
-      alert("Invalid format. Please upload only .png or .pdf files.");
-      e.target.value = ''; // Reset input
-    }
-  };
+  const validTypes = ['image/png', 'application/pdf'];
+  if (!validTypes.includes(file.type)) {
+    alert("Upload only .png or .pdf");
+    e.target.value = "";
+    return;
+  }
+  
+  // Pass the actual file object to the App.tsx handler
+  onFileUpload(file); 
+};
+  // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (!file) return;
+
+  //   const fileExt = file.name.split('.').pop()?.toLowerCase();
+  //   if (fileExt === 'png' || fileExt === 'pdf') {
+  //     onFileUpload({ monthlyUnits: 1200, name: 'Khadeeja', location: 'Islamabad' });
+  //   } else {
+  //     alert("Invalid format. Please upload only .png or .pdf files.");
+  //     e.target.value = ''; // Reset input
+  //   }
+  // };
 
   const isSelected = (name: string) => appliances.some((a: any) => a.name === name);
 

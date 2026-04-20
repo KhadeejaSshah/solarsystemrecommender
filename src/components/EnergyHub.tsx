@@ -39,22 +39,19 @@ const PACKAGES = {
     bg: 'bg-purple-400/10'
   }
 };
-
-export default function EnergyHub({ interactionLevel, billUnits, appliances, billRandomOffsets }: any) {
-  const [showDetails, setShowDetails] = useState(false);
+export default function EnergyHub({ specs, interactionLevel }: any) {
   const isFormed = interactionLevel !== 'initial';
-  const isActive = interactionLevel === 'appliances-selected';
+  
+  // Use the specs passed from the parent
+  const { solarKw, storageKwh, inverterKw, packageId } = specs || {
+    solarKw: 0, storageKwh: 0, inverterKw: 0, packageId: 'lite'
+  };
 
-  // Calculations
-  const applianceLoadKw = appliances.reduce((sum: number, app: any) => sum + (app.wattage || 500) / 1000, 0);
-  const solarKw = Math.max(0, (billUnits / 100) + billRandomOffsets.solar + (isActive ? applianceLoadKw * 0.45 : 0));
-  const storageKwh = solarKw * 2.2;
-  const inverterKw = solarKw * 0.85;
-
-  // Package Determination Logic
-  let currentPkg = PACKAGES.lite;
-  if (inverterKw >= 60) currentPkg = PACKAGES.max;
-  else if (inverterKw >= 30) currentPkg = PACKAGES.plus;
+  const currentPkg = PACKAGES[packageId];
+// export default function EnergyHub({ interactionLevel, billUnits, appliances, billRandomOffsets }: any) {
+  const [showDetails, setShowDetails] = useState(false);
+//   const isFormed = interactionLevel !== 'initial';
+//   const isActive = interactionLevel === 'appliances-selected';
 
   return (
     <div className="p-6 flex flex-col gap-6 h-full relative">
