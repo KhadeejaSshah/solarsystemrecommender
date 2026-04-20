@@ -69,10 +69,10 @@ const hasEVBike = selectedAppliances.some(a => a.id === 'bike');
     <div className="h-screen w-full bg-[var(--surface)] text-[var(--fg)] overflow-hidden font-sans transition-colors duration-500">
       <header className="h-20 px-8 flex justify-between items-center z-50 relative border-b border-[var(--border)] backdrop-blur-md">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 bg-solar-emerald rounded-xl flex items-center justify-center shadow-lg shadow-solar-emerald/20">
-            <Zap className="w-6 h-6 text-black" />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-solar-emerald/20 overflow-hidden bg-[var(--card)]">
+            <img src="/logo.png" alt="SKYELECTIC logo" className="w-full h-full object-contain" />
           </div>
-          <span className="text-xl font-black tracking-tighter uppercase italic">SkyElectric</span>
+          <span className="text-xl font-black tracking-tighter uppercase italic">SKYELECTIC</span>
         </div>
 
         <button 
