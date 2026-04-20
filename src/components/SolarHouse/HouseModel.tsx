@@ -68,7 +68,7 @@ export const ModernHouseModel = ({ solarPanels = 10, isDark = false }: { solarPa
     <group>
       {/* Foundation / Multi-level concrete base */}
       <mesh position={[0, -0.2, 0]} material={materials.darkConcrete} receiveShadow>
-        <boxGeometry args={[14, 0.4, 8]} />
+        <boxGeometry args={[15, 0.4, 8]} />
       </mesh>
 
       {/* Main Ground Floor Volume */}

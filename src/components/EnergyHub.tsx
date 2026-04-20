@@ -1,183 +1,222 @@
-import React from 'react';
-import { motion } from 'motion/react';
-import { TrendingUp, Sun, Battery, Zap, Download, Info } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sun, Battery, Zap, Info, Download, ChevronRight, X, Layout, Users, ShieldCheck, Cpu } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { Appliance } from '../types';
 
-interface EnergyHubProps {
-  interactionLevel: 'initial' | 'bill-uploaded' | 'appliances-selected';
-  billUnits: number;
-  selectedPlan: string;
-  appliances: Appliance[];
-  billRandomOffsets: {
-    solar: number;
-    storage: number;
-    inverter: number;
-  };
-}
-
-const PLAN_DETAILS: Record<string, { name: string, hardware: string, system: string }> = {
+// Package Data Dictionary
+const PACKAGES = {
   lite: {
+    id: 'lite',
     name: 'Smart Lite',
-    hardware: '5kW Hybrid System | 5kWh Storage',
-    system: 'Economy Optimized for Essential Loads'
+    sub: 'Compact home, shared walls',
+    target: 'Up to 10 Marla / 250 yards / Portions',
+    capacity: '5–10 kW · 10 kWh Smart Battery',
+    support: 'Mobile App + Cloud Monitoring',
+    loads: ['Basic lights & fans', 'Fridge & LED TV', '1–2 Inverter ACs'],
+    color: 'text-blue-400',
+    bg: 'bg-blue-400/10'
   },
   plus: {
+    id: 'plus',
     name: 'Smart Plus',
-    hardware: '10kW Hybrid System | 10kWh Storage',
-    system: 'Balanced Capacity for Modern Home'
+    sub: 'Full home backup for 1–2 Kanal',
+    target: '1–2 Kanal / 500 yards Houses',
+    capacity: '15–30 kW · 20–40 kWh Smart Battery',
+    support: 'Mobile App + Cloud Monitoring',
+    loads: ['Full home backup', '4–6 ACs + Water Pump', 'Built-in EV Charger'],
+    color: 'text-solar-emerald',
+    bg: 'bg-solar-emerald/10'
   },
   max: {
+    id: 'max',
     name: 'Estate Max',
-    hardware: '15kW+ Industrial System | 20kWh Storage',
-    system: 'Full Energy Independence & Resilience'
+    sub: 'Large estates, high-capacity loads',
+    target: 'Farmhouses / Large Estates / 1000 yards+',
+    capacity: '50 kW+ · High-Capacity Lithium Bank',
+    support: '24/7 Dedicated NOC Support',
+    loads: ['Centralized cooling & pools', 'Lifts & heavy equipment', 'Multiple EV Chargers'],
+    color: 'text-purple-400',
+    bg: 'bg-purple-400/10'
   }
 };
 
-export default function EnergyHub({
-  interactionLevel,
-  billUnits,
-  selectedPlan = 'plus',
-  appliances,
-  billRandomOffsets,
-}: EnergyHubProps) {
+export default function EnergyHub({ interactionLevel, billUnits, appliances, billRandomOffsets }: any) {
+  const [showDetails, setShowDetails] = useState(false);
   const isFormed = interactionLevel !== 'initial';
   const isActive = interactionLevel === 'appliances-selected';
 
-  const applianceLoadKw = appliances.reduce((sum, appliance) => {
-    return sum + ((appliance.wattage || 0) * (appliance.quantity || 1)) / 1000;
-  }, 0);
+  // Calculations
+  const applianceLoadKw = appliances.reduce((sum: number, app: any) => sum + (app.wattage || 500) / 1000, 0);
+  const solarKw = Math.max(0, (billUnits / 100) + billRandomOffsets.solar + (isActive ? applianceLoadKw * 0.45 : 0));
+  const storageKwh = solarKw * 2.2;
+  const inverterKw = solarKw * 0.85;
 
-  const demandLift = isActive ? applianceLoadKw : 0;
-  const baseSolar = billUnits > 0 ? billUnits / 100 : 0;
-  const solarKw = Math.max(0, baseSolar + billRandomOffsets.solar + demandLift * 0.45);
-  const storageKwh = Math.max(0, (solarKw * 2) + billRandomOffsets.storage + demandLift * 1.1);
-  const inverterKw = Math.max(0, solarKw + billRandomOffsets.inverter + demandLift * 0.3);
-
-  const systemSize = solarKw.toFixed(1);
-  const currentPlan = PLAN_DETAILS[selectedPlan] || PLAN_DETAILS.plus;
+  // Package Determination Logic
+  let currentPkg = PACKAGES.lite;
+  if (inverterKw >= 60) currentPkg = PACKAGES.max;
+  else if (inverterKw >= 30) currentPkg = PACKAGES.plus;
 
   return (
-    <div className="h-full min-h-0 flex flex-col p-6 gap-6 overflow-y-auto overscroll-contain custom-scrollbar border-l border-[var(--border)] bg-[var(--surface)] backdrop-blur-3xl">
-      <div className="flex justify-between items-center mb-2">
-        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-solar-electric">Solar Energy Hub</h3>
-        <div className="px-2 py-0.5 rounded bg-[var(--card)] border border-[var(--border)] text-[8px] font-black opacity-40">STABLE</div>
+    <div className="p-6 flex flex-col gap-6 h-full relative">
+      <div className="flex justify-between items-center">
+        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">Intelligence Node</h3>
+        {isFormed && (
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-solar-emerald/10 border border-solar-emerald/20">
+              <div className="w-1.5 h-1.5 rounded-full bg-solar-emerald animate-pulse" />
+              <span className="text-[8px] font-black text-solar-emerald uppercase tracking-widest">Active</span>
+          </div>
+        )}
       </div>
 
-      {/* Selected System Configuration */}
-      <div className={cn("p-5 rounded-3xl border border-solar-electric/20 bg-solar-electric/5 transition-all duration-700", !isFormed && "opacity-20")}>
-        <div className="flex justify-between items-start mb-3">
-           <div>
-             <h4 className="text-sm font-black text-solar-electric">{currentPlan.name}</h4>
-             <p className="text-[10px] text-[var(--muted)] font-bold">{currentPlan.system}</p>
-           </div>
-           <div className="px-2 py-1 bg-solar-electric text-black text-[9px] font-black rounded-lg">SELECTED</div>
-        </div>
-        <div className="flex items-center gap-3">
-           <Zap className="w-4 h-4 text-solar-electric" />
-           <span className="text-[11px] font-black text-[var(--fg)]">{currentPlan.hardware}</span>
+      {/* Recommended Package Section */}
+      <div className={cn(
+        "p-6 rounded-[2rem] border transition-all duration-700 relative overflow-hidden", 
+        isFormed ? "bg-[var(--card)] border-white/10 shadow-2xl" : "bg-[var(--card)] border-[var(--border)] opacity-20"
+      )}>
+        <div className="relative z-10">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h4 className={cn("text-xl font-black italic tracking-tighter", isFormed ? currentPkg.color : "text-[var(--fg)]")}>
+                  {isFormed ? currentPkg.name : "Analyzing..."}
+                </h4>
+                <p className="text-[10px] font-bold opacity-50 uppercase tracking-widest">{isFormed ? currentPkg.sub : "Requirement Pending"}</p>
+              </div>
+              {isFormed && (
+                <button 
+                  onClick={() => setShowDetails(true)}
+                  className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all group"
+                >
+                  <ChevronRight className="w-4 h-4 text-white group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              )}
+            </div>
+
+            <div className="p-4 bg-[var(--surface)] rounded-2xl border border-[var(--border)] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Zap className={cn("w-4 h-4", isFormed ? currentPkg.color : "text-white/20")} />
+                <span className="text-[10px] font-bold opacity-80 italic">Tier Classification</span>
+              </div>
+              <button onClick={() => setShowDetails(true)} className="text-[9px] font-black uppercase text-solar-emerald underline underline-offset-4">Details</button>
+            </div>
         </div>
       </div>
 
-      {/* Real-time System Specs */}
-      <div className={cn("space-y-4 transition-all duration-700", !isFormed && "opacity-20")}>
+      {/* Real-time Metrics */}
+      <div className="space-y-3">
         {[
-          { icon: Sun, label: "Solar Array", value: `${systemSize} kW`, sub: "Mono-PERC 550W Panels", active: isActive },
-          { icon: Battery, label: "Storage System", value: `${storageKwh.toFixed(1)} kWh`, sub: "LiFePO4 Active Cooling", active: isActive },
-          { icon: Zap, label: "Inverter Matrix", value: `${inverterKw.toFixed(1)} kW`, sub: "Hybrid Pure Sine Wave", active: isActive }
+          { icon: Sun, label: "Solar Array", val: solarKw, unit: "kW" },
+          { icon: Battery, label: "Storage System", val: storageKwh, unit: "kWh" },
+          { icon: Zap, label: "Inverter Matrix", val: inverterKw, unit: "kW" }
         ].map((spec, i) => (
           <motion.div
             key={spec.label}
-            initial={{ x: 20, opacity: 0 }}
-            animate={{ 
-              x: isFormed ? 0 : 20, 
-              opacity: isFormed ? 1 : 0.2 
-            }}
-            transition={{ delay: i * 0.1, duration: 0.5 }}
+            animate={{ opacity: isFormed ? 1 : 0.2, x: isFormed ? 0 : 20 }}
+            transition={{ delay: i * 0.1 }}
+            className="p-5 rounded-2xl bg-[var(--card)] border border-[var(--border)] flex items-center justify-between group hover:border-white/20 transition-all"
           >
-            <SpecCard {...spec} />
+            <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-[var(--surface)] flex items-center justify-center border border-[var(--border)]">
+                    <spec.icon className="w-5 h-5 text-solar-emerald" />
+                </div>
+                <div>
+                    <p className="text-[9px] font-black opacity-40 uppercase tracking-widest">{spec.label}</p>
+                    <p className="text-xl font-black">{isFormed ? spec.val.toFixed(1) : "0.0"} <span className="text-xs opacity-30 tracking-normal font-bold">{spec.unit}</span></p>
+                </div>
+            </div>
           </motion.div>
         ))}
       </div>
 
-
-      {/* Volatility & Insights */}
-      <div className={cn("space-y-6 mt-4 transition-all duration-[1000ms]", !isFormed && "opacity-20")}>
-        <section>
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-[10px] font-bold opacity-40 uppercase tracking-widest">Economic Risk</span>
-            <span className="text-[10px] font-black text-solar-emerald">Shield Active</span>
-          </div>
-          <div className="p-4 premium-glass rounded-2xl relative overflow-hidden group">
-             <div className="flex items-center gap-3 mb-2 underline-offset-4 decoration-solar-emerald/30">
-               <TrendingUp className="w-4 h-4 text-solar-emerald group-hover:scale-110 transition-transform" />
-               <span className="text-[13px] font-black text-[var(--fg)]">Inflation Mastery</span>
-             </div>
-             <div className="text-[9px] text-[var(--muted)] leading-tight mb-3 italic">
-               Decouple your energy costs from the grid's 14% annual inflation rate.
-             </div>
-             <div className="w-full h-1 bg-[var(--card)] rounded-full overflow-hidden">
-               <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: isFormed ? '92%' : 0 }}
-                className="h-full bg-solar-emerald shadow-[0_0_10px_#10B981]"
-               />
-             </div>
-          </div>
-        </section>
-
-        <section>
-          <div className="flex items-center gap-2 mb-2 opacity-40">
-            <Info className="w-3 h-3" />
-            <span className="text-[10px] font-bold uppercase tracking-widest">Meteorological Data</span>
-          </div>
-          <div className="p-4 premium-glass rounded-2xl border-solar-emerald/10 bg-solar-emerald/5">
-            <p className="text-[11px] font-bold text-solar-emerald mb-1"></p>
-            <p className="text-[9px] text-[var(--muted)] leading-relaxed">Islamabad Region
-              Verified 5.2 kWh/m² daily irradiance. 1825 annual sun hours. 
-              <span className="text-solar-electric font-bold ml-1">Optimal Tilt: 28° South.</span>
+      {/* Site Intelligence */}
+      <AnimatePresence>
+        {isFormed && (
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }}
+            className="p-6 rounded-3xl bg-[var(--card)] border border-[var(--border)] space-y-4"
+          >
+            <div className="flex items-center gap-2">
+                <Info className="w-4 h-4 text-solar-electric" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-solar-electric">Site Intelligence</span>
+            </div>
+            <p className="text-[11px] font-medium opacity-70 leading-relaxed italic">
+                Optimal Tilt: <span className="text-[var(--fg)] font-black">28° South</span> for Islamabad Region. Peak irradiance verified at <span className="text-[var(--fg)] font-black">5.2 kWh/m²</span>.
             </p>
-          </div>
-        </section>
-      </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Final Action */}
-      <div className="mt-auto pt-6">
-        <button 
-          disabled={!isFormed}
-          className="btn-proposal w-full flex items-center justify-center gap-3 group px-4 h-14"
-        >
-          <Download className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
-          <span className="tracking-widest">Generate Proposal</span>
-        </button>
-      </div>
+      <button disabled={!isFormed} className="w-full h-16 mt-auto rounded-[2rem] bg-solar-emerald text-black font-black uppercase tracking-widest text-[11px] disabled:opacity-20 flex items-center justify-center gap-3 shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]">
+        <Download className="w-5 h-5" /> Generate Proposal
+      </button>
+
+      {/* Package Detail Modal Overlay */}
+      <AnimatePresence>
+        {showDetails && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+              className="bg-[var(--card)] border border-white/10 w-full max-w-lg rounded-[3rem] overflow-hidden relative shadow-[0_0_50px_rgba(0,0,0,0.5)]"
+            >
+              <button 
+                onClick={() => setShowDetails(false)}
+                className="absolute top-6 right-6 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white z-20"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className={cn("h-32 w-full absolute top-0 left-0 opacity-20 blur-3xl", currentPkg.bg)} />
+
+              <div className="p-10 relative z-10">
+                <div className="mb-8">
+                  <h2 className={cn("text-4xl font-black italic tracking-tighter mb-2", currentPkg.color)}>{currentPkg.name}</h2>
+                  <p className="text-sm font-bold opacity-60">{currentPkg.sub}</p>
+                </div>
+
+                <div className="grid gap-6">
+                  <DetailItem icon={Layout} label="Target Property" val={currentPkg.target} />
+                  <DetailItem icon={Cpu} label="System Capacity" val={currentPkg.capacity} />
+                  <DetailItem icon={ShieldCheck} label="Support Level" val={currentPkg.support} />
+                  
+                  <div className="pt-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-3">Load Coverage</p>
+                    <div className="flex flex-wrap gap-2">
+                      {currentPkg.loads.map(load => (
+                        <span key={load} className="px-3 py-1.5 rounded-full bg-white/5 border border-white/5 text-[10px] font-bold text-white/80">
+                          {load}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => setShowDetails(false)}
+                  className="w-full mt-10 h-14 rounded-2xl bg-white text-black font-black uppercase tracking-[0.2em] text-[10px]"
+                >
+                  Close Specification
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function SpecCard({ icon: Icon, label, value, sub, active }: any) {
+function DetailItem({ icon: Icon, label, val }: any) {
   return (
-    <div className={cn(
-      "p-4 premium-glass rounded-2xl border-[var(--border)] flex items-center gap-4 transition-all group",
-      active ? "border-solar-emerald/30 shadow-[0_0_30px_rgba(16,185,129,0.08)]" : "hover:border-solar-electric/30"
-    )}>
-      <div className="w-10 h-10 rounded-xl bg-solar-electric/10 flex items-center justify-center group-hover:bg-solar-electric/20 transition-all relative text-[var(--fg)]">
-        <Icon className="w-5 h-5 text-solar-electric" />
-        {active && (
-          <motion.div 
-            animate={{ scale: [1, 1.4, 1], opacity: [0.6, 0, 0.6] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute inset-0 rounded-xl bg-solar-emerald/30"
-          />
-        )}
+    <div className="flex gap-4 items-start">
+      <div className="p-2.5 rounded-xl bg-white/5 border border-white/5">
+        <Icon className="w-4 h-4 text-solar-emerald" />
       </div>
-      <div className="flex-1">
-        <div className="flex justify-between items-start">
-          <div className="text-[9px] font-black uppercase text-[var(--muted)] tracking-widest mb-0.5">{label}</div>
-          {active && <div className="text-[8px] font-black text-solar-emerald bg-solar-emerald/10 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">Live</div>}
-        </div>
-        <div className="text-[15px] font-display font-black leading-none mb-1 text-[var(--fg)]">{value}</div>
-        <div className="text-[9px] text-[var(--muted)] font-medium tracking-tight font-sans opacity-80">{sub}</div>
+      <div>
+        <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-30 mb-0.5">{label}</p>
+        <p className="text-sm font-bold text-white/90">{val}</p>
       </div>
     </div>
   );
