@@ -31,21 +31,21 @@ export default function PlanningPanel({ interactionLevel, onFileUpload, applianc
       {/* Personalized Greeting */}
       <AnimatePresence>
         {interactionLevel !== 'initial' && (
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="p-5 rounded-[2rem] bg-solar-emerald/10 border border-solar-emerald/20">
-            <h3 className="text-lg font-black text-solar-emerald mb-1 italic">Welcome, {userData.name}!</h3>
-            <p className="text-[10px] font-bold opacity-60">Here is your personalized smart energy design for your property in <span className="text-green">{userData.city}</span>.</p>
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="p-6 rounded-[2rem] bg-slate-50 border border-slate-100 shadow-sm">
+            <h3 className="text-lg font-black text-slate-900 mb-1">Welcome, {userData.name}!</h3>
+            <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest leading-loose">Personalized smart energy design for <span className="text-solar-gold font-black">{userData.city}</span>.</p>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Step 1: File Upload */}
       <section className="space-y-4">
-        <div className="text-[10px] font-black uppercase tracking-widest opacity-40 italic">01. Digital Onboarding</div>
-        <div className={cn("p-8 rounded-[2.5rem] border-2 border-dashed transition-all relative group", isScanning ? "animate-pulse border-solar-electric bg-solar-electric/5" : "border-solar-emerald/40 bg-solar-emerald/5")}>
+        <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">01. Digital Onboarding</div>
+        <div className={cn("p-8 rounded-[2.5rem] border-2 border-dashed transition-all relative group", isScanning ? "animate-pulse border-solar-gold bg-solar-gold/5" : "border-slate-200 bg-slate-50 shadow-inner")}>
           <input type="file" accept=".png,.pdf" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={(e) => onFileUpload(e.target.files![0])} />
           <div className="flex flex-col items-center gap-3 text-center">
-            {isScanning ? <Zap className="w-8 h-8 text-solar-electric animate-spin" /> : <FileText className="w-8 h-8 text-solar-emerald" />}
-            <p className="text-sm font-black italic">{isScanning ? "AI is Scanning..." : "Upload Utility Bill"}</p>
+            {isScanning ? <Zap className="w-8 h-8 text-solar-gold animate-spin" /> : <FileText className="w-8 h-8 text-slate-400 group-hover:text-solar-gold transition-colors" />}
+            <p className="text-sm font-black text-slate-900">{isScanning ? "AI is Scanning..." : "Upload Utility Bill"}</p>
           </div>
         </div>
       </section>
@@ -148,8 +148,8 @@ export default function PlanningPanel({ interactionLevel, onFileUpload, applianc
             className={cn(
               "w-6 h-6 transition-all",
               openSection === cat.id
-                ? "text-solar-emerald"
-                : "opacity-40"
+                ? "text-solar-gold"
+                : "opacity-30"
             )}
           />
 
@@ -181,8 +181,8 @@ export default function PlanningPanel({ interactionLevel, onFileUpload, applianc
                     className={cn(
                       "flex items-center justify-between p-3 rounded-2xl border transition-all text-left",
                       active
-                        ? "bg-solar-emerald/10 border-solar-emerald/30 text-solar-emerald"
-                        : "bg-[var(--surface)] border-[var(--border)] opacity-60"
+                        ? "bg-solar-gold/10 border-solar-gold/30 text-slate-900"
+                        : "bg-white border-slate-100 opacity-60"
                     )}
                   >
                     <span className="text-[10px] font-black">
@@ -193,8 +193,8 @@ export default function PlanningPanel({ interactionLevel, onFileUpload, applianc
                       className={cn(
                         "w-3 h-3 rounded-full border-2",
                         active
-                          ? "bg-solar-emerald border-solar-emerald"
-                          : "border-white/10"
+                          ? "bg-solar-gold border-solar-gold shadow-[0_0_10px_rgba(251,191,36,0.6)]"
+                          : "border-slate-200"
                       )}
                     />
                   </button>
@@ -216,22 +216,21 @@ export default function PlanningPanel({ interactionLevel, onFileUpload, applianc
   </div>
 </section>
 
-      {/* Investment Recovery - Hidden until upload */}
       <AnimatePresence>
         {interactionLevel !== 'initial' && (
           <motion.div 
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="mt-auto p-6 rounded-[2.5rem] bg-gradient-to-br from-solar-emerald/20 to-transparent border border-solar-emerald/20"
+            className="mt-6 p-6 rounded-[2.5rem] bg-slate-900 text-white shadow-2xl"
           >
             <div className="flex gap-4">
-               <div className="p-3 rounded-2xl bg-solar-emerald text-black h-fit">
+               <div className="p-3 rounded-2xl bg-solar-gold text-slate-900 h-fit">
                  <MapPin className="w-4 h-4" />
                </div>
                <div>
-                 <p className="text-[11px] font-black uppercase text-[var(--fg)] mb-1 tracking-tighter">Investment Recovery</p>
+                 <p className="text-[11px] font-black uppercase text-white/40 mb-1 tracking-widest">Investment Recovery</p>
                  <p className="text-[10px] opacity-70 leading-relaxed font-medium">
-                   System payback estimated in <span className="text-solar-emerald font-black">2.4 years</span>. ROI outpaces standard local bank deposits by 300%.
+                   System payback estimated in <span className="text-solar-gold font-black">2.4 years</span>. ROI outpaces standard bank deposits by 300%.
                  </p>
                </div>
             </div>
