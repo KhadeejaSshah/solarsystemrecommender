@@ -253,6 +253,8 @@ export default function App() {
               <ImpactBox isDark={isDark} label="Investment Recovery" value={`Rs ${(specs.monthlySavings / 1000).toFixed(1)}k`} sub="Monthly ROI" icon={Wallet} color="text-emerald-500" />
               <ImpactBox isDark={isDark} label="Inflation Mastery" value={`${specs.gridImpact || 98}%`} sub="Cost Hedged" icon={TrendingUp} color="text-blue-500" />
 
+
+
                {/* TIER BADGE (Clickable) */}
                <div
                  onClick={() => setShowTierDetails(true)}
