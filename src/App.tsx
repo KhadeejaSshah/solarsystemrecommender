@@ -119,14 +119,11 @@ export default function App() {
           ))}
         </div> */}
         <div className="absolute inset-0 flex items-center justify-center p-20 pointer-events-none">
-          <img
-            src="/houseeee.png"
-            alt="Solar House"
-            className="h-[80%] w-auto object-contain 
-               drop-shadow-[0_35px_35px_rgba(15,23,42,0.4)]
-               transition-transform duration-1000
-               translate-x-[150px] translate-y-[-30px]"
-          /></div>
+            <img
+              src="/h23.png"
+              alt="Solar House" className="absolute w-full h-full object-cover"
+            />
+          </div>
       </div>
 
 
@@ -237,7 +234,7 @@ export default function App() {
             className="absolute bottom-10 left-[420px] right-10 z-50 space-y-4"
           >
             {/* REACTIVE LOAD PLOT */}
-            <div className={cn("w-[46%] h-32 ml-6 rounded-[2rem] border backdrop-blur-2xl p-6 flex flex-col justify-center relative", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}>
+            <div className={cn("w-[46.5%] h-32 ml-6 rounded-[2rem] border backdrop-blur-2xl p-6 flex flex-col justify-center relative", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}>
               <div className="absolute top-6 left-6 text-[10px] font-black uppercase tracking-widest opacity-40 flex items-center gap-2">
                 <Activity size={12} className="text-orange-500" /> Dynamic Load Projection
               </div>
@@ -253,28 +250,28 @@ export default function App() {
 
             {/* IMPACT BOXES */}
             <div className="flex gap-4 ml-6 ">
-              <ImpactBox label="Investment Recovery" value={`Rs ${(specs.monthlySavings / 1000).toFixed(1)}k`} sub="Monthly ROI" icon={Wallet} color="text-emerald-500" />
-              <ImpactBox label="Inflation Mastery" value={`${specs.gridImpact || 98}%`} sub="Cost Hedged" icon={TrendingUp} color="text-blue-500" />
+              <ImpactBox isDark={isDark} label="Investment Recovery" value={`Rs ${(specs.monthlySavings / 1000).toFixed(1)}k`} sub="Monthly ROI" icon={Wallet} color="text-emerald-500" />
+              <ImpactBox isDark={isDark} label="Inflation Mastery" value={`${specs.gridImpact || 98}%`} sub="Cost Hedged" icon={TrendingUp} color="text-blue-500" />
 
-              {/* TIER BADGE (Clickable) */}
-              <div
-                onClick={() => setShowTierDetails(true)}
-                className={cn("flex-[1.2] p-6 rounded-[2rem] border cursor-pointer hover:scale-[1.02] transition-transform shadow-lg", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}
-              >
-                <p className="text-[8px] font-black uppercase tracking-widest mb-1">System Metadata</p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-[11px] font-black uppercase flex items-center opacity-80 gap-1"><Layers size={10} /> {specs.packageId || "Lite"}</p>
-                    <p className="text-[8px] opacity-40 font-bold uppercase">Package Tier</p>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-black uppercase opacity-80">3.2 Years</p>
-                    <p className="text-[8px] opacity-40 font-bold uppercase">ROI Est.</p>
-                  </div>
-                </div>
-              </div>
+               {/* TIER BADGE (Clickable) */}
+               <div
+                 onClick={() => setShowTierDetails(true)}
+                 className={cn("flex-[1.2] p-6 rounded-[2rem] border cursor-pointer hover:scale-[1.02] transition-transform shadow-lg", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}
+               >
+                 <p className="text-[8px] font-black uppercase tracking-widest mb-1">System Metadata</p>
+                 <div className="grid grid-cols-2 gap-4">
+                   <div>
+                     <p className="text-[11px] font-black uppercase flex items-center opacity-80 gap-1"><Layers size={10} /> {specs.packageId || "Lite"}</p>
+                     <p className="text-[8px] opacity-40 font-bold uppercase">Package Tier</p>
+                   </div>
+                   <div>
+                     <p className="text-[11px] font-black uppercase opacity-80">3.2 Years</p>
+                     <p className="text-[8px] opacity-40 font-bold uppercase">ROI Est.</p>
+                   </div>
+                 </div>
+               </div>
 
-              <ImpactBox label="Carbon Offset" value={`${specs.carbonOffset.toFixed(1)} KG`} sub="Impact" icon={TreeDeciduous} color="text-emerald-400" />
+              <ImpactBox isDark={isDark} label="Carbon Offset" value={`${specs.carbonOffset.toFixed(1)} KG`} sub="Impact" icon={TreeDeciduous} color="text-emerald-400" />
             </div>
           </motion.div>
         )}
@@ -316,9 +313,12 @@ function ComponentRow({ icon: Icon, label, value }: any) {
   );
 }
 
-function ImpactBox({ label, value, sub, icon: Icon, color }: any) {
+function ImpactBox({ label, value, sub, icon: Icon, color, isDark }: any) {
   return (
-    <div className="flex-1 p-6 rounded-[2rem] bg-white/5 backdrop-blur-3xl border border-white/10 shadow-xl flex flex-col justify-between">
+    <div className={cn(
+      "flex-1 p-6 rounded-[2rem] backdrop-blur-3xl border shadow-xl flex flex-col justify-between",
+      isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60"
+    )}>
       <div className="flex justify-between items-start"><p className="text-[8px] font-black uppercase tracking-widest opacity-40">{label}</p><Icon size={14} className={color} /></div>
       <div><h4 className={cn("text-2xl font-black tracking-tighter", color)}>{value}</h4><p className="text-[9px] font-bold opacity-40 uppercase mt-1">{sub}</p></div>
     </div>
