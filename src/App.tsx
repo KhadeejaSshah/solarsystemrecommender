@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sun, Moon, Zap, Leaf, Wallet, Clock, Plus, Minus,
-  Wind, CloudSnow, Flower2, ThermometerSun, 
-  Download, Bell, Home, Calendar, ShieldCheck, 
+  Wind, CloudSnow, Flower2, ThermometerSun,
+  Download, Bell, Home, Calendar, ShieldCheck,
   CloudSun, Gauge, Info, TreeDeciduous, TrendingUp,
   Activity, Cpu, BatteryMedium, Layers, X
 } from 'lucide-react';
@@ -90,10 +90,10 @@ export default function App() {
   const toggleAppliance = (name: string) => {
     const techId = UI_NAME_TO_ID[name] || name.toLowerCase().replace(/\s+/g, '-');
     const exists = selectedAppliances.find(a => a.id === techId);
-    const newSelection = exists 
-        ? selectedAppliances.filter(a => a.id !== techId) 
-        : [...selectedAppliances, { id: techId, name, wattage: 500, quantity: 1, icon: 'zap' }];
-    
+    const newSelection = exists
+      ? selectedAppliances.filter(a => a.id !== techId)
+      : [...selectedAppliances, { id: techId, name, wattage: 500, quantity: 1, icon: 'zap' }];
+
     setSelectedAppliances(newSelection);
     fetchSystemSpecs(billUnits, newSelection);
   };
@@ -102,10 +102,10 @@ export default function App() {
 
   return (
     <div className={cn("h-screen w-full overflow-hidden transition-all duration-1000 font-sans", isDark ? "bg-slate-950 text-white" : "bg-white text-slate-900")}>
-      
+
       {/* 1. BACKGROUND / WEATHER LAYER */}
       <div className={cn("absolute inset-0 z-0 transition-all duration-[3000ms] bg-gradient-to-br", isDark ? currentSeason.darkColor : currentSeason.color)}>
-        <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+        {/* <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
           {[...Array(25)].map((_, i) => (
             <motion.div
               key={`${seasonIdx}-${i}`}
@@ -117,36 +117,36 @@ export default function App() {
               {currentSeason.particle}
             </motion.div>
           ))}
-        </div>
+        </div> */}
         <div className="absolute inset-0 flex items-center justify-center p-20 pointer-events-none">
-  <img
-    src="/houseeee.png"
-    alt="Solar House"
-    className="h-[80%] w-auto object-contain 
+          <img
+            src="/houseeee.png"
+            alt="Solar House"
+            className="h-[80%] w-auto object-contain 
                drop-shadow-[0_35px_35px_rgba(15,23,42,0.4)]
                transition-transform duration-1000
                translate-x-[150px] translate-y-[-30px]"
-  /></div>
+          /></div>
       </div>
 
 
       {/* 2. LOGO & STATUS (CENTERED-LEFT) */}
-      <div className="absolute top-10 left-[440px] z-50 flex items-center gap-8">
-        <img src="/logofull.png" className={cn("h-10 transition-all", isDark && "brightness-0 invert")} alt="Logo" />
-        <div className="px-5 py-2 rounded-full bg-white/10 backdrop-blur-xl border border-white/10 text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
+      <div className={cn("absolute p-2 top-10 left-[480px] z-50 flex items-center gap-8 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/10 shadow-lg", isDark ? "bg-white/40 border-black/10" : "bg-black/60 border-white/80")}>
+        <img src="/logofull.png" className={cn("h-10 transition-all")} alt="Logo" />
+        <div className={cn("px-5 py-2 rounded-full bg-white/10 backdrop-blur-xl border border-white/10 text-[10px] font-black uppercase tracking-widest flex items-center gap-3", isDark ? "bg-black/80 border-white/10" : "bg-white/60 border-black/80")}>
           <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-          <span className="opacity-70">Optimization Active</span>
+          <span className="opacity-100">Optimization Active</span>
         </div>
-        <button 
-          onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
-          className="p-3 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/10 shadow-lg"
-        >
-          {isDark ? <Sun size={18} className="text-orange-400" /> : <Moon size={18} />}
-        </button>
-      </div>
 
+      </div>
+      <button
+        onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+        className="p-3 absolute top-10 right-10 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/10 shadow-lg"
+      >
+        {isDark ? <Sun size={18} className="text-orange-400" /> : <Moon size={18} />}
+      </button>
       {/* 3. LEFT PANEL: LOAD PROFILING */}
-      <motion.aside 
+      <motion.aside
         className={cn(
           "absolute left-10 top-14 bottom-10 w-[380px] z-50 rounded-[2.5rem] border backdrop-blur-[40px] shadow-2xl flex flex-col transition-all duration-500 overflow-hidden",
           isDark ? "bg-black/40 border-white/10" : "bg-white/60 border-white/80"
@@ -158,46 +158,46 @@ export default function App() {
               {interactionLevel === 'initial' ? "System Design" : `Hello, ${userData.name.split(' ')[0]}`}
             </h2>
             <p className="text-[10px] font-black opacity-40 uppercase tracking-widest flex items-center gap-2">
-               <Home size={10} /> {userData.city || "Upload Bill to Start"}
+              <Home size={10} /> {userData.city || "Upload Bill to Start"}
             </p>
           </div>
 
           {interactionLevel === 'initial' ? (
             <div className="pt-4 space-y-4">
-               <div className="p-8 border-2 border-dashed border-current/10 rounded-[2rem] text-center space-y-4 hover:border-orange-500/50 transition-all cursor-pointer relative group">
-                 <input type="file" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-                 <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform">
-                    <Download className="text-white" size={20} />
-                 </div>
-                 <p className="text-[11px] font-black uppercase tracking-widest">{isScanning ? "Processing..." : "Drop Energy Bill"}</p>
-               </div>
+              <div className="p-8 border-2 border-dashed border-current/10 rounded-[2rem] text-center space-y-4 hover:border-orange-500/50 transition-all cursor-pointer relative group">
+                <input type="file" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform">
+                  <Download className="text-white" size={20} />
+                </div>
+                <p className="text-[11px] font-black uppercase tracking-widest">{isScanning ? "Processing..." : "Drop Energy Bill"}</p>
+              </div>
             </div>
           ) : (
             <div className="space-y-6">
-               <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Load Profiling</span>
-                  <span className="text-[9px] font-bold bg-orange-500/10 text-orange-500 px-2 py-0.5 rounded-full">{selectedAppliances.length} Active</span>
-               </div>
-               <div className="space-y-6">
-                  {CATEGORIES.map(cat => (
-                    <div key={cat.id} className="space-y-3">
-                      <p className="text-[9px] font-black text-current/30 uppercase tracking-widest">{cat.name}</p>
-                      <div className="grid grid-cols-1 gap-2">
-                        {cat.items.map(item => {
-                          const isSelected = selectedAppliances.some(a => a.name === item);
-                          return (
-                            <button key={item} onClick={() => toggleAppliance(item)} className={cn(
-                                "p-4 rounded-2xl border text-[10px] font-black uppercase tracking-widest flex items-center justify-between transition-all",
-                                isSelected ? "bg-orange-500 text-white border-transparent shadow-lg" : "bg-current/5 border-transparent opacity-60 hover:opacity-100"
-                            )}>
-                              {item} {isSelected ? <Minus size={14}/> : <Plus size={14} className="opacity-40" />}
-                            </button>
-                          );
-                        })}
-                      </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Load Profiling</span>
+                <span className="text-[9px] font-bold bg-orange-500/10 text-orange-500 px-2 py-0.5 rounded-full">{selectedAppliances.length} Active</span>
+              </div>
+              <div className="space-y-6">
+                {CATEGORIES.map(cat => (
+                  <div key={cat.id} className="space-y-3">
+                    <p className="text-[9px] font-black text-current/30 uppercase tracking-widest">{cat.name}</p>
+                    <div className="grid grid-cols-1 gap-2">
+                      {cat.items.map(item => {
+                        const isSelected = selectedAppliances.some(a => a.name === item);
+                        return (
+                          <button key={item} onClick={() => toggleAppliance(item)} className={cn(
+                            "p-4 rounded-2xl border text-[10px] font-black uppercase tracking-widest flex items-center justify-between transition-all",
+                            isSelected ? "bg-orange-500 text-white border-transparent shadow-lg" : "bg-current/5 border-transparent opacity-60 hover:opacity-100"
+                          )}>
+                            {item} {isSelected ? <Minus size={14} /> : <Plus size={14} className="opacity-40" />}
+                          </button>
+                        );
+                      })}
                     </div>
-                  ))}
-               </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -206,10 +206,10 @@ export default function App() {
       {/* 4. RECOMMENDED SIZE + COMPONENTS (RIGHT CENTER) */}
       <AnimatePresence>
         {specs.solarKw > 0 && (
-          <motion.div 
+          <motion.div
             initial={{ x: 100, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
             className={cn(
-              "absolute right-10 top-1/2 -translate-y-1/2 z-50 p-8 rounded-[3rem] border backdrop-blur-[50px] shadow-2xl w-[400px]",
+              "absolute right-10 top-70 -translate-y-1/2 z-50 p-8 rounded-[3rem] border backdrop-blur-[50px] shadow-2xl w-[400px]",
               isDark ? "bg-black/30 border-white/10" : "bg-white/40 border-white/80"
             )}
           >
@@ -221,9 +221,9 @@ export default function App() {
 
             {/* PV, Inverter, Battery Grid */}
             <div className="grid grid-cols-1 gap-3">
-               <ComponentRow icon={Sun} label="PV Panel Matrix" value={`${specs.solarKw.toFixed(1)} kW`} />
-               <ComponentRow icon={Cpu} label="Hybrid Inverter" value={`${specs.inverterKw.toFixed(2) || (specs.solarKw * 0.8).toFixed(1)} kW`} />
-               <ComponentRow icon={BatteryMedium} label="LFP Battery Storage" value={`${specs.storageKwh.toFixed(2)} kWh`} />
+              <ComponentRow icon={Sun} label="PV Panel Matrix" value={`${specs.solarKw.toFixed(1)} kW`} />
+              <ComponentRow icon={Cpu} label="Hybrid Inverter" value={`${specs.inverterKw.toFixed(2) || (specs.solarKw * 0.8).toFixed(1)} kW`} />
+              <ComponentRow icon={BatteryMedium} label="LFP Battery Storage" value={`${specs.storageKwh.toFixed(2)} kWh`} />
             </div>
           </motion.div>
         )}
@@ -232,23 +232,23 @@ export default function App() {
       {/* 5. BOTTOM GROUP: REACTIVE PLOT + IMPACT GRID */}
       <AnimatePresence>
         {specs.solarKw > 0 && (
-          <motion.div 
+          <motion.div
             initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
             className="absolute bottom-10 left-[420px] right-10 z-50 space-y-4"
           >
             {/* REACTIVE LOAD PLOT */}
-            <div className={cn("w-[98%] h-32 ml-6 rounded-[2.5rem] border backdrop-blur-2xl p-6 flex flex-col justify-center relative", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}>
-               <div className="absolute top-6 left-6 text-[10px] font-black uppercase tracking-widest opacity-40 flex items-center gap-2">
-                  <Activity size={12} className="text-orange-500" /> Dynamic Load Projection
-               </div>
-               <div className="flex items-end h-16 gap-1">
-                  {loadCurveData.map((h, i) => (
-                    <motion.div 
-                      key={i} initial={{ height: 0 }} animate={{ height: `${h}%` }}
-                      className={cn("flex-1 rounded-t-sm transition-all", i > 5 && i < 18 ? "bg-orange-500/60 shadow-[0_0_10px_rgba(249,115,22,0.2)]" : "bg-current/10")} 
-                    />
-                  ))}
-               </div>
+            <div className={cn("w-[46%] h-32 ml-6 rounded-[2rem] border backdrop-blur-2xl p-6 flex flex-col justify-center relative", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}>
+              <div className="absolute top-6 left-6 text-[10px] font-black uppercase tracking-widest opacity-40 flex items-center gap-2">
+                <Activity size={12} className="text-orange-500" /> Dynamic Load Projection
+              </div>
+              <div className="flex items-end h-16 gap-1">
+                {loadCurveData.map((h, i) => (
+                  <motion.div
+                    key={i} initial={{ height: 0 }} animate={{ height: `${h}%` }}
+                    className={cn("flex-1 rounded-t-sm transition-all", i > 5 && i < 18 ? "bg-orange-500/60 shadow-[0_0_10px_rgba(249,115,22,0.2)]" : "bg-current/10")}
+                  />
+                ))}
+              </div>
             </div>
 
             {/* IMPACT BOXES */}
@@ -257,21 +257,21 @@ export default function App() {
               <ImpactBox label="Inflation Mastery" value={`${specs.gridImpact || 98}%`} sub="Cost Hedged" icon={TrendingUp} color="text-blue-500" />
 
               {/* TIER BADGE (Clickable) */}
-              <div 
+              <div
                 onClick={() => setShowTierDetails(true)}
-                className={cn("flex-[1.2] p-6 rounded-[2rem] border backdrop-blur-2xl cursor-pointer hover:scale-[1.02] transition-transform", isDark ? "bg-black/40 border-white/10" : "bg-white/40 border-white/80")}
+                className={cn("flex-[1.2] p-6 rounded-[2rem] border cursor-pointer hover:scale-[1.02] transition-transform shadow-lg", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}
               >
-                  <p className="text-[8px] font-black opacity-30 uppercase tracking-widest mb-1">System Metadata</p>
-                  <div className="grid grid-cols-2 gap-4">
-                     <div>
-                        <p className="text-[11px] font-black uppercase text-orange-500 flex items-center gap-1"><Layers size={10}/> {specs.packageId || "Lite"}</p>
-                        <p className="text-[8px] opacity-40 font-bold uppercase">Package Tier</p>
-                     </div>
-                     <div>
-                        <p className="text-[11px] font-black uppercase opacity-80">3.2 Years</p>
-                        <p className="text-[8px] opacity-40 font-bold uppercase">ROI Est.</p>
-                     </div>
+                <p className="text-[8px] font-black uppercase tracking-widest mb-1">System Metadata</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[11px] font-black uppercase flex items-center opacity-80 gap-1"><Layers size={10} /> {specs.packageId || "Lite"}</p>
+                    <p className="text-[8px] opacity-40 font-bold uppercase">Package Tier</p>
                   </div>
+                  <div>
+                    <p className="text-[11px] font-black uppercase opacity-80">3.2 Years</p>
+                    <p className="text-[8px] opacity-40 font-bold uppercase">ROI Est.</p>
+                  </div>
+                </div>
               </div>
 
               <ImpactBox label="Carbon Offset" value={`${specs.carbonOffset.toFixed(1)} KG`} sub="Impact" icon={TreeDeciduous} color="text-emerald-400" />
@@ -285,15 +285,15 @@ export default function App() {
         {showTierDetails && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-10 bg-black/40 backdrop-blur-xl">
             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className={cn("w-[500px] p-10 rounded-[3rem] border shadow-2xl relative", isDark ? "bg-slate-900 border-white/10" : "bg-white border-slate-200")}>
-               <button onClick={() => setShowTierDetails(false)} className="absolute top-8 right-8 opacity-40 hover:opacity-100"><X size={24}/></button>
-               <h3 className="text-3xl font-black tracking-tighter mb-2">{specs.packageId || "Lite"} Package Details</h3>
-               <p className="text-sm opacity-60 mb-8 font-medium italic">"Optimized for standard residential load with high-efficiency tier-1 components."</p>
-               <div className="space-y-4">
-                  <DetailRow label="PV Warranty" value="25 Years" />
-                  <DetailRow label="Inverter Type" value="Hybrid Smart" />
-                  <DetailRow label="Battery Cells" value="LiFePO4" />
-                  <DetailRow label="Installation" value="Standard Incl." />
-               </div>
+              <button onClick={() => setShowTierDetails(false)} className="absolute top-8 right-8 opacity-40 hover:opacity-100"><X size={24} /></button>
+              <h3 className="text-3xl font-black tracking-tighter mb-2">{specs.packageId || "Lite"} Package Details</h3>
+              <p className="text-sm opacity-60 mb-8 font-medium italic">"Optimized for standard residential load with high-efficiency tier-1 components."</p>
+              <div className="space-y-4">
+                <DetailRow label="PV Warranty" value="25 Years" />
+                <DetailRow label="Inverter Type" value="Hybrid Smart" />
+                <DetailRow label="Battery Cells" value="LiFePO4" />
+                <DetailRow label="Installation" value="Standard Incl." />
+              </div>
             </motion.div>
           </motion.div>
         )}
