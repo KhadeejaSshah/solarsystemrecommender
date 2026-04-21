@@ -1,11 +1,11 @@
 import React, { Suspense, useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { 
-  OrbitControls, 
-  PerspectiveCamera, 
-  Environment, 
-  ContactShadows, 
-  Stars, 
+import {
+  OrbitControls,
+  PerspectiveCamera,
+  Environment,
+  ContactShadows,
+  Stars,
   Float,
   Center,
   Sky
@@ -27,14 +27,14 @@ export default function SolarHouse3D({ appliances, evInfo }: { appliances: Appli
         <Suspense fallback={null}>
           {/* Camera adjusted for the 2x house size */}
           <PerspectiveCamera makeDefault position={[-45, 20, 45]} fov={35} />
-          
+
           <SceneController appliances={appliances} evInfo={evInfo} hasEVCar={hasEVCar} />
-          
+
           <OrbitControls
             enablePan={false}
             minDistance={30}
             maxDistance={120}
-            autoRotate={!hasEVCar}
+            autoRotate={false}
             autoRotateSpeed={0.5}
             makeDefault
           />
@@ -59,16 +59,16 @@ function SceneController({ appliances, evInfo, hasEVCar }: any) {
     const x = Math.cos(angle) * 100;
     const y = Math.sin(angle) * 60;
     const z = -50;
-    
+
     if (sunRef.current) sunRef.current.position.set(x, y, z);
     if (lightRef.current) lightRef.current.position.set(x, y, z);
 
     // 2. ANIMATE BACKGROUND GRADIENT (COLORS FROM YOUR IMAGE)
     // We interpolate between Deep Purple, Sunset Orange, and Soft Pink
-    const colorNight = new THREE.Color("#1e1b4b"); // Deep Purple
-    const colorSunset = new THREE.Color("#f43f5e"); // Rose/Red from image
-    const colorDay = new THREE.Color("#fb923c"); // Orange from image
-    const colorMorning = new THREE.Color("#c084fc"); // Purple/Pink from image
+    const colorNight = new THREE.Color("#020617"); // Deep Midnight Navy
+    const colorSunset = new THREE.Color("#f59e0b"); // SkyElectric Amber
+    const colorDay = new THREE.Color("#bae6fd"); // Crisp Sky Blue
+    const colorMorning = new THREE.Color("#f8fafc"); // Misty White Morning
 
     let finalColor = new THREE.Color();
     if (y > 20) finalColor.lerpColors(colorMorning, colorDay, (y - 20) / 40);
@@ -92,7 +92,7 @@ function SceneController({ appliances, evInfo, hasEVCar }: any) {
         castShadow
         shadow-mapSize={[2048, 2048]}
       />
-      
+
       <ambientLight intensity={0.5} />
 
       {/* GOD RAYS EFFECT */}
@@ -100,7 +100,7 @@ function SceneController({ appliances, evInfo, hasEVCar }: any) {
         {sunRef.current && (
           <GodRays
             sun={sunRef.current}
-            samples={60} 
+            samples={60}
             density={0.96}
             decay={0.9}
             weight={0.4}
@@ -120,13 +120,13 @@ function SceneController({ appliances, evInfo, hasEVCar }: any) {
         <Float speed={1.5} rotationIntensity={0.1} floatIntensity={0.5}>
           <Center top>
             <ModernHouseModel isDark={false} />
-            
+
             {hasEVCar && (
               <group position={[-5.7, 0.7, 0.9]} rotation={[0, -Math.PI / 2, 0]}>
                 <EVCar />
               </group>
             )}
-            
+
             <ApplianceMarkers appliances={appliances} />
             <EnergyFlow isSolarActive={true} appliances={appliances} />
           </Center>
