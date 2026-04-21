@@ -256,6 +256,9 @@ export default function App() {
               <ImpactBox label="Investment Recovery" value={`Rs ${(specs.monthlySavings / 1000).toFixed(1)}k`} sub="Monthly ROI" icon={Wallet} color="text-emerald-500" />
               <ImpactBox label="Inflation Mastery" value={`${specs.gridImpact || 98}%`} sub="Cost Hedged" icon={TrendingUp} color="text-blue-500" />
 
+
+
+              <ImpactBox label="Carbon Offset" value={`${specs.carbonOffset.toFixed(1)} KG`} sub="Impact" icon={TreeDeciduous} color="text-emerald-400" />
               {/* TIER BADGE (Clickable) */}
               <div
                 onClick={() => setShowTierDetails(true)}
@@ -273,8 +276,6 @@ export default function App() {
                   </div>
                 </div>
               </div>
-
-              <ImpactBox label="Carbon Offset" value={`${specs.carbonOffset.toFixed(1)} KG`} sub="Impact" icon={TreeDeciduous} color="text-emerald-400" />
             </div>
           </motion.div>
         )}
