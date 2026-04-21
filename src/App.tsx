@@ -96,7 +96,7 @@
 
 //   return (
 //     <div className={cn("h-screen w-full overflow-hidden font-sans relative transition-colors duration-700", isDark ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-900")}>
-      
+
 //       {/* LAYER 1: 3D BACKDROP */}
 //       <div className="absolute inset-0 z-0">
 //         <SolarHouse3D 
@@ -140,7 +140,7 @@
 
 //       {/* LAYER 3: UI OVERLAY */}
 //       <div className="relative z-10 h-full w-full flex pointer-events-none">
-        
+
 //         <aside className={cn(
 //           "w-[420px] h-full border-r backdrop-blur-3xl shadow-2xl flex flex-col overflow-hidden pointer-events-auto transition-all duration-500",
 //           isDark ? "bg-slate-950/60 border-white/5" : "bg-white/95 border-black/5"
@@ -346,10 +346,10 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sun, Moon, Zap, BarChart3, Globe, Leaf, 
-  TrendingDown, Wallet, FileText, Settings2, 
-  RefreshCcw, ChevronRight, CheckCircle2, Battery, 
+import {
+  Sun, Moon, Zap, BarChart3, Globe, Leaf,
+  TrendingDown, Wallet, FileText, Settings2,
+  RefreshCcw, ChevronRight, CheckCircle2, Battery,
   CloudSun, Activity, Wind, Utensils, Tv, Plus, Minus,
   ArrowUpRight, TreeDeciduous
 } from 'lucide-react';
@@ -358,11 +358,13 @@ import {
 import PlanningPanel from './components/PlanningPanel';
 import EnergyHub from './components/EnergyHub';
 import SolarHouse3D from './components/SolarHouse/SolarHouse3D';
+import IntelligencePanel from './components/IntelligencePanel';
 
 // Config & Types
 import { Appliance } from './types';
 import { UI_NAME_TO_ID } from './config/applianceConfigs';
 import { cn } from './lib/utils';
+import { Download } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
@@ -419,7 +421,7 @@ export default function App() {
     const techId = UI_NAME_TO_ID[name] || name.toLowerCase().replace(/\s+/g, '-');
     setSelectedAppliances(prev => {
       const exists = prev.find(a => a.id === techId);
-      const newSelection = exists ? prev.filter(a => a.id !== techId) : 
+      const newSelection = exists ? prev.filter(a => a.id !== techId) :
         [...prev, { id: techId, name, wattage: 500, quantity: 1, icon: 'zap' }];
       fetchSystemSpecs(billUnits, newSelection);
       return newSelection;
@@ -442,24 +444,42 @@ export default function App() {
 
   return (
     <div className={cn("h-screen w-full overflow-hidden font-sans relative transition-colors duration-700", isDark ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-900")}>
-      
+
       {/* 3D BACKDROP */}
       <div className="absolute inset-0 z-0">
-        <SolarHouse3D 
-          appliances={selectedAppliances} 
-          evInfo={{ status: selectedAppliances.some(a => a.name === 'EV Car') ? 'own' : 'none' }} 
-          isDark={isDark} 
+        <SolarHouse3D
+          appliances={selectedAppliances}
+          evInfo={{ status: selectedAppliances.some(a => a.name === 'EV Car') ? 'own' : 'none' }}
+          isDark={isDark}
         />
       </div>
 
-      {/* COMPANY LOGO & THEME TOGGLE */}
-      <div className="absolute top-6 left-[450px] z-40 flex items-center gap-6 pointer-events-auto">
-        <img src="/logofull.png" alt="Logo" className="h-10" />
-      </div>
-      <div className="absolute top-6 right-8 z-40 pointer-events-auto">
-        <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-3 rounded-2xl border border-current/10 backdrop-blur-xl">
-          {isDark ? <Sun size={18} className="text-solar-gold" /> : <Moon size={18} className="text-solar-electric" />}
-        </button>
+      {/* TOP ACTIONS LAYER */}
+      <div className="absolute top-6 left-[450px] right-8 z-40 flex items-center justify-between pointer-events-none">
+        <div className="pointer-events-auto">
+          <img src="/logofull.png" alt="Logo" className="h-10" />
+        </div>
+        <div className="flex items-center gap-4 pointer-events-auto">
+          <AnimatePresence>
+            {interactionLevel !== 'initial' && (
+              <motion.button
+                initial={{ x: 20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 20, opacity: 0 }}
+                whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(16, 185, 129, 0.4)" }}
+                whileTap={{ scale: 0.95 }}
+                className="px-6 h-12 rounded-2xl bg-solar-emerald text-black font-black uppercase tracking-widest text-[10px] flex items-center gap-3 shadow-[0_10px_30px_rgba(16,185,129,0.2)] transition-all relative overflow-hidden group"
+              >
+                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                <Download className="w-4 h-4 relative z-10" />
+                <span className="relative z-10">Generate Proposal</span>
+              </motion.button>
+            )}
+          </AnimatePresence>
+          <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className="p-3 rounded-2xl border border-current/10 backdrop-blur-xl bg-[var(--card)]/30 transition-transform hover:scale-110 active:scale-90 shadow-lg">
+            {isDark ? <Sun size={18} className="text-solar-gold" /> : <Moon size={18} className="text-solar-electric" />}
+          </button>
+        </div>
       </div>
 
       {/* SIDEBAR PANEL */}
@@ -468,40 +488,40 @@ export default function App() {
           "w-[420px] h-full border-r backdrop-blur-3xl shadow-2xl flex flex-col overflow-hidden pointer-events-auto transition-all duration-500",
           isDark ? "bg-slate-950/70 border-white/5" : "bg-white/95 border-black/5"
         )}>
-          
+
           <div className="h-24" /> {/* Spacer for Logo */}
 
-          <div className="flex-1 overflow-y-auto p-8 pt-0 custom-scrollbar space-y-6">
+          <div className="flex-1 overflow-hidden p-8 pt-0 space-y-6">
             <AnimatePresence mode="wait">
               {interactionLevel === 'initial' ? (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} key="p1">
-                  <PlanningPanel 
-                     interactionLevel={interactionLevel}
-                     onFileUpload={handleFileUpload}
-                     isScanning={isScanning}
-                     userData={userData}
-                     appliances={selectedAppliances}
-                     onApplianceToggle={toggleAppliance}
+                  <PlanningPanel
+                    interactionLevel={interactionLevel}
+                    onFileUpload={handleFileUpload}
+                    isScanning={isScanning}
+                    userData={userData}
+                    appliances={selectedAppliances}
+                    onApplianceToggle={toggleAppliance}
                   />
                 </motion.div>
               ) : (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                  
+
                   {/* HERO POWER CARD (The Layout from your image) */}
                   <EnergyOverviewCard isDark={isDark} specs={specs} />
 
                   {/* APPLIANCE JOURNEY */}
                   <div className="space-y-3">
-                    <button 
+                    <button
                       onClick={() => setApplianceJourneyActive(!applianceJourneyActive)}
-                      className={cn("w-full p-5 rounded-[1.5rem] border flex items-center justify-between transition-all", 
+                      className={cn("w-full p-5 rounded-[1.5rem] border flex items-center justify-between transition-all",
                         applianceJourneyActive ? "bg-solar-emerald text-black" : (isDark ? "bg-white/5 border-white/5" : "bg-slate-100 border-transparent"))}
                     >
                       <div className="flex items-center gap-3">
                         <Settings2 size={16} />
                         <span className="text-xs font-black uppercase tracking-widest">Load Builder</span>
                       </div>
-                      {applianceJourneyActive ? <Minus size={16}/> : <Plus size={16}/>}
+                      {applianceJourneyActive ? <Minus size={16} /> : <Plus size={16} />}
                     </button>
 
                     {applianceJourneyActive && (
@@ -513,8 +533,8 @@ export default function App() {
                               {cat.items.map(item => (
                                 <button key={item} onClick={() => toggleAppliance(item)} className={cn(
                                   "p-3 rounded-xl border text-[10px] font-bold transition-all text-left flex items-center justify-between",
-                                  selectedAppliances.some(a => a.name === item) 
-                                    ? "bg-solar-emerald/10 border-solar-emerald text-solar-emerald" 
+                                  selectedAppliances.some(a => a.name === item)
+                                    ? "bg-solar-emerald/10 border-solar-emerald text-solar-emerald"
                                     : (isDark ? "bg-white/5 border-white/5" : "bg-white border-slate-200")
                                 )}>
                                   {item}
@@ -538,16 +558,17 @@ export default function App() {
         {/* BOTTOM IMPACT BAR (RESTORED) */}
         <AnimatePresence>
           {specs.solarKw > 0 && (
-            <motion.div initial={{ y: 100 }} animate={{ y: -40 }} className="absolute bottom-0 left-[calc(420px+(100%-420px)/2)] -translate-x-1/2 pointer-events-auto flex justify-center">
+            <motion.div initial={{ y: 100 }} animate={{ y: -40 }} className="absolute bottom-0 left-[calc(100px+(100%-100px)/2)] -translate-x-1/2 pointer-events-auto flex justify-center">
               <div className={cn("px-12 py-6 rounded-[3rem] border backdrop-blur-3xl flex gap-16 shadow-2xl", isDark ? "bg-slate-900/80 border-white/10" : "bg-white/90 border-black/5")}>
-                 <StatMini label="Grid Savings" value={`${specs.gridImpact?.toFixed(0)}%`} icon={TrendingDown} color="text-solar-emerald" isDark={isDark} />
-                 <StatMini label="Carbon Offset" value={`${specs.carbonOffset?.toFixed(1)}T`} icon={Leaf} color="text-solar-electric" isDark={isDark} />
-                 <StatMini label="Monthly ROI" value={`Rs.${(specs.monthlySavings / 1000).toFixed(0)}k`} icon={Wallet} color={isDark ? "text-white" : "text-slate-900"} isDark={isDark} />
+                <StatMini label="Grid Savings" value={`${specs.gridImpact?.toFixed(0)}%`} icon={TrendingDown} color="text-solar-emerald" isDark={isDark} />
+                <StatMini label="Carbon Offset" value={`${specs.carbonOffset?.toFixed(1)}T`} icon={Leaf} color="text-solar-electric" isDark={isDark} />
+                <StatMini label="Monthly ROI" value={`Rs.${(specs.monthlySavings / 1000).toFixed(0)}k`} icon={Wallet} color={isDark ? "text-white" : "text-slate-900"} isDark={isDark} />
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
+        <IntelligencePanel isFormed={interactionLevel !== 'initial'} isDark={isDark} />
       </div>
     </div>
   );
@@ -561,7 +582,7 @@ export default function App() {
 
 //   return (
 //     <div className={cn("p-8 rounded-[2.5rem] border shadow-2xl space-y-8", isDark ? "bg-white/5 border-white/10" : "bg-white border-slate-200")}>
-      
+
 //       {/* 1. Header Hero */}
 //       <div className="space-y-1">
 //         <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Power</p>
@@ -636,7 +657,7 @@ function EnergyOverviewCard({ isDark, specs }: any) {
 
   return (
     <div className={cn("p-8 rounded-[2.5rem] border shadow-2xl space-y-8", isDark ? "bg-white/5 border-white/10" : "bg-white border-slate-200")}>
-      
+
       {/* 1. Header Hero */}
       <div className="space-y-1">
         <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Power</p>
@@ -650,9 +671,9 @@ function EnergyOverviewCard({ isDark, specs }: any) {
       {/* 2. Bar Chart Visualization */}
       <div className="flex items-end justify-between h-24 gap-[2px]">
         {bars.map((h, i) => (
-          <div 
-            key={i} 
-            className={cn("flex-1 rounded-t-sm transition-all duration-1000", i === 12 ? "bg-orange-500" : "bg-solar-gold/30")} 
+          <div
+            key={i}
+            className={cn("flex-1 rounded-t-sm transition-all duration-1000", i === 12 ? "bg-orange-500" : "bg-solar-gold/30")}
             style={{ height: `${h}%` }}
           />
         ))}
@@ -675,7 +696,7 @@ function EnergyOverviewCard({ isDark, specs }: any) {
         <div className="space-y-1 text-right">
           <p className="text-[10px] font-black uppercase tracking-widest opacity-40">CO₂ Offset</p>
           <div className="flex items-center justify-end gap-2">
-             <p className="text-xl font-black tracking-tighter">{(specs.carbonOffset || 6.12).toFixed(2)} KG</p>
+            <p className="text-xl font-black tracking-tighter">{(specs.carbonOffset || 6.12).toFixed(2)} KG</p>
           </div>
           <p className="text-[9px] font-bold text-solar-emerald uppercase tracking-widest flex items-center justify-end gap-1">
             <TreeDeciduous size={10} /> Equivalent to 20 Trees

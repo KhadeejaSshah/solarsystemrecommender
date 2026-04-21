@@ -57,14 +57,8 @@ export default function EnergyHub({ specs, interactionLevel }: any) {
 
   return (
     <div className="p-6 flex flex-col gap-6 h-full relative">
-      <div className="flex justify-between items-center">
-        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">Intelligence Node</h3>
-        {isFormed && (
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-solar-emerald/10 border border-solar-emerald/20">
-              <div className="w-1.5 h-1.5 rounded-full bg-solar-emerald animate-pulse" />
-              <span className="text-[8px] font-black text-solar-emerald uppercase tracking-widest">Active</span>
-          </div>
-        )}
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">System Recommendation</h3>
       </div>
 
       {/* Recommended Package Section */}
@@ -126,28 +120,7 @@ export default function EnergyHub({ specs, interactionLevel }: any) {
         ))}
       </div> */}
 
-      {/* Site Intelligence */}
-      <AnimatePresence>
-        {isFormed && (
-          <motion.div 
-            initial={{ y: 20, opacity: 0 }} 
-            animate={{ y: 0, opacity: 1 }}
-            className="p-6 rounded-3xl bg-[var(--card)] border border-[var(--border)] space-y-4"
-          >
-            <div className="flex items-center gap-2">
-                <Info className="w-4 h-4 text-solar-electric" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-solar-electric">Site Intelligence</span>
-            </div>
-            <p className="text-[11px] font-medium opacity-70 leading-relaxed italic">
-                Optimal Tilt: <span className="text-[var(--fg)] font-black">28° South</span> for Islamabad Region. Peak irradiance verified at <span className="text-[var(--fg)] font-black">5.2 kWh/m²</span>.
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      <button disabled={!isFormed} className="w-full h-16 mt-auto rounded-[2rem] bg-solar-emerald text-black font-black uppercase tracking-widest text-[11px] disabled:opacity-20 flex items-center justify-center gap-3 shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]">
-        <Download className="w-5 h-5" /> Generate Proposal
-      </button>
       {/* <div className="p-5 rounded-2xl bg-[var(--card)] border border-[var(--border)]">
         <p className="text-[9px] font-black opacity-40 uppercase mb-2">Tier Classification</p>
         <h4 className={cn("text-xl font-black italic", currentPkg?.color)}>{isFormed ? currentPkg?.name : "Awaiting Bill"}</h4>
