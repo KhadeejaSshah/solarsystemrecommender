@@ -26,14 +26,18 @@ export default function SolarHouse3D({ appliances, evInfo }: { appliances: Appli
       <Canvas shadows dpr={[1, 2]}>
         <Suspense fallback={null}>
           {/* Camera adjusted for the 2x house size */}
-          <PerspectiveCamera makeDefault position={[-45, 20, 45]} fov={35} />
+          <PerspectiveCamera makeDefault position={[0, 10, 55]} fov={35} />
 
           <SceneController appliances={appliances} evInfo={evInfo} hasEVCar={hasEVCar} />
 
           <OrbitControls
             enablePan={false}
-            minDistance={30}
+            enableZoom={false}
+            minDistance={50}
             maxDistance={120}
+            minPolarAngle={0}
+            maxPolarAngle={Math.PI / 2.1}
+            target={[4, 5, 10]}
             autoRotate={false}
             autoRotateSpeed={0.5}
             makeDefault
@@ -116,24 +120,22 @@ function SceneController({ appliances, evInfo, hasEVCar }: any) {
 
       {/* THE HOUSE CONTENT */}
       {/* TO MOVE HOUSE: Change position={[Left/Right, Up/Down, Forward/Back]} */}
-      <group position={[9, -11, 0]} scale={2.5}>
-        <Float speed={1.5} rotationIntensity={0.1} floatIntensity={0.5}>
-          <Center top>
-            <ModernHouseModel isDark={false} />
+      <group position={[10, -7, 10]} scale={2.5}>
+        <Center top>
+          <ModernHouseModel isDark={false} />
 
-            {hasEVCar && (
-              <group position={[-5.7, 0.7, 0.9]} rotation={[0, -Math.PI / 2, 0]}>
-                <EVCar />
-              </group>
-            )}
+          {hasEVCar && (
+            <group position={[-5.7, 0.7, 0.9]} rotation={[0, -Math.PI / 2, 0]}>
+              <EVCar />
+            </group>
+          )}
 
-            <ApplianceMarkers appliances={appliances} />
-            <EnergyFlow isSolarActive={true} appliances={appliances} />
-          </Center>
-        </Float>
-      </group>
+          <ApplianceMarkers appliances={appliances} />
+          <EnergyFlow isSolarActive={true} appliances={appliances} />
+        </Center>
+      </group >
 
-      <ContactShadows position={[0, -7.1, 0]} opacity={0.4} scale={80} blur={2.5} far={20} />
+      <ContactShadows position={[8, -8.1, 10]} opacity={0.4} scale={80} blur={2.5} far={20} />
       <Environment preset="sunset" />
     </>
   );
