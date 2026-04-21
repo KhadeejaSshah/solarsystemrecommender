@@ -101,7 +101,7 @@ export default function EnergyHub({ specs, interactionLevel }: any) {
       </div>
 
       {/* Real-time Metrics */}
-      <div className="space-y-3">
+      {/* <div className="space-y-3">
         {[
           { icon: Sun, label: "Solar Array", val: solarKw, unit: "kW" },
           { icon: Battery, label: "Storage System", val: storageKwh, unit: "kWh" },
@@ -124,7 +124,7 @@ export default function EnergyHub({ specs, interactionLevel }: any) {
             </div>
           </motion.div>
         ))}
-      </div>
+      </div> */}
 
       {/* Site Intelligence */}
       <AnimatePresence>
