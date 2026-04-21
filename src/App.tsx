@@ -119,16 +119,16 @@ export default function App() {
           ))}
         </div> */}
         <div className="absolute inset-0 flex items-center justify-center p-20 pointer-events-none">
-            <img
-              src="/h23.png"
-              alt="Solar House" className="absolute w-full h-full object-cover"
-            />
-          </div>
+          <img
+            src="/h23.png"
+            alt="Solar House" className="absolute w-full h-full object-cover"
+          />
+        </div>
       </div>
 
 
       {/* 2. LOGO & STATUS (CENTERED-LEFT) */}
-      <div className={cn("absolute p-2 top-10 left-[480px] z-50 flex items-center gap-8 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/10 shadow-lg", isDark ? "bg-white/40 border-black/10" : "bg-black/60 border-white/80")}>
+      <div className={cn("absolute p-2 top-10 left-[480px] z-50 flex items-center gap-8 rounded-[2rem] bg-white/10 backdrop-blur-xl border border-white/10 shadow-lg", isDark ? "bg-white/40 border-black/10" : "bg-black/60 border-white/80")}>
         <img src="/logofull.png" className={cn("h-10 transition-all")} alt="Logo" />
         <div className={cn("px-5 py-2 rounded-full bg-white/10 backdrop-blur-xl border border-white/10 text-[10px] font-black uppercase tracking-widest flex items-center gap-3", isDark ? "bg-black/80 border-white/10" : "bg-white/60 border-black/80")}>
           <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
@@ -138,14 +138,14 @@ export default function App() {
       </div>
       <button
         onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
-        className="p-3 absolute top-10 right-10 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/10 shadow-lg"
+        className="p-3 absolute top-10 right-10 rounded-[2rem] bg-white/10 backdrop-blur-xl border border-white/10 shadow-lg"
       >
         {isDark ? <Sun size={18} className="text-orange-400" /> : <Moon size={18} />}
       </button>
       {/* 3. LEFT PANEL: LOAD PROFILING */}
       <motion.aside
         className={cn(
-          "absolute left-10 top-14 bottom-10 w-[380px] z-50 rounded-[2.5rem] border backdrop-blur-[40px] shadow-2xl flex flex-col transition-all duration-500 overflow-hidden",
+          "absolute left-12 top-10 bottom-10 w-[380px] z-50 rounded-[2rem] border backdrop-blur-[40px] shadow-2xl flex flex-col transition-all duration-500 overflow-hidden",
           isDark ? "bg-black/40 border-white/10" : "bg-white/60 border-white/80"
         )}
       >
@@ -206,7 +206,7 @@ export default function App() {
           <motion.div
             initial={{ x: 100, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
             className={cn(
-              "absolute right-10 top-70 -translate-y-1/2 z-50 p-8 rounded-[3rem] border backdrop-blur-[50px] shadow-2xl w-[400px]",
+              "absolute right-10 top-72 -translate-y-1/2 z-50 p-8 rounded-[2rem] border backdrop-blur-[50px] shadow-2xl w-[400px]",
               isDark ? "bg-black/30 border-white/10" : "bg-white/40 border-white/80"
             )}
           >
@@ -234,7 +234,7 @@ export default function App() {
             className="absolute bottom-10 left-[420px] right-10 z-50 space-y-4"
           >
             {/* REACTIVE LOAD PLOT */}
-            <div className={cn("w-[46.5%] h-32 ml-6 rounded-[2rem] border backdrop-blur-2xl p-6 flex flex-col justify-center relative", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}>
+            <div className={cn("w-[46.5%] h-32 ml-11 rounded-[2rem] border backdrop-blur-2xl p-6 flex flex-col justify-center relative", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}>
               <div className="absolute top-6 left-6 text-[10px] font-black uppercase tracking-widest opacity-40 flex items-center gap-2">
                 <Activity size={12} className="text-orange-500" /> Dynamic Load Projection
               </div>
@@ -249,29 +249,29 @@ export default function App() {
             </div>
 
             {/* IMPACT BOXES */}
-            <div className="flex gap-4 ml-6 ">
+            <div className="flex gap-4 ml-11 ">
               <ImpactBox isDark={isDark} label="Investment Recovery" value={`Rs ${(specs.monthlySavings / 1000).toFixed(1)}k`} sub="Monthly ROI" icon={Wallet} color="text-emerald-500" />
               <ImpactBox isDark={isDark} label="Inflation Mastery" value={`${specs.gridImpact || 98}%`} sub="Cost Hedged" icon={TrendingUp} color="text-blue-500" />
 
 
 
-               {/* TIER BADGE (Clickable) */}
-               <div
-                 onClick={() => setShowTierDetails(true)}
-                 className={cn("flex-[1.2] p-6 rounded-[2rem] border cursor-pointer hover:scale-[1.02] transition-transform shadow-lg", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}
-               >
-                 <p className="text-[8px] font-black uppercase tracking-widest mb-1">System Metadata</p>
-                 <div className="grid grid-cols-2 gap-4">
-                   <div>
-                     <p className="text-[11px] font-black uppercase flex items-center opacity-80 gap-1"><Layers size={10} /> {specs.packageId || "Lite"}</p>
-                     <p className="text-[8px] opacity-40 font-bold uppercase">Package Tier</p>
-                   </div>
-                   <div>
-                     <p className="text-[11px] font-black uppercase opacity-80">3.2 Years</p>
-                     <p className="text-[8px] opacity-40 font-bold uppercase">ROI Est.</p>
-                   </div>
-                 </div>
-               </div>
+              {/* TIER BADGE (Clickable) */}
+              <div
+                onClick={() => setShowTierDetails(true)}
+                className={cn("flex-[1.2] p-6 rounded-[2rem] border cursor-pointer hover:scale-[1.02] transition-transform shadow-lg", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}
+              >
+                <p className="text-[8px] font-black uppercase tracking-widest mb-1">System Metadata</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[11px] font-black uppercase flex items-center opacity-80 gap-1"><Layers size={10} /> {specs.packageId || "Lite"}</p>
+                    <p className="text-[8px] opacity-40 font-bold uppercase">Package Tier</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-black uppercase opacity-80">3.2 Years</p>
+                    <p className="text-[8px] opacity-40 font-bold uppercase">ROI Est.</p>
+                  </div>
+                </div>
+              </div>
 
               <ImpactBox isDark={isDark} label="Carbon Offset" value={`${specs.carbonOffset.toFixed(1)} KG`} sub="Impact" icon={TreeDeciduous} color="text-emerald-400" />
             </div>
