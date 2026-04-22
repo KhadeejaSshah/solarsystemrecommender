@@ -2,4 +2,5 @@ node_modules
 package-lock.json
 *.yaml
 *.pdf
+backend/uploads/.png
 backend/uploads/.*

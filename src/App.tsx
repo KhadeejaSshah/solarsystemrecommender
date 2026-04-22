@@ -235,30 +235,31 @@ export default function App() {
 
   const updateApplianceCount = (itemId: string, name: string, variantKey: string, watt: number, delta: number) => {
     setApplianceCounts(prev => {
-      // clone top-level and the item-level object (avoid accidental shared refs)
+      // deep-clone one level so we never mutate existing nested objects
       const next: Record<string, Record<string, { quantity: number; watt: number; name: string }>> = { ...prev };
-      if (!next[itemId]) next[itemId] = {};
+      next[itemId] = { ...(prev[itemId] || {}) }; // ensure we preserve other variants for this item
+
       const existing = next[itemId][variantKey];
       const currentQty = existing?.quantity || 0;
-      let newQty = Math.min(10, Math.max(0, currentQty + delta)); // clamp 0..10
+      const newQty = Math.min(10, Math.max(0, currentQty + delta)); // clamp 0..10
 
       if (newQty <= 0) {
         // remove this variant
         delete next[itemId][variantKey];
-        // if no variants left for this item, remove item
+        // if no variants left for this item, remove the item key entirely
         if (Object.keys(next[itemId]).length === 0) {
           delete next[itemId];
         }
       } else {
-        next[itemId] = { ...next[itemId], [variantKey]: { quantity: newQty, watt, name } };
+        next[itemId][variantKey] = { quantity: newQty, watt, name };
       }
 
-      // Build selectedAppliances array: one entry per variant (unique id per variant)
+      // Build selectedAppliances array: include every variant separately (so all selected variants are considered)
       const arr: any[] = [];
       Object.entries(next).forEach(([id, variants]) => {
         Object.entries(variants).forEach(([vKey, d]) => {
           arr.push({
-            id: `${id}:${vKey}`,
+            id: `${id}:${vKey}`,            // unique id per variant
             name: `${d.name} (${vKey})`,
             wattage: d.watt,
             quantity: d.quantity,
@@ -268,7 +269,7 @@ export default function App() {
       });
 
       setSelectedAppliances(arr);
-      // Refresh specs on change
+      // Refresh specs on change (debounce if you want fewer requests)
       fetchSystemSpecs(billUnits, arr);
       return next;
     });
@@ -320,7 +321,7 @@ export default function App() {
       </div>
 
       {/* 2. LOGO & STATUS */}
-      <div className={cn("absolute p-2 top-10 left-[480px] z-50 flex items-center gap-8 rounded-[2rem] backdrop-blur-xl border shadow-lg", isDark ? "bg-black/60 border-white/10" : "bg-white/70 border-black/10")}>
+      <div className={cn("absolute p-2 top-10 left-[465px] z-50 flex items-center gap-8 rounded-[2rem] backdrop-blur-xl border shadow-lg", isDark ? "bg-black/60 border-white/10" : "bg-white/70 border-black/10")}>
         <img src="/logofull.png" className="h-10" alt="Logo" />
         <div className={cn("px-5 py-2 rounded-full border text-[10px] font-black uppercase tracking-widest flex items-center gap-3", isDark ? "bg-black/60 border-white/10" : "bg-black/5 border-black/10")}>
           <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
