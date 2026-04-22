@@ -4,6 +4,7 @@ import shutil
 import yaml
 import json
 import re
+import math
 from fastapi import FastAPI, UploadFile, File, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -12,9 +13,6 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 from llama_parse import LlamaParse
 
-# ---------------------------------------------------------
-# 1. SETUP & CONFIG
-# ---------------------------------------------------------
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 load_dotenv()
@@ -62,12 +60,18 @@ def terminal_solar_math(units, appliances):
     print("═"*60)
     
     # 1. Base Load Calculation
-    # Formula: (Avg Monthly Units / 30 Days) / 5.5 Peak Sun Hours
+    # Standardizing on 5.0 Peak Sun Hours for Pakistan
+    PEAK_SUN_HOURS = 5.0
+    EFFICIENCY_FACTOR = 0.78 # Accounting for dust, heat, wiring losses
+    
     avg_monthly = float(units) if units > 0 else 0
-    daily_avg = avg_monthly / 30
-    base_load_kw = daily_avg / 5.5
+    daily_avg_kwh = avg_monthly / 30
+    
+    # Base load kW needed to generate daily_avg_kwh
+    base_load_kw = daily_avg_kwh / (PEAK_SUN_HOURS * EFFICIENCY_FACTOR) if avg_monthly > 0 else 0
+    
     print(f"[STEP 1] Avg Monthly Units: {avg_monthly}")
-    print(f"[STEP 1] Formula: ({avg_monthly} / 30) / 5.5 = {base_load_kw:.2f} kW Base Load")
+    print(f"[STEP 1] Formula: ({avg_monthly} / 30) / ({PEAK_SUN_HOURS} * {EFFICIENCY_FACTOR}) = {base_load_kw:.2f} kW Base Load")
 
     # 2. Appliance Load
     # Sum of (wattage * quantity) / 1000
@@ -75,33 +79,59 @@ def terminal_solar_math(units, appliances):
     print(f"[STEP 2] Appliance Load: {app_load_kw:.2f} kW (Total active appliances)")
 
     # 3. Hardware Sizing
-    # Solar must cover base load + 45% of appliance peak for stability
-    solar_kw = base_load_kw + (app_load_kw * 0.45)
-    # Storage is 2.1x Solar capacity for hybrid/off-grid stability
-    storage_kwh = solar_kw * 2.1
-    # Inverter must handle the peak of either solar production or appliance load
-    inverter_kw = max(solar_kw, app_load_kw)
+    # Total Load = Base load from bill + full appliance load
+    total_load_kw = base_load_kw + app_load_kw
+    
+    # Solar capacity with 1.2x safety margin for system losses
+    solar_kw = total_load_kw * 1.2
+    # Round up to nearest 0.5 kW (panel increments)
+    solar_kw = math.ceil(solar_kw * 2) / 2
+    
+    # Package Determination (SkyElectric Grid Independence Package)
+    package_id = "Smart Lite"
+    if solar_kw >= 50: package_id = "Estate Max"
+    elif solar_kw >= 15: package_id = "Smart Plus"
+    else: package_id = "Smart Lite"
+    
+    # Battery Sizing per Tier
+    backup_hours = 4
+    if package_id == "Smart Lite":
+        storage_kwh = 10.0  # Fixed 10 kWh Smart Battery as per spec
+    elif package_id == "Smart Plus":
+        # Scale 20–40 kWh based on load, min 20kWh
+        calculated_storage = (total_load_kw * backup_hours) / 0.8
+        storage_kwh = max(20.0, min(40.0, math.ceil(calculated_storage / 2.5) * 2.5))
+    else:  # Estate Max
+        calculated_storage = (total_load_kw * backup_hours) / 0.8
+        storage_kwh = math.ceil(calculated_storage / 5.0) * 5.0 # Round to 5kWh blocks for Max
+
+    # Inverter Sizing
+    # Must handle solar or peak load + 25% surge margin
+    inverter_kw = max(solar_kw, total_load_kw) * 1.25
+    # Snap to standard inverter sizes
+    STANDARD_SIZES = [3, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 60, 80, 100]
+    inverter_kw = next((s for s in STANDARD_SIZES if s >= inverter_kw), inverter_kw)
 
     print(f"[STEP 3] Computed Solar: {solar_kw:.2f} kW")
     print(f"[STEP 3] Computed Battery: {storage_kwh:.2f} kWh")
     print(f"[STEP 3] Computed Inverter: {inverter_kw:.2f} kW")
 
     # 4. Impact Metrics
-    # Savings based on avg Pakistan Tariff of Rs. 55/unit
-    monthly_save = avg_monthly * 55 
+    # Solar production in units/month
+    solar_units_month = solar_kw * PEAK_SUN_HOURS * 30
+    # Net savings: Proportional to units offset
+    units_offset = min(solar_units_month, avg_monthly)
+    monthly_save = units_offset * 55 # Rs. 55/unit tariff
+    
     # Grid Impact: Percentage reduction
-    grid_impact = min(98, ((solar_kw * 5.5 * 30) / (avg_monthly if avg_monthly > 0 else 1)) * 100)
-    # Carbon: 1kW solar saves roughly 1.4 tons of CO2 per year
+    grid_impact = min(100, (solar_units_month / max(avg_monthly, 1)) * 100)
+    
+    # Carbon Offset: 1.4 tons/kW/year
     carbon_offset = solar_kw * 1.4
 
     print(f"[STEP 4] Grid Impact: -{grid_impact:.0f}%")
     print(f"[STEP 4] Monthly Savings: Rs. {monthly_save:,.0f}")
     print(f"[STEP 4] Carbon Offset: {carbon_offset:.1f} Tons/Year")
-    
-    # 5. Package Determination
-    package_id = "lite"
-    if inverter_kw >= 60: package_id = "max"
-    elif inverter_kw >= 30: package_id = "plus"
     print(f"[STEP 5] Final Tier Assigned: {package_id.upper()}")
     print("═"*60 + "\n")
 
