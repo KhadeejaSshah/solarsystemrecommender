@@ -5,7 +5,7 @@ import yaml
 import json
 import re
 import math
-from fastapi import FastAPI, UploadFile, File, HTTPException, Body
+from fastapi import FastAPI, UploadFile, File, HTTPException, Body, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -16,26 +16,6 @@ from llama_parse import LlamaParse
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 load_dotenv()
-
-with open("conf.yaml", "r") as f:
-    config = yaml.safe_load(f)
-
-GEMINI_API_KEY = config["secrets"]["GEMINI_API_KEY"]
-LLAMA_PARSER_API_KEY = config["secrets"]["LLAMA_PARSER_API_KEY"]
-
-genai.configure(api_key=GEMINI_API_KEY)
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], 
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # ---------------------------------------------------------
 # 2. SCHEMAS FOR CALCULATION
@@ -49,6 +29,30 @@ class ApplianceItem(BaseModel):
 class CalcRequest(BaseModel):
     units: float
     appliances: List[ApplianceItem]
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# --- Replace previous CONF_PATH loading with explicit conf.yaml usage ---
+with open("conf.yaml", "r") as f:
+    config = yaml.safe_load(f)
+
+GEMINI_API_KEY = config["secrets"]["GEMINI_API_KEY"]
+LLAMA_PARSER_API_KEY = config["secrets"]["LLAMA_PARSER_API_KEY"]
+
+# configure the Google generative client
+genai.configure(api_key=GEMINI_API_KEY)
+
+# uploads directory
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # ---------------------------------------------------------
 # 3. ENGINEERING MATH ENGINE (WITH TERMINAL PRINTS)
@@ -154,7 +158,7 @@ async def extract_text(file_path):
     return "\n".join([doc.text for doc in docs])
 
 async def extract_bill_data(text):
-    # Note: Ensure you have access to gemini-2.0-flash or 1.5-flash
+    # Use gemini-2.5-flash model
     model = genai.GenerativeModel("gemini-2.5-flash") 
     prompt = f"""
     You are an expert in Pakistani electricity bills (IESCO, K-Electric, etc).
@@ -217,6 +221,91 @@ async def upload_bill(file: UploadFile = File(...)):
         logger.error(f"Error: {e}")
         return {"success": False, "error": str(e)}
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+class AIRequest(BaseModel):
+    bill: dict | None = None
+    specs: dict | None = None
+    user: dict | None = None
+    units: int | None = 0
+    selectedAppliances: list | None = []
+
+@app.post("/ai-insights")
+@app.post("/ai-insights")
+async def ai_insights(payload: AIRequest):
+    """
+    Generate structured AI insights for frontend display
+    """
+    logger.info("Received /ai-insights request")
+
+    city = payload.user.get("city") if payload.user else "your area"
+    units = payload.units or 0
+    solar_kw = payload.specs.get("solarKw") if payload.specs else None
+    savings = payload.specs.get("monthlySavings") if payload.specs else None
+
+    prompt = f"""
+You are an expert solar energy consultant in Pakistan.
+
+Generate AI insights for a homeowner in {city}.
+
+User Details:
+- City: {city}
+- Monthly Units: {units}
+- Recommended Solar Size: {solar_kw} kW
+- Estimated Savings: {savings} PKR
+
+Return ONLY a JSON array of 6 short bullet points.
+
+Tone:
+- Professional
+- Data-driven
+- Helpful
+- Not salesy
+
+Example Style:
+- Electricity prices in Islamabad have steadily increased over the past year
+- Future tariffs are expected to rise 20–30% over the next few years
+- Your annual electricity expenses may increase significantly without solar
+- Solar helps lock in long-term energy costs
+- Installing solar now protects against future tariff hikes
+- Solar can increase property value and energy independence
+
+Return format:
+[
+ "bullet 1",
+ "bullet 2",
+ "bullet 3",
+ "bullet 4",
+ "bullet 5",
+ "bullet 6"
+]
+"""
+
+    try:
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        response = model.generate_content(prompt)
+
+        cleaned = re.sub(r"```json|```", "", response.text).strip()
+        insights = json.loads(cleaned)
+
+    except Exception as e:
+        logger.exception("Gemini failed — fallback insights")
+
+        insights = [
+            f"Electricity prices in {city} have steadily increased over the past year",
+            "Future tariffs are expected to rise 20–30% over the next few years",
+            "Your annual electricity expenses may increase significantly without solar",
+            "Solar helps lock in long-term energy costs",
+            "Installing solar now protects against future tariff hikes",
+            "Solar can increase property value and energy independence"
+        ]
+
+    # Terminal Output
+    print("\n" + "="*60)
+    print("🧠 AI INSIGHTS")
+    for i in insights:
+        print(f"• {i}")
+    print("="*60 + "\n")
+
+    return {
+        "success": True,
+        "insights": insights
+    }

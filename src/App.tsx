@@ -1,3 +1,329 @@
+// import { useState, useEffect, useMemo } from 'react';
+// import { motion, AnimatePresence } from 'motion/react';
+// import {
+//   Sun, Moon, Zap, Wallet, Plus, Minus,
+//   Wind, CloudSnow, Flower2, ThermometerSun,
+//   Download, Home, TreeDeciduous, TrendingUp,
+//   Activity, Cpu, BatteryMedium, Layers, X, ArrowLeft, ChevronDown, Sparkles
+// } from 'lucide-react';
+
+// // Types & Config
+// import { Appliance } from './types';
+// import { UI_NAME_TO_ID } from './config/applianceConfigs';
+// import { cn } from './lib/utils';
+
+// const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
+// const CATEGORIES = [
+//   { id: 'climate', name: 'Climate', items: ['Air Conditioner', 'Ceiling Fan'] },
+//   { id: 'kitchen', name: 'Kitchen', items: ['Refrigerator', 'Microwave Oven', 'Water Motor'] },
+//   { id: 'tech', name: 'Tech', items: ['LED TV', 'LED Lights'] },
+//   { id: 'ev', name: 'Mobility', items: ['EV Car', 'Electric Bike'] }
+// ];
+
+// const WATTAGE_MAP: Record<string, number> = {
+//   ac: 1800, fan: 80, fridge: 300, microwave: 1200,
+//   motor: 746, tv: 100, lights: 60, tesla: 7200, bike: 500,
+// };
+
+// const SEASONS = [
+//   { name: 'Spring', color: 'from-green-100 to-rose-100', darkColor: 'from-emerald-950/40 to-slate-900', icon: Flower2, particle: '🌸' },
+//   { name: 'Summer', color: 'from-sky-100 to-amber-50', darkColor: 'from-blue-950/40 to-slate-950', icon: ThermometerSun, particle: '☀️' },
+//   { name: 'Autumn', color: 'from-orange-100 to-red-50', darkColor: 'from-orange-950/40 to-slate-950', icon: Wind, particle: '🍂' },
+//   { name: 'Winter', color: 'from-slate-100 to-blue-50', darkColor: 'from-slate-900 to-blue-950', icon: CloudSnow, particle: '❄️' }
+// ];
+
+// export default function App() {
+//   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+//   const [seasonIdx, setSeasonIdx] = useState(0);
+//   const [interactionLevel, setInteractionLevel] = useState<'initial' | 'bill-uploaded'>('initial');
+//   const [isScanning, setIsScanning] = useState(false);
+//   const [showTierDetails, setShowTierDetails] = useState(false);
+//   const [showLoadProfiling, setShowLoadProfiling] = useState(true);
+  
+//   const [billUnits, setBillUnits] = useState(0);
+//   const [userData, setUserData] = useState({ name: '', city: '' });
+//   const [selectedAppliances, setSelectedAppliances] = useState<Appliance[]>([]);
+//   const [specs, setSpecs] = useState<any>({
+//     solarKw: 0, storageKwh: 0, inverterKw: 0, packageId: 'Smart Lite',
+//     monthlySavings: 0, carbonOffset: 0, gridImpact: 0
+//   });
+
+//   // AI States
+//   const [aiInsights, setAiInsights] = useState<string[] | null>(null);
+//   const [aiLoading, setAiLoading] = useState(false);
+//   const [aiError, setAiError] = useState<string | null>(null);
+
+//   const isDark = theme === 'dark';
+
+//   const loadCurveData = useMemo(() => {
+//     const base = [15, 20, 18, 25, 45, 70, 85, 90, 75, 60, 40, 25, 20, 35, 50, 65, 80, 95, 85, 60, 45, 30, 20, 15];
+//     const multiplier = 1 + (selectedAppliances.length * 0.15);
+//     return base.map(val => Math.min(100, val * multiplier));
+//   }, [selectedAppliances]);
+
+//   useEffect(() => {
+//     const timer = setInterval(() => setSeasonIdx(prev => (prev + 1) % SEASONS.length), 15000);
+//     return () => clearInterval(timer);
+//   }, []);
+
+//   const fetchSystemSpecs = async (units: number, apps: Appliance[]) => {
+//     try {
+//       const res = await fetch(`${API_BASE}/calculate`, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ units, appliances: apps }),
+//       });
+//       const data = await res.json();
+//       if (res.ok) setSpecs(data);
+//       return data;
+//     } catch (e) { console.error(e); return null; }
+//   };
+
+//   const requestAIInsights = async (payload: any) => {
+//     setAiLoading(true);
+//     setAiError(null);
+//     try {
+//       const res = await fetch(`${API_BASE}/ai-insights`, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify(payload),
+//       });
+//       const data = await res.json();
+//       if (data.success) {
+//         setAiInsights(Array.isArray(data.insights) ? data.insights : data.text?.split('\n'));
+//       } else {
+//         setAiError("Could not generate insights.");
+//       }
+//     } catch (err) {
+//       setAiError("AI Service Unavailable");
+//     } finally {
+//       setAiLoading(false);
+//     }
+//   };
+
+//   const handleFileUpload = async (event: any) => {
+//     const file = event.target.files[0];
+//     if (!file) return;
+//     setIsScanning(true);
+//     const formData = new FormData();
+//     formData.append('file', file);
+//     try {
+//       const response = await fetch(`${API_BASE}/upload-bill`, { method: 'POST', body: formData });
+//       const result = await response.json();
+//       if (result.success) {
+//         const units = Number(result.data.units_consumed) || 0;
+//         const user = { name: result.data.consumer_name || 'User', city: result.data.location || 'Detecting...' };
+//         setBillUnits(units);
+//         setUserData(user);
+//         setInteractionLevel('bill-uploaded');
+//         const updatedSpecs = await fetchSystemSpecs(units, []);
+//         requestAIInsights({ bill: result.data, specs: updatedSpecs, units, appliances: [] });
+//       }
+//     } finally { setIsScanning(false); }
+//   };
+
+//   const toggleAppliance = (name: string) => {
+//     const techId = UI_NAME_TO_ID[name] || name.toLowerCase().replace(/\s+/g, '-');
+//     const exists = selectedAppliances.find(a => a.id === techId);
+//     const newSelection = exists
+//       ? selectedAppliances.filter(a => a.id !== techId)
+//       : [...selectedAppliances, { id: techId, name, wattage: WATTAGE_MAP[techId] || 500, quantity: 1, icon: 'zap' }];
+
+//     setSelectedAppliances(newSelection);
+//     fetchSystemSpecs(billUnits, newSelection);
+//   };
+
+//   const reset = () => {
+//     setInteractionLevel('initial');
+//     setSelectedAppliances([]);
+//     setAiInsights(null);
+//     setSpecs({ solarKw: 0, storageKwh: 0, inverterKw: 0, packageId: 'Smart Lite' });
+//   };
+
+//   return (
+//     <div className={cn("h-screen w-full overflow-hidden transition-all duration-1000 font-sans", isDark ? "bg-slate-950 text-white" : "bg-white text-slate-900")}>
+      
+//       {/* BACKGROUND */}
+//       <div className={cn("absolute inset-0 z-0 transition-all duration-[3000ms] bg-gradient-to-br", isDark ? SEASONS[seasonIdx].darkColor : SEASONS[seasonIdx].color)}>
+//         <div className="absolute inset-0 flex items-center justify-center p-20 pointer-events-none">
+//           <img src="/h23.png" alt="Solar House" className="absolute w-full h-full object-cover" />
+//         </div>
+//       </div>
+
+//       {/* HEADER CONTROLS */}
+//       <div className={cn("absolute p-2 top-10 left-[480px] z-50 flex items-center gap-8 rounded-[2rem] backdrop-blur-xl border shadow-lg", isDark ? "bg-black/60 border-white/10" : "bg-white/70 border-black/10")}>
+//         <img src="/logofull.png" className="h-10" alt="Logo" />
+//         <div className="px-5 py-2 rounded-full border text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
+//           <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+//           <span>Optimization Active</span>
+//         </div>
+//       </div>
+
+//       {/* SIDEBAR: LOAD PROFILING & AI */}
+//       <motion.aside className={cn("absolute left-12 top-10 bottom-10 w-[380px] z-50 rounded-[2rem] border backdrop-blur-[40px] shadow-2xl flex flex-col transition-all duration-500 overflow-hidden", isDark ? "bg-black/40 border-white/10" : "bg-white/60 border-white/80")}>
+//         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+          
+//           {/* USER HEADER */}
+//           <div className="mb-8">
+//             <div className="flex items-center justify-between">
+//               <h2 className="text-2xl font-black tracking-tighter">
+//                 {interactionLevel === 'initial' ? "System Design" : `Hello, ${userData.name.split(' ')[0]}`}
+//               </h2>
+//               {interactionLevel === 'bill-uploaded' && (
+//                 <button onClick={reset} className="p-2 rounded-xl bg-current/5 hover:bg-orange-500 hover:text-white transition-all"><ArrowLeft size={16} /></button>
+//               )}
+//             </div>
+//             <p className="text-[10px] font-black opacity-40 uppercase tracking-widest flex items-center gap-2 mt-1">
+//               <Home size={10} /> {userData.city || "Upload Bill to Start"}
+//             </p>
+//           </div>
+
+//           {interactionLevel === 'initial' ? (
+//             <div className="p-8 border-2 border-dashed border-current/10 rounded-[2rem] text-center space-y-4 hover:border-orange-500 transition-all cursor-pointer relative">
+//               <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg"><Download className="text-white" size={20} /></div>
+//               <p className="text-[11px] font-black uppercase tracking-widest">{isScanning ? "Processing..." : "Drop Energy Bill"}</p>
+//               <input type="file" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+//             </div>
+//           ) : (
+//             <div className="space-y-6">
+              
+//               {/* DROPDOWN: LOAD PROFILING */}
+//               <div className="rounded-3xl border border-white/5 overflow-hidden bg-black/5">
+//                 <button 
+//                   onClick={() => setShowLoadProfiling(!showLoadProfiling)}
+//                   className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-colors"
+//                 >
+//                   <span className="text-[11px] font-black uppercase tracking-widest opacity-60">Load Profiling</span>
+//                   <div className="flex items-center gap-3">
+//                     <span className="text-[10px] font-bold text-orange-500">{selectedAppliances.length} Selected</span>
+//                     <ChevronDown size={16} className={cn("transition-transform duration-300", showLoadProfiling ? "rotate-180" : "")} />
+//                   </div>
+//                 </button>
+                
+//                 <AnimatePresence>
+//                   {showLoadProfiling && (
+//                     <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="px-4 pb-4 space-y-6 overflow-hidden">
+//                       {CATEGORIES.map(cat => (
+//                         <div key={cat.id} className="space-y-2">
+//                           <p className="text-[9px] font-black opacity-30 uppercase ml-1">{cat.name}</p>
+//                           <div className="grid grid-cols-1 gap-1">
+//                             {cat.items.map(item => {
+//                               const isSelected = selectedAppliances.some(a => a.name === item);
+//                               return (
+//                                 <button key={item} onClick={() => toggleAppliance(item)} className={cn("p-3 rounded-xl text-[10px] font-bold uppercase flex items-center justify-between transition-all", isSelected ? "bg-orange-500 text-white" : "bg-white/5 hover:bg-white/10")}>
+//                                   {item} {isSelected ? <Minus size={14} /> : <Plus size={14} className="opacity-40" />}
+//                                 </button>
+//                               );
+//                             })}
+//                           </div>
+//                         </div>
+//                       ))}
+//                     </motion.div>
+//                   )}
+//                 </AnimatePresence>
+//               </div>
+
+//               {/* AI INSIGHTS CARD (UNDER DROPDOWN) */}
+//               <div className={cn("p-6 rounded-[2rem] border transition-all", isDark ? "bg-orange-500/5 border-orange-500/20" : "bg-orange-50 border-orange-200")}>
+//                 <div className="flex items-center gap-2 mb-4">
+//                   <Sparkles size={16} className="text-orange-500" />
+//                   <h4 className="text-[11px] font-black uppercase tracking-widest">AI Energy Advisor</h4>
+//                 </div>
+                
+//                 {aiLoading ? (
+//                   <div className="space-y-2 animate-pulse">
+//                     <div className="h-2 bg-current/10 rounded w-full" />
+//                     <div className="h-2 bg-current/10 rounded w-[80%]" />
+//                   </div>
+//                 ) : aiError ? (
+//                   <p className="text-[10px] text-red-500 font-bold">{aiError}</p>
+//                 ) : aiInsights ? (
+//                   <ul className="space-y-3">
+//                     {aiInsights.slice(0, 3).map((insight, i) => (
+//                       <li key={i} className="text-[11px] leading-relaxed opacity-80 flex gap-2">
+//                         <span className="text-orange-500">•</span> {insight}
+//                       </li>
+//                     ))}
+//                   </ul>
+//                 ) : (
+//                   <p className="text-[10px] opacity-40 italic">Adjust your load to see real-time suggestions.</p>
+//                 )}
+//               </div>
+
+//             </div>
+//           )}
+//         </div>
+//       </motion.aside>
+
+//       {/* MAIN CONTENT AREA (RIGHT SIDE) */}
+//       <AnimatePresence>
+//         {specs.solarKw > 0 && (
+//           <>
+//             {/* CAPACITY BADGE */}
+//             <motion.div initial={{ x: 50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="absolute right-10 top-1/2 -translate-y-1/2 z-50 p-8 rounded-[2rem] border backdrop-blur-3xl bg-black/20 w-[380px]">
+//               <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40 mb-2">Recommended Capacity</p>
+//               <div className="flex items-baseline gap-3 mb-6">
+//                 <h3 className="text-8xl font-black text-orange-500">{specs.solarKw.toFixed(1)}</h3>
+//                 <span className="text-2xl font-black opacity-30 italic">kW</span>
+//               </div>
+//               <div className="space-y-2">
+//                 <ComponentRow icon={Sun} label="PV Panels" value={`${specs.solarKw.toFixed(1)} kW`} />
+//                 <ComponentRow icon={Cpu} label="Inverter" value={`${specs.inverterKw.toFixed(1)} kW`} />
+//                 <ComponentRow icon={BatteryMedium} label="Storage" value={`${specs.storageKwh.toFixed(1)} kWh`} />
+//               </div>
+//             </motion.div>
+
+//             {/* BOTTOM PLOT & IMPACT */}
+//             <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="absolute bottom-10 left-[420px] right-10 z-50 flex flex-col gap-4">
+//               <div className="h-32 rounded-[2rem] border backdrop-blur-3xl bg-black/20 p-6">
+//                 <div className="flex items-end h-full gap-1">
+//                   {loadCurveData.map((h, i) => (
+//                     <motion.div key={i} animate={{ height: `${h}%` }} className={cn("flex-1 rounded-t-sm", i > 6 && i < 18 ? "bg-orange-500/50" : "bg-white/10")} />
+//                   ))}
+//                 </div>
+//               </div>
+//               <div className="flex gap-4">
+//                 <ImpactBox label="Monthly Savings" value={`Rs ${(specs.monthlySavings/1000).toFixed(1)}k`} icon={Wallet} color="text-emerald-500" isDark={isDark} />
+//                 <ImpactBox label="Carbon Offset" value={`${specs.carbonOffset.toFixed(0)} kg`} icon={TreeDeciduous} color="text-orange-500" isDark={isDark} />
+//                 <div onClick={() => setShowTierDetails(true)} className="flex-1 p-6 rounded-[2rem] border bg-black/20 cursor-pointer hover:bg-orange-500 group transition-all">
+//                   <p className="text-[8px] font-black uppercase opacity-40 group-hover:text-white">System Tier</p>
+//                   <p className="text-xl font-black group-hover:text-white">{specs.packageId}</p>
+//                 </div>
+//               </div>
+//             </motion.div>
+//           </>
+//         )}
+//       </AnimatePresence>
+//     </div>
+//   );
+// }
+
+// // SHARED COMPONENTS
+// function ComponentRow({ icon: Icon, label, value }: any) {
+//   return (
+//     <div className="flex items-center justify-between p-3 rounded-xl bg-white/5">
+//       <div className="flex items-center gap-2">
+//         <Icon size={14} className="text-orange-500" />
+//         <span className="text-[9px] font-black uppercase opacity-40">{label}</span>
+//       </div>
+//       <span className="text-xs font-black">{value}</span>
+//     </div>
+//   );
+// }
+
+// function ImpactBox({ label, value, icon: Icon, color, isDark }: any) {
+//   return (
+//     <div className={cn("flex-1 p-6 rounded-[2rem] border backdrop-blur-xl", isDark ? "bg-black/20" : "bg-white/50")}>
+//       <div className="flex justify-between items-start mb-2">
+//         <p className="text-[8px] font-black uppercase opacity-40">{label}</p>
+//         <Icon size={14} className={color} />
+//       </div>
+//       <h4 className={cn("text-2xl font-black", color)}>{value}</h4>
+//     </div>
+//   );
+// }
+
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -5,7 +331,8 @@ import {
   Wind, CloudSnow, Flower2, ThermometerSun,
   Download, Bell, Home, Calendar, ShieldCheck,
   CloudSun, Gauge, Info, TreeDeciduous, TrendingUp,
-  Activity, Cpu, BatteryMedium, Layers, X, ArrowLeft
+  Activity, Cpu, BatteryMedium, Layers, X, ArrowLeft, 
+  ChevronDown, Sparkles
 } from 'lucide-react';
 
 // Types & Config
@@ -23,15 +350,8 @@ const CATEGORIES = [
 ];
 
 const WATTAGE_MAP: Record<string, number> = {
-  ac: 1800,      // 1.5 Ton default
-  fan: 80,       // Standard ceiling fan
-  fridge: 300,   // Medium double door
-  microwave: 1200,
-  motor: 746,    // 1 HP
-  tv: 100,
-  lights: 60,    // LED panel
-  tesla: 7200,   // EV charger ~7.2kW
-  bike: 500,     // Electric bike charger
+  ac: 1800, fan: 80, fridge: 300, microwave: 1200,
+  motor: 746, tv: 100, lights: 60, tesla: 7200, bike: 500,
 };
 
 const SEASONS = [
@@ -47,6 +367,13 @@ export default function App() {
   const [interactionLevel, setInteractionLevel] = useState<'initial' | 'bill-uploaded'>('initial');
   const [isScanning, setIsScanning] = useState(false);
   const [showTierDetails, setShowTierDetails] = useState(false);
+  
+  // New UI States
+  const [showLoadProfiling, setShowLoadProfiling] = useState(false); // Minimized by default
+  const [aiInsights, setAiInsights] = useState<string[] | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
   const [billUnits, setBillUnits] = useState(0);
   const [userData, setUserData] = useState({ name: '', city: '' });
   const [selectedAppliances, setSelectedAppliances] = useState<Appliance[]>([]);
@@ -57,8 +384,6 @@ export default function App() {
 
   const isDark = theme === 'dark';
 
-  // --- REACTIVE PLOT LOGIC ---
-  // The load curve grows taller and wider as more appliances are selected
   const loadCurveData = useMemo(() => {
     const base = [15, 20, 18, 25, 45, 70, 85, 90, 75, 60, 40, 25, 20, 35, 50, 65, 80, 95, 85, 60, 45, 30, 20, 15];
     const multiplier = 1 + (selectedAppliances.length * 0.15);
@@ -70,6 +395,32 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
+  const requestAIInsights = async (payload: any) => {
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const res = await fetch(`${API_BASE}/ai-insights`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Handle both array and newline string formats
+        const insights = Array.isArray(data.insights) 
+          ? data.insights 
+          : data.text?.split('\n').filter((l: string) => l.trim().length > 0);
+        setAiInsights(insights);
+      } else {
+        setAiError("AI insights temporarily unavailable.");
+      }
+    } catch (e) {
+      setAiError("Failed to connect to AI advisor.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const fetchSystemSpecs = async (units: number, apps: Appliance[]) => {
     try {
       const res = await fetch(`${API_BASE}/calculate`, {
@@ -77,8 +428,13 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ units, appliances: apps }),
       });
-      if (res.ok) setSpecs(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        setSpecs(data);
+        return data;
+      }
     } catch (e) { console.error(e); }
+    return null;
   };
 
   const handleFileUpload = async (event: any) => {
@@ -91,10 +447,16 @@ export default function App() {
       const response = await fetch(`${API_BASE}/upload-bill`, { method: 'POST', body: formData });
       const result = await response.json();
       if (result.success) {
-        setBillUnits(Number(result.data.units_consumed) || 0);
-        setUserData({ name: result.data.consumer_name || 'Valued User', city: result.data.location || 'Detecting...' });
+        const units = Number(result.data.units_consumed) || 0;
+        const user = { name: result.data.consumer_name || 'Valued User', city: result.data.location || 'Detecting...' };
+        
+        setBillUnits(units);
+        setUserData(user);
         setInteractionLevel('bill-uploaded');
-        fetchSystemSpecs(Number(result.data.units_consumed), []);
+        
+        const currentSpecs = await fetchSystemSpecs(units, []);
+        // Trigger AI Strategy immediately after upload
+        requestAIInsights({ bill: result.data, specs: currentSpecs, units, appliances: [] });
       }
     } finally { setIsScanning(false); }
   };
@@ -112,7 +474,6 @@ export default function App() {
 
   const currentSeason = SEASONS[seasonIdx];
 
-  // helper to map package id -> detailed content
   const getPackageDetails = (pkg: string) => {
     const id = (pkg || 'Smart Lite').toLowerCase();
     if (id.includes('plus')) {
@@ -120,40 +481,24 @@ export default function App() {
         title: 'Smart Plus (Most Popular)',
         target: '1–2 Kanal / 500 yards Houses',
         capacity: '15–30 kW | 20–40 kWh Smart Battery',
-        powers: [
-          'Full Home Backup',
-          '4–6 Air Conditioners',
-          'Water Pump',
-          'Built-in EV Charger'
-        ],
+        powers: ['Full Home Backup', '4–6 Air Conditioners', 'Water Pump', 'Built-in EV Charger'],
         support: 'Mobile App + Cloud Monitoring'
       };
     }
     if (id.includes('estate') || id.includes('max')) {
       return {
         title: 'Estate Max',
-        target: 'Farmhouses / Large Estates / 1000 yards & above',
+        target: 'Farmhouses / Large Estates',
         capacity: '50 kW+ | High-Capacity Lithium Bank',
-        powers: [
-          'Centralized Cooling',
-          'Pools',
-          'Lifts',
-          'Multiple EV Chargers'
-        ],
+        powers: ['Centralized Cooling', 'Pools', 'Lifts', 'Multiple EV Chargers'],
         support: '24/7 Dedicated NOC Support'
       };
     }
-    // default -> Smart Lite
     return {
       title: 'Smart Lite',
-      target: 'Up to 10 Marla / 250 yards / Portions',
+      target: 'Up to 10 Marla / Portions',
       capacity: '5–10 kW | 10 kWh Smart Battery',
-      powers: [
-        'Basic Lights & Fans',
-        'Refrigerator',
-        '1–2 Inverter ACs',
-        'LED TV'
-      ],
+      powers: ['Basic Lights & Fans', 'Refrigerator', '1–2 Inverter ACs', 'LED TV'],
       support: 'Mobile App + Cloud Monitoring'
     };
   };
@@ -161,53 +506,37 @@ export default function App() {
   return (
     <div className={cn("h-screen w-full overflow-hidden transition-all duration-1000 font-sans", isDark ? "bg-slate-950 text-white" : "bg-white text-slate-900")}>
 
-      {/* 1. BACKGROUND / WEATHER LAYER */}
+      {/* 1. BACKGROUND */}
       <div className={cn("absolute inset-0 z-0 transition-all duration-[3000ms] bg-gradient-to-br", isDark ? currentSeason.darkColor : currentSeason.color)}>
-        {/* <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
-          {[...Array(25)].map((_, i) => (
-            <motion.div
-              key={`${seasonIdx}-${i}`}
-              initial={{ y: -100, x: Math.random() * 100 + "%", opacity: 0 }}
-              animate={{ y: "110vh", opacity: [0, 1, 1, 0], rotate: 360 }}
-              transition={{ duration: 10 + Math.random() * 8, repeat: Infinity, ease: "linear", delay: i * 0.5 }}
-              className="absolute text-4xl opacity-30"
-            >
-              {currentSeason.particle}
-            </motion.div>
-          ))}
-        </div> */}
         <div className="absolute inset-0 flex items-center justify-center p-20 pointer-events-none">
-          <img
-            src="/h23.png"
-            alt="Solar House" className="absolute w-full h-full object-cover"
-          />
+          <img src="/h23.png" alt="Solar House" className="absolute w-full h-full object-cover" />
         </div>
       </div>
 
-
-      {/* 2. LOGO & STATUS (CENTERED-LEFT) */}
+      {/* 2. LOGO & STATUS */}
       <div className={cn("absolute p-2 top-10 left-[480px] z-50 flex items-center gap-8 rounded-[2rem] backdrop-blur-xl border shadow-lg", isDark ? "bg-black/60 border-white/10" : "bg-white/70 border-black/10")}>
-        <img src="/logofull.png" className={cn("h-10 transition-all")} alt="Logo" />
-        <div className={cn("px-5 py-2 rounded-full backdrop-blur-xl border text-[10px] font-black uppercase tracking-widest flex items-center gap-3", isDark ? "bg-black/60 border-white/10" : "bg-black/5 border-black/10")}>
+        <img src="/logofull.png" className="h-10" alt="Logo" />
+        <div className={cn("px-5 py-2 rounded-full border text-[10px] font-black uppercase tracking-widest flex items-center gap-3", isDark ? "bg-black/60 border-white/10" : "bg-black/5 border-black/10")}>
           <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-          <span className="opacity-100">Optimization Active</span>
+          <span>Optimization Active</span>
         </div>
-
       </div>
+
       <button
         onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
-        className={cn("p-3 absolute top-10 right-10 rounded-[2rem] backdrop-blur-xl border shadow-lg transition-all", isDark ? "bg-black/60 border-white/10 hover:bg-black/80" : "bg-white/70 border-black/10 hover:bg-white/90")}
+        className={cn("p-3 absolute top-10 right-10 rounded-[2rem] backdrop-blur-xl border shadow-lg transition-all z-[100]", isDark ? "bg-black/60 border-white/10 hover:bg-black/80" : "bg-white/70 border-black/10 hover:bg-white/90")}
       >
         {isDark ? <Sun size={18} className="text-orange-400" /> : <Moon size={18} className="text-slate-700" />}
       </button>
-      {/* 3. LEFT PANEL: LOAD PROFILING */}
+
+      {/* 3. LEFT PANEL: LOAD PROFILING & AI */}
       <motion.aside
         className={cn(
           "absolute left-12 top-10 bottom-10 w-[380px] z-50 rounded-[2rem] border backdrop-blur-[40px] shadow-2xl flex flex-col transition-all duration-500 overflow-hidden",
           isDark ? "bg-black/40 border-white/10" : "bg-white/60 border-white/80"
         )}
       >
-        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8">
+        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-6">
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-black tracking-tighter">
@@ -219,13 +548,10 @@ export default function App() {
                     setInteractionLevel('initial');
                     setSelectedAppliances([]);
                     setBillUnits(0);
-                    setUserData({ name: '', city: '' });
+                    setAiInsights(null);
                     setSpecs({ solarKw: 0, storageKwh: 0, inverterKw: 0, packageId: 'Smart Lite', monthlySavings: 0, carbonOffset: 0, gridImpact: 0 });
                   }}
-                  className={cn(
-                    "p-2 rounded-xl transition-all hover:scale-110 active:scale-95",
-                    isDark ? "bg-white/10 hover:bg-white/20 text-white/60 hover:text-white" : "bg-black/5 hover:bg-black/10 text-black/40 hover:text-black/80"
-                  )}
+                  className="p-2 rounded-xl bg-current/5 hover:bg-orange-500 hover:text-white transition-all"
                 >
                   <ArrowLeft size={16} />
                 </button>
@@ -238,7 +564,7 @@ export default function App() {
 
           {interactionLevel === 'initial' ? (
             <div className="pt-4 space-y-4">
-              <div className="p-8 border-2 border-dashed border-current/10 rounded-[2rem] text-center space-y-4 hover:border-orange-500/50 transition-all cursor-pointer relative group">
+              <div className="p-8 border-2 border-dashed border-current/10 rounded-[2rem] text-center space-y-4 hover:border-orange-500 transition-all cursor-pointer relative group">
                 <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform">
                   <Download className="text-white" size={20} />
                 </div>
@@ -248,36 +574,90 @@ export default function App() {
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Load Profiling</span>
-                <span className="text-[9px] font-bold bg-orange-500/10 text-orange-500 px-2 py-0.5 rounded-full">{selectedAppliances.length} Active</span>
-              </div>
-              <div className="space-y-6">
-                {CATEGORIES.map(cat => (
-                  <div key={cat.id} className="space-y-3">
-                    <p className="text-[9px] font-black text-current/30 uppercase tracking-widest">{cat.name}</p>
-                    <div className="grid grid-cols-1 gap-2">
-                      {cat.items.map(item => {
-                        const isSelected = selectedAppliances.some(a => a.name === item);
-                        return (
-                          <button key={item} onClick={() => toggleAppliance(item)} className={cn(
-                            "p-4 rounded-2xl border text-[10px] font-black uppercase tracking-widest flex items-center justify-between transition-all",
-                            isSelected ? "bg-orange-500 text-white border-transparent shadow-lg" : "bg-current/5 border-transparent opacity-60 hover:opacity-100"
-                          )}>
-                            {item} {isSelected ? <Minus size={14} /> : <Plus size={14} className="opacity-40" />}
-                          </button>
-                        );
-                      })}
-                    </div>
+              {/* COLLAPSIBLE LOAD PROFILING */}
+              <div className="rounded-3xl border border-white/10 overflow-hidden bg-white/5">
+                <button 
+                  onClick={() => setShowLoadProfiling(!showLoadProfiling)}
+                  className="w-full p-5 flex items-center justify-between hover:bg-white/5 transition-colors"
+                >
+                  <div className="flex flex-col items-start text-left">
+                    <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Load Profiling</span>
+                    <span className="text-[10px] font-bold text-orange-500 mt-0.5">{selectedAppliances.length} Active Devices</span>
                   </div>
-                ))}
+                  <ChevronDown size={18} className={cn("transition-transform duration-500", showLoadProfiling ? "rotate-180" : "")} />
+                </button>
+                
+                <AnimatePresence>
+                  {showLoadProfiling && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                      className="px-5 pb-5 space-y-6 overflow-hidden"
+                    >
+                      {CATEGORIES.map(cat => (
+                        <div key={cat.id} className="space-y-3">
+                          <p className="text-[9px] font-black text-current/30 uppercase tracking-widest">{cat.name}</p>
+                          <div className="grid grid-cols-1 gap-2">
+                            {cat.items.map(item => {
+                              const isSelected = selectedAppliances.some(a => a.name === item);
+                              return (
+                                <button key={item} onClick={() => toggleAppliance(item)} className={cn(
+                                  "p-4 rounded-2xl border text-[10px] font-black uppercase tracking-widest flex items-center justify-between transition-all",
+                                  isSelected ? "bg-orange-500 text-white border-transparent shadow-lg" : "bg-current/5 border-transparent opacity-60 hover:opacity-100"
+                                )}>
+                                  {item} {isSelected ? <Minus size={14} /> : <Plus size={14} className="opacity-40" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* AI STRATEGY BLOCK */}
+              <div className={cn(
+                "p-6 rounded-[2.5rem] border transition-all duration-700", 
+                isDark ? "bg-orange-500/5 border-orange-500/20" : "bg-orange-50 border-orange-200"
+              )}>
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="p-2 bg-orange-500 rounded-xl shadow-lg shadow-orange-500/20">
+                    <Sparkles size={14} className="text-white" />
+                  </div>
+                  <h4 className="text-[11px] font-black uppercase tracking-widest">AI Strategy Advisor</h4>
+                </div>
+
+                {aiLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3, 4, 5, 6].map(i => (
+                      <div key={i} className="h-2 bg-orange-500/10 rounded-full animate-pulse" style={{ width: `${100 - (i * 8)}%` }} />
+                    ))}
+                  </div>
+                ) : aiError ? (
+                  <p className="text-[10px] text-red-500 font-bold">{aiError}</p>
+                ) : aiInsights ? (
+                  <ul className="space-y-4">
+                    {aiInsights.map((insight, i) => (
+                      <motion.li 
+                        initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
+                        key={i} className="text-[11px] leading-relaxed flex gap-3 group"
+                      >
+                        <span className="text-orange-500 font-bold">•</span>
+                        <span className={isDark ? "text-white/80" : "text-slate-700"}>{insight}</span>
+                      </motion.li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-[10px] opacity-40 italic text-center py-4">Generating personalized energy insights...</p>
+                )}
               </div>
             </div>
           )}
         </div>
       </motion.aside>
 
-      {/* 4. RECOMMENDED SIZE + COMPONENTS (RIGHT CENTER) */}
+      {/* 4. RECOMMENDED SIZE */}
       <AnimatePresence>
         {specs.solarKw > 0 && (
           <motion.div
@@ -293,7 +673,6 @@ export default function App() {
               <span className="text-3xl font-black text-current opacity-40 italic">kW</span>
             </div>
 
-            {/* PV, Inverter, Battery Grid */}
             <div className="grid grid-cols-1 gap-3">
               <ComponentRow icon={Sun} label="PV Panel Matrix" value={`${specs.solarKw.toFixed(1)} kW`} />
               <ComponentRow icon={Cpu} label="Hybrid Inverter" value={`${specs.inverterKw.toFixed(2) || (specs.solarKw * 0.8).toFixed(1)} kW`} />
@@ -310,7 +689,6 @@ export default function App() {
             initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
             className="absolute bottom-10 left-[420px] right-10 z-50 space-y-4"
           >
-            {/* REACTIVE LOAD PLOT */}
             <div className={cn("w-[46.5%] h-32 ml-11 rounded-[2rem] border backdrop-blur-2xl p-6 flex flex-col justify-center relative", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}>
               <div className="absolute top-6 left-6 text-[10px] font-black uppercase tracking-widest opacity-40 flex items-center gap-2">
                 <Activity size={12} className="text-orange-500" /> Dynamic Load Projection
@@ -325,14 +703,10 @@ export default function App() {
               </div>
             </div>
 
-            {/* IMPACT BOXES */}
             <div className="flex gap-4 ml-11 ">
               <ImpactBox isDark={isDark} label="Investment Recovery" value={`Rs ${(specs.monthlySavings / 1000).toFixed(1)}k`} sub="Monthly ROI" icon={Wallet} color="text-emerald-500" />
               <ImpactBox isDark={isDark} label="Inflation Mastery" value={`${specs.gridImpact || 98}%`} sub="Cost Hedged" icon={TrendingUp} color="text-blue-500" />
 
-
-
-              {/* TIER BADGE (Clickable) */}
               <div
                 onClick={() => setShowTierDetails(true)}
                 className={cn("flex-[1.2] p-6 rounded-[2rem] border cursor-pointer hover:scale-[1.02] transition-transform shadow-lg", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}
@@ -369,29 +743,21 @@ export default function App() {
                   <div>
                     <h3 className="text-2xl md:text-3xl font-black tracking-tighter mb-2">{pd.title}</h3>
                     <p className="text-sm opacity-60 mb-6 font-medium italic">Optimized configuration and support for the selected package.</p>
-
                     <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-3">
                         <p className="text-[10px] font-black uppercase opacity-40 tracking-widest">Target</p>
                         <p className="text-sm font-bold">{pd.target}</p>
                       </div>
-
                       <div className="space-y-3">
                         <p className="text-[10px] font-black uppercase opacity-40 tracking-widest">Capacity</p>
                         <p className="text-sm font-bold">{pd.capacity}</p>
                       </div>
                     </div>
-
                     <div className="mt-6">
                       <p className="text-[10px] font-black uppercase opacity-40 tracking-widest mb-3">Powers</p>
                       <ul className="list-disc ml-5 space-y-1 text-sm">
                         {pd.powers.map((p: string, i: number) => <li key={i}>{p}</li>)}
                       </ul>
-                    </div>
-
-                    <div className="mt-6">
-                      <p className="text-[10px] font-black uppercase opacity-40 tracking-widest">Support</p>
-                      <p className="text-sm font-bold">{pd.support}</p>
                     </div>
                   </div>
                 );
@@ -400,12 +766,11 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
-
     </div>
   );
 }
 
-// COMPONENTS
+// SHARED COMPONENTS
 function ComponentRow({ icon: Icon, label, value }: any) {
   return (
     <div className="flex items-center justify-between p-3 rounded-2xl bg-current/5 border border-current/5">
@@ -426,15 +791,6 @@ function ImpactBox({ label, value, sub, icon: Icon, color, isDark }: any) {
     )}>
       <div className="flex justify-between items-start"><p className="text-[8px] font-black uppercase tracking-widest opacity-40">{label}</p><Icon size={14} className={color} /></div>
       <div><h4 className={cn("text-2xl font-black tracking-tighter", color)}>{value}</h4><p className="text-[9px] font-bold opacity-40 uppercase mt-1">{sub}</p></div>
-    </div>
-  );
-}
-
-function DetailRow({ label, value }: any) {
-  return (
-    <div className="flex justify-between border-b border-current/5 pb-3">
-      <span className="text-xs font-bold opacity-40 uppercase tracking-widest">{label}</span>
-      <span className="text-xs font-black uppercase">{value}</span>
     </div>
   );
 }
