@@ -112,6 +112,52 @@ export default function App() {
 
   const currentSeason = SEASONS[seasonIdx];
 
+  // helper to map package id -> detailed content
+  const getPackageDetails = (pkg: string) => {
+    const id = (pkg || 'Smart Lite').toLowerCase();
+    if (id.includes('plus')) {
+      return {
+        title: 'Smart Plus (Most Popular)',
+        target: '1–2 Kanal / 500 yards Houses',
+        capacity: '15–30 kW | 20–40 kWh Smart Battery',
+        powers: [
+          'Full Home Backup',
+          '4–6 Air Conditioners',
+          'Water Pump',
+          'Built-in EV Charger'
+        ],
+        support: 'Mobile App + Cloud Monitoring'
+      };
+    }
+    if (id.includes('estate') || id.includes('max')) {
+      return {
+        title: 'Estate Max',
+        target: 'Farmhouses / Large Estates / 1000 yards & above',
+        capacity: '50 kW+ | High-Capacity Lithium Bank',
+        powers: [
+          'Centralized Cooling',
+          'Pools',
+          'Lifts',
+          'Multiple EV Chargers'
+        ],
+        support: '24/7 Dedicated NOC Support'
+      };
+    }
+    // default -> Smart Lite
+    return {
+      title: 'Smart Lite',
+      target: 'Up to 10 Marla / 250 yards / Portions',
+      capacity: '5–10 kW | 10 kWh Smart Battery',
+      powers: [
+        'Basic Lights & Fans',
+        'Refrigerator',
+        '1–2 Inverter ACs',
+        'LED TV'
+      ],
+      support: 'Mobile App + Cloud Monitoring'
+    };
+  };
+
   return (
     <div className={cn("h-screen w-full overflow-hidden transition-all duration-1000 font-sans", isDark ? "bg-slate-950 text-white" : "bg-white text-slate-900")}>
 
@@ -314,16 +360,42 @@ export default function App() {
       <AnimatePresence>
         {showTierDetails && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-10 bg-black/40 backdrop-blur-xl">
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className={cn("w-[500px] p-10 rounded-[3rem] border shadow-2xl relative", isDark ? "bg-slate-900 border-white/10" : "bg-white border-slate-200")}>
-              <button onClick={() => setShowTierDetails(false)} className="absolute top-8 right-8 opacity-40 hover:opacity-100"><X size={24} /></button>
-              <h3 className="text-3xl font-black tracking-tighter mb-2">{specs.packageId || "Smart Lite"} Package Details</h3>
-              <p className="text-sm opacity-60 mb-8 font-medium italic">"Optimized for standard residential load with high-efficiency tier-1 components."</p>
-              <div className="space-y-4">
-                <DetailRow label="PV Warranty" value="25 Years" />
-                <DetailRow label="Inverter Type" value="Hybrid Smart" />
-                <DetailRow label="Battery Cells" value="LiFePO4" />
-                <DetailRow label="Installation" value="Standard Incl." />
-              </div>
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className={cn("w-[600px] p-8 rounded-[3rem] border shadow-2xl relative", isDark ? "bg-slate-900 border-white/10" : "bg-white border-slate-200")}>
+              <button onClick={() => setShowTierDetails(false)} className="absolute top-6 right-6 opacity-40 hover:opacity-100"><X size={24} /></button>
+
+              {(() => {
+                const pd = getPackageDetails(specs.packageId);
+                return (
+                  <div>
+                    <h3 className="text-2xl md:text-3xl font-black tracking-tighter mb-2">{pd.title}</h3>
+                    <p className="text-sm opacity-60 mb-6 font-medium italic">Optimized configuration and support for the selected package.</p>
+
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <p className="text-[10px] font-black uppercase opacity-40 tracking-widest">Target</p>
+                        <p className="text-sm font-bold">{pd.target}</p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <p className="text-[10px] font-black uppercase opacity-40 tracking-widest">Capacity</p>
+                        <p className="text-sm font-bold">{pd.capacity}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-6">
+                      <p className="text-[10px] font-black uppercase opacity-40 tracking-widest mb-3">Powers</p>
+                      <ul className="list-disc ml-5 space-y-1 text-sm">
+                        {pd.powers.map((p: string, i: number) => <li key={i}>{p}</li>)}
+                      </ul>
+                    </div>
+
+                    <div className="mt-6">
+                      <p className="text-[10px] font-black uppercase opacity-40 tracking-widest">Support</p>
+                      <p className="text-sm font-bold">{pd.support}</p>
+                    </div>
+                  </div>
+                );
+              })()}
             </motion.div>
           </motion.div>
         )}
