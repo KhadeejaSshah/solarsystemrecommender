@@ -17,10 +17,73 @@ import { cn } from './lib/utils';
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 const CATEGORIES = [
-  { id: 'climate', name: 'Climate', items: ['Air Conditioner', 'Ceiling Fan'] },
-  { id: 'kitchen', name: 'Kitchen', items: ['Refrigerator', 'Microwave Oven', 'Water Motor'] },
-  { id: 'tech', name: 'Tech', items: ['LED TV', 'LED Lights'] },
-  { id: 'ev', name: 'Mobility', items: ['EV Car', 'Electric Bike'] }
+  {
+    id: 'climate',
+    name: 'Climate',
+    items: [
+      {
+        name: 'Air Conditioner',
+        id: 'ac',
+        variants: [
+          { key: '1-ton', label: '1.0 Ton', watt: 1250 },
+          { key: '1.5-ton', label: '1.5 Ton', watt: 1800 },
+          { key: '2-ton', label: '2.0 Ton', watt: 2400 }
+        ]
+      },
+      {
+        name: 'Ceiling Fan',
+        id: 'fan',
+        variants: [
+          { key: 'standard', label: 'Standard Fan', watt: 80 }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'kitchen',
+    name: 'Kitchen',
+    items: [
+      {
+        name: 'Refrigerator',
+        id: 'fridge',
+        variants: [
+          { key: 'small', label: 'Small', watt: 150 },
+          { key: 'medium', label: 'Medium', watt: 300 },
+          { key: 'large', label: 'Large', watt: 500 }
+        ]
+      },
+      {
+        name: 'Microwave Oven',
+        id: 'microwave',
+        variants: [
+          { key: 'standard', label: 'Standard', watt: 1200 }
+        ]
+      },
+      {
+        name: 'Water Motor',
+        id: 'motor',
+        variants: [
+          { key: '1hp', label: '1 HP', watt: 746 }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'tech',
+    name: 'Tech',
+    items: [
+      { name: 'LED TV', id: 'tv', variants: [{ key: 'std', label: 'LED TV', watt: 100 }] },
+      { name: 'LED Lights', id: 'lights', variants: [{ key: 'std', label: 'LED Lights', watt: 60 }] }
+    ]
+  },
+  {
+    id: 'ev',
+    name: 'Mobility',
+    items: [
+      { name: 'EV Car', id: 'tesla', variants: [{ key: 'ev', label: 'EV Car', watt: 7200 }] },
+      { name: 'Electric Bike', id: 'bike', variants: [{ key: 'ebike', label: 'E-Bike', watt: 500 }] }
+    ]
+  }
 ];
 
 const WATTAGE_MAP: Record<string, number> = {
@@ -55,6 +118,11 @@ export default function App() {
     solarKw: 0, storageKwh: 0, inverterKw: 0, packageId: 'Smart Lite',
     monthlySavings: 0, carbonOffset: 0, gridImpact: 0
   });
+
+  // New states to support variants and quantities
+  const [variantOpen, setVariantOpen] = useState<Record<string, boolean>>({});
+  // Map itemId -> variantKey -> { quantity, watt, name }
+  const [applianceCounts, setApplianceCounts] = useState<Record<string, Record<string, { quantity: number; watt: number; name: string }>>>({});
 
   const isDark = theme === 'dark';
 
@@ -153,6 +221,62 @@ export default function App() {
     setSelectedAppliances(newSelection);
     fetchSystemSpecs(billUnits, newSelection);
   };
+
+  // Reverse lookup for display name (UI_NAME_TO_ID maps displayName -> id)
+  const ID_TO_UI_NAME = useMemo(() => {
+    const map: Record<string, string> = {};
+    Object.entries(UI_NAME_TO_ID).forEach(([k, v]) => (map[v] = k));
+    return map;
+  }, []);
+
+  const openVariantPanel = (displayName: string) => {
+    setVariantOpen(p => ({ ...p, [displayName]: !p[displayName] }));
+  };
+
+  const updateApplianceCount = (itemId: string, name: string, variantKey: string, watt: number, delta: number) => {
+    setApplianceCounts(prev => {
+      // clone top-level and the item-level object (avoid accidental shared refs)
+      const next: Record<string, Record<string, { quantity: number; watt: number; name: string }>> = { ...prev };
+      if (!next[itemId]) next[itemId] = {};
+      const existing = next[itemId][variantKey];
+      const currentQty = existing?.quantity || 0;
+      let newQty = Math.min(10, Math.max(0, currentQty + delta)); // clamp 0..10
+
+      if (newQty <= 0) {
+        // remove this variant
+        delete next[itemId][variantKey];
+        // if no variants left for this item, remove item
+        if (Object.keys(next[itemId]).length === 0) {
+          delete next[itemId];
+        }
+      } else {
+        next[itemId] = { ...next[itemId], [variantKey]: { quantity: newQty, watt, name } };
+      }
+
+      // Build selectedAppliances array: one entry per variant (unique id per variant)
+      const arr: any[] = [];
+      Object.entries(next).forEach(([id, variants]) => {
+        Object.entries(variants).forEach(([vKey, d]) => {
+          arr.push({
+            id: `${id}:${vKey}`,
+            name: `${d.name} (${vKey})`,
+            wattage: d.watt,
+            quantity: d.quantity,
+            icon: 'zap'
+          });
+        });
+      });
+
+      setSelectedAppliances(arr);
+      // Refresh specs on change
+      fetchSystemSpecs(billUnits, arr);
+      return next;
+    });
+  };
+
+  // Convenience handlers used in UI
+  const addOne = (itemId: string, name: string, variantKey: string, watt: number) => updateApplianceCount(itemId, name, variantKey, watt, +1);
+  const removeOne = (itemId: string, name: string, variantKey: string, watt: number) => updateApplianceCount(itemId, name, variantKey, watt, -1);
 
   const currentSeason = SEASONS[seasonIdx];
 
@@ -284,15 +408,66 @@ export default function App() {
                         <div key={cat.id} className="space-y-3">
                           <p className="text-[9px] font-black text-current/30 uppercase tracking-widest">{cat.name}</p>
                           <div className="grid grid-cols-1 gap-2">
-                            {cat.items.map(item => {
-                              const isSelected = selectedAppliances.some(a => a.name === item);
+                            {cat.items.map((item: any) => {
+                              const displayName = item.name;
+                              const itemId = item.id;
+                              // total across all variants for this item
+                              const totalSelected = applianceCounts[itemId] ? Object.values(applianceCounts[itemId]).reduce((s, d) => s + d.quantity, 0) : 0;
+                              const totalWatt = applianceCounts[itemId] ? Object.values(applianceCounts[itemId]).reduce((s, d) => s + (d.watt * d.quantity), 0) : 0;
                               return (
-                                <button key={item} onClick={() => toggleAppliance(item)} className={cn(
-                                  "p-4 rounded-2xl border text-[10px] font-black uppercase tracking-widest flex items-center justify-between transition-all",
-                                  isSelected ? "bg-orange-500 text-white border-transparent shadow-lg" : "bg-current/5 border-transparent opacity-60 hover:opacity-100"
-                                )}>
-                                  {item} {isSelected ? <Minus size={14} /> : <Plus size={14} className="opacity-40" />}
-                                </button>
+                                <div key={itemId} className="relative">
+                                  <button
+                                    onClick={() => openVariantPanel(displayName)}
+                                    className={cn(
+                                      "w-full p-4 rounded-2xl border text-[10px] font-black uppercase tracking-widest flex items-center justify-between transition-all",
+                                      totalSelected > 0 ? "bg-orange-500 text-white border-transparent shadow-lg" : "bg-current/5 border-transparent opacity-60 hover:opacity-100"
+                                    )}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <span>{displayName}</span>
+                                      {totalSelected > 0 && <span className="text-[10px] font-bold opacity-90">x{totalSelected}</span>}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[10px] opacity-60">{totalSelected > 0 ? `${totalWatt} W` : ''}</span>
+                                      <Plus size={14} className="opacity-40" />
+                                    </div>
+                                  </button>
+
+                                  {/* Variant dropdown */}
+                                  {variantOpen[displayName] && (
+                                    <div className="mt-2 p-3 rounded-2xl bg-current/3 border space-y-2">
+                                      {item.variants.map((v: any) => {
+                                        const cnt = applianceCounts[itemId] && applianceCounts[itemId][v.key] ? applianceCounts[itemId][v.key].quantity : 0;
+                                        return (
+                                          <div key={v.key} className="flex items-center justify-between">
+                                            <div>
+                                              <div className="text-[10px] font-bold">{v.label}</div>
+                                              <div className="text-[9px] opacity-50">{v.watt} W / unit</div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                              <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); removeOne(itemId, displayName, v.key, v.watt); }}
+                                                className="p-2 rounded-full bg-current/5"
+                                              >
+                                                <Minus size={12} />
+                                              </button>
+                                              <div className="text-[11px] font-black">{cnt}</div>
+                                              <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); addOne(itemId, displayName, v.key, v.watt); }}
+                                                className="p-2 rounded-full bg-current/5"
+                                              >
+                                                <Plus size={12} />
+                                              </button>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                      <div className="text-[9px] opacity-40 italic">You can add up to 10 units per variant. Quantities update the system sizing immediately.</div>
+                                    </div>
+                                  )}
+                                </div>
                               );
                             })}
                           </div>
@@ -376,11 +551,11 @@ export default function App() {
             initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
             className="absolute bottom-10 left-[420px] right-10 z-50 space-y-4"
           >
-            <div className={cn("w-[46.5%] h-32 ml-11 rounded-[2rem] border backdrop-blur-2xl p-6 flex flex-col justify-center relative", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}>
+            <div className={cn("w-[46.5%] h-36 ml-11 rounded-[2rem] border backdrop-blur-2xl p-6 flex flex-col justify-center relative", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}>
               <div className="absolute top-6 left-6 text-[10px] font-black uppercase tracking-widest opacity-40 flex items-center gap-2">
                 <Activity size={12} className="text-orange-500" /> Dynamic Load Projection
               </div>
-              <div className="flex items-end h-16 gap-1">
+              <div className="flex items-end h-30 mt-9 gap-1">
                 {loadCurveData.map((h, i) => (
                   <motion.div
                     key={i} initial={{ height: 0 }} animate={{ height: `${h}%` }}
