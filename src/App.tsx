@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   Sun, Moon, Zap, Leaf, Wallet, Clock, Plus, Minus,
   Wind, CloudSnow, Flower2, ThermometerSun,
   Download, Bell, Home, Calendar, ShieldCheck,
   CloudSun, Gauge, Info, TreeDeciduous, TrendingUp,
-  Activity, Cpu, BatteryMedium, Layers, X
+  Activity, Cpu, BatteryMedium, Layers, X, ArrowLeft
 } from 'lucide-react';
 
 // Types & Config
@@ -21,6 +21,18 @@ const CATEGORIES = [
   { id: 'tech', name: 'Tech', items: ['LED TV', 'LED Lights'] },
   { id: 'ev', name: 'Mobility', items: ['EV Car', 'Electric Bike'] }
 ];
+
+const WATTAGE_MAP: Record<string, number> = {
+  ac: 1800,      // 1.5 Ton default
+  fan: 80,       // Standard ceiling fan
+  fridge: 300,   // Medium double door
+  microwave: 1200,
+  motor: 746,    // 1 HP
+  tv: 100,
+  lights: 60,    // LED panel
+  tesla: 7200,   // EV charger ~7.2kW
+  bike: 500,     // Electric bike charger
+};
 
 const SEASONS = [
   { name: 'Spring', color: 'from-green-100 to-rose-100', darkColor: 'from-emerald-950/40 to-slate-900', icon: Flower2, particle: '🌸' },
@@ -39,7 +51,7 @@ export default function App() {
   const [userData, setUserData] = useState({ name: '', city: '' });
   const [selectedAppliances, setSelectedAppliances] = useState<Appliance[]>([]);
   const [specs, setSpecs] = useState<any>({
-    solarKw: 0, storageKwh: 0, inverterKw: 0, packageId: 'Lite',
+    solarKw: 0, storageKwh: 0, inverterKw: 0, packageId: 'Smart Lite',
     monthlySavings: 0, carbonOffset: 0, gridImpact: 0
   });
 
@@ -92,7 +104,7 @@ export default function App() {
     const exists = selectedAppliances.find(a => a.id === techId);
     const newSelection = exists
       ? selectedAppliances.filter(a => a.id !== techId)
-      : [...selectedAppliances, { id: techId, name, wattage: 500, quantity: 1, icon: 'zap' }];
+      : [...selectedAppliances, { id: techId, name, wattage: WATTAGE_MAP[techId] || 500, quantity: 1, icon: 'zap' }];
 
     setSelectedAppliances(newSelection);
     fetchSystemSpecs(billUnits, newSelection);
@@ -128,9 +140,9 @@ export default function App() {
 
 
       {/* 2. LOGO & STATUS (CENTERED-LEFT) */}
-      <div className={cn("absolute p-2 top-10 left-[480px] z-50 flex items-center gap-8 rounded-[2rem] bg-white/10 backdrop-blur-xl border border-white/10 shadow-lg", isDark ? "bg-white/40 border-black/10" : "bg-black/60 border-white/80")}>
+      <div className={cn("absolute p-2 top-10 left-[480px] z-50 flex items-center gap-8 rounded-[2rem] backdrop-blur-xl border shadow-lg", isDark ? "bg-black/60 border-white/10" : "bg-white/70 border-black/10")}>
         <img src="/logofull.png" className={cn("h-10 transition-all")} alt="Logo" />
-        <div className={cn("px-5 py-2 rounded-full bg-white/10 backdrop-blur-xl border border-white/10 text-[10px] font-black uppercase tracking-widest flex items-center gap-3", isDark ? "bg-black/80 border-white/10" : "bg-white/60 border-black/80")}>
+        <div className={cn("px-5 py-2 rounded-full backdrop-blur-xl border text-[10px] font-black uppercase tracking-widest flex items-center gap-3", isDark ? "bg-black/60 border-white/10" : "bg-black/5 border-black/10")}>
           <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
           <span className="opacity-100">Optimization Active</span>
         </div>
@@ -138,9 +150,9 @@ export default function App() {
       </div>
       <button
         onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
-        className="p-3 absolute top-10 right-10 rounded-[2rem] bg-white/10 backdrop-blur-xl border border-white/10 shadow-lg"
+        className={cn("p-3 absolute top-10 right-10 rounded-[2rem] backdrop-blur-xl border shadow-lg transition-all", isDark ? "bg-black/60 border-white/10 hover:bg-black/80" : "bg-white/70 border-black/10 hover:bg-white/90")}
       >
-        {isDark ? <Sun size={18} className="text-orange-400" /> : <Moon size={18} />}
+        {isDark ? <Sun size={18} className="text-orange-400" /> : <Moon size={18} className="text-slate-700" />}
       </button>
       {/* 3. LEFT PANEL: LOAD PROFILING */}
       <motion.aside
@@ -151,9 +163,28 @@ export default function App() {
       >
         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8">
           <div className="space-y-1">
-            <h2 className="text-2xl font-black tracking-tighter">
-              {interactionLevel === 'initial' ? "System Design" : `Hello, ${userData.name.split(' ')[0]}`}
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-black tracking-tighter">
+                {interactionLevel === 'initial' ? "System Design" : `Hello, ${userData.name.split(' ')[0]}`}
+              </h2>
+              {interactionLevel === 'bill-uploaded' && (
+                <button
+                  onClick={() => {
+                    setInteractionLevel('initial');
+                    setSelectedAppliances([]);
+                    setBillUnits(0);
+                    setUserData({ name: '', city: '' });
+                    setSpecs({ solarKw: 0, storageKwh: 0, inverterKw: 0, packageId: 'Smart Lite', monthlySavings: 0, carbonOffset: 0, gridImpact: 0 });
+                  }}
+                  className={cn(
+                    "p-2 rounded-xl transition-all hover:scale-110 active:scale-95",
+                    isDark ? "bg-white/10 hover:bg-white/20 text-white/60 hover:text-white" : "bg-black/5 hover:bg-black/10 text-black/40 hover:text-black/80"
+                  )}
+                >
+                  <ArrowLeft size={16} />
+                </button>
+              )}
+            </div>
             <p className="text-[10px] font-black opacity-40 uppercase tracking-widest flex items-center gap-2">
               <Home size={10} /> {userData.city || "Upload Bill to Start"}
             </p>
@@ -162,11 +193,11 @@ export default function App() {
           {interactionLevel === 'initial' ? (
             <div className="pt-4 space-y-4">
               <div className="p-8 border-2 border-dashed border-current/10 rounded-[2rem] text-center space-y-4 hover:border-orange-500/50 transition-all cursor-pointer relative group">
-                <input type="file" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
                 <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform">
                   <Download className="text-white" size={20} />
                 </div>
                 <p className="text-[11px] font-black uppercase tracking-widest">{isScanning ? "Processing..." : "Drop Energy Bill"}</p>
+                <input type="file" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
               </div>
             </div>
           ) : (
@@ -263,7 +294,7 @@ export default function App() {
                 <p className="text-[8px] font-black uppercase tracking-widest mb-1">System Metadata</p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase flex items-center opacity-80 gap-1"><Layers size={10} /> {specs.packageId || "Lite"}</p>
+                    <p className="text-[11px] font-black uppercase flex items-center opacity-80 gap-1"><Layers size={10} /> {specs.packageId || "Smart Lite"}</p>
                     <p className="text-[8px] opacity-40 font-bold uppercase">Package Tier</p>
                   </div>
                   <div>
@@ -285,7 +316,7 @@ export default function App() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-10 bg-black/40 backdrop-blur-xl">
             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className={cn("w-[500px] p-10 rounded-[3rem] border shadow-2xl relative", isDark ? "bg-slate-900 border-white/10" : "bg-white border-slate-200")}>
               <button onClick={() => setShowTierDetails(false)} className="absolute top-8 right-8 opacity-40 hover:opacity-100"><X size={24} /></button>
-              <h3 className="text-3xl font-black tracking-tighter mb-2">{specs.packageId || "Lite"} Package Details</h3>
+              <h3 className="text-3xl font-black tracking-tighter mb-2">{specs.packageId || "Smart Lite"} Package Details</h3>
               <p className="text-sm opacity-60 mb-8 font-medium italic">"Optimized for standard residential load with high-efficiency tier-1 components."</p>
               <div className="space-y-4">
                 <DetailRow label="PV Warranty" value="25 Years" />
