@@ -47,6 +47,10 @@ with open("conf.yaml", "r") as f:
 GEMINI_API_KEY = config["secrets"]["GEMINI_API_KEY"]
 LLAMA_PARSER_API_KEY = config["secrets"]["LLAMA_PARSER_API_KEY"]
 
+# expose engineering and appliance defaults for use in calculations
+ENGINEERING = config.get("engineering", {})
+APPLIANCE_DEFAULTS = {k.lower(): v for k, v in config.get("appliance_defaults", {}).items()}
+
 # configure the Google generative client
 genai.configure(api_key=GEMINI_API_KEY)
 
@@ -54,66 +58,81 @@ genai.configure(api_key=GEMINI_API_KEY)
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+def apply_appliance_defaults(appliances):
+    """Fill missing or zero wattage values from config defaults (match by name)."""
+    for a in appliances:
+        try:
+            name_key = (a.name or "").strip().lower()
+            if (not getattr(a, "wattage", None)) and name_key in APPLIANCE_DEFAULTS:
+                a.wattage = APPLIANCE_DEFAULTS[name_key]
+        except Exception:
+            continue
+
 # ---------------------------------------------------------
 # 3. ENGINEERING MATH ENGINE (WITH TERMINAL PRINTS)
 # ---------------------------------------------------------
 def terminal_solar_math(units, appliances):
     """Performs engineering math and prints formulas to the terminal."""
+    # load tuned parameters from config (with sensible fallbacks)
+    PEAK_SUN_HOURS = ENGINEERING.get("peak_sun_hours", 5.0)
+    EFFICIENCY_FACTOR = ENGINEERING.get("efficiency_factor", 0.78)
+    BACKUP_HOURS = ENGINEERING.get("backup_hours", 4)
+    TARIFF_PER_UNIT = ENGINEERING.get("tariff_per_unit", 55)
+    PACKAGE_THRESHOLDS = ENGINEERING.get("package_thresholds", {})
+    SMART_LITE_STORAGE = ENGINEERING.get("smart_lite_storage_kwh", 10.0)
+    SMART_PLUS_CFG = ENGINEERING.get("smart_plus", {})
+    ESTATE_CFG = ENGINEERING.get("estate", {})
+    STANDARD_SIZES = ENGINEERING.get("inverter_sizes", [3,5,6,8,10,12,15,20,25,30,40,50,60,80,100])
+
     print("\n" + "═"*60)
     print(" ☀️  SKYELECTRIC ENGINEERING CALCULATION ENGINE")
     print("═"*60)
     
     # 1. Base Load Calculation
-    # Standardizing on 5.0 Peak Sun Hours for Pakistan
-    PEAK_SUN_HOURS = 5.0
-    EFFICIENCY_FACTOR = 0.78 # Accounting for dust, heat, wiring losses
-    
     avg_monthly = float(units) if units > 0 else 0
     daily_avg_kwh = avg_monthly / 30
     
-    # Base load kW needed to generate daily_avg_kwh
     base_load_kw = daily_avg_kwh / (PEAK_SUN_HOURS * EFFICIENCY_FACTOR) if avg_monthly > 0 else 0
     
     print(f"[STEP 1] Avg Monthly Units: {avg_monthly}")
     print(f"[STEP 1] Formula: ({avg_monthly} / 30) / ({PEAK_SUN_HOURS} * {EFFICIENCY_FACTOR}) = {base_load_kw:.2f} kW Base Load")
 
     # 2. Appliance Load
-    # Sum of (wattage * quantity) / 1000
+    # ensure defaults applied if caller sent incomplete appliance items
+    apply_appliance_defaults(appliances)
     app_load_kw = sum([(a.wattage * a.quantity) / 1000 for a in appliances])
     print(f"[STEP 2] Appliance Load: {app_load_kw:.2f} kW (Total active appliances)")
 
     # 3. Hardware Sizing
-    # Total Load = Base load from bill + full appliance load
     total_load_kw = base_load_kw + app_load_kw
-    
-    # Solar capacity with 1.2x safety margin for system losses
     solar_kw = total_load_kw * 1.2
-    # Round up to nearest 0.5 kW (panel increments)
     solar_kw = math.ceil(solar_kw * 2) / 2
-    
-    # Package Determination (SkyElectric Grid Independence Package)
+
+    # Package Determination (config-driven thresholds)
     package_id = "Smart Lite"
-    if solar_kw >= 50: package_id = "Estate Max"
-    elif solar_kw >= 15: package_id = "Smart Plus"
-    else: package_id = "Smart Lite"
+    if solar_kw >= PACKAGE_THRESHOLDS.get("estate_max_kw", 50):
+        package_id = "Estate Max"
+    elif solar_kw >= PACKAGE_THRESHOLDS.get("smart_plus_kw", 15):
+        package_id = "Smart Plus"
+    else:
+        package_id = "Smart Lite"
     
-    # Battery Sizing per Tier
-    backup_hours = 4
+    # Battery Sizing per Tier (config-driven)
     if package_id == "Smart Lite":
-        storage_kwh = 10.0  # Fixed 10 kWh Smart Battery as per spec
+        storage_kwh = SMART_LITE_STORAGE
     elif package_id == "Smart Plus":
-        # Scale 20–40 kWh based on load, min 20kWh
-        calculated_storage = (total_load_kw * backup_hours) / 0.8
-        storage_kwh = max(20.0, min(40.0, math.ceil(calculated_storage / 2.5) * 2.5))
+        calculated_storage = (total_load_kw * BACKUP_HOURS) / 0.8
+        min_k = SMART_PLUS_CFG.get("min_kwh", 20.0)
+        max_k = SMART_PLUS_CFG.get("max_kwh", 40.0)
+        incr = SMART_PLUS_CFG.get("round_increment", 2.5)
+        storage_kwh = max(min_k, min(max_k, math.ceil(calculated_storage / incr) * incr))
     else:  # Estate Max
-        calculated_storage = (total_load_kw * backup_hours) / 0.8
-        storage_kwh = math.ceil(calculated_storage / 5.0) * 5.0 # Round to 5kWh blocks for Max
+        calculated_storage = (total_load_kw * BACKUP_HOURS) / 0.8
+        incr = ESTATE_CFG.get("round_increment", 5.0)
+        storage_kwh = math.ceil(calculated_storage / incr) * incr
 
     # Inverter Sizing
-    # Must handle solar or peak load + 25% surge margin
     inverter_kw = max(solar_kw, total_load_kw) * 1.25
-    # Snap to standard inverter sizes
-    STANDARD_SIZES = [3, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 60, 80, 100]
     inverter_kw = next((s for s in STANDARD_SIZES if s >= inverter_kw), inverter_kw)
 
     print(f"[STEP 3] Computed Solar: {solar_kw:.2f} kW")
@@ -121,16 +140,11 @@ def terminal_solar_math(units, appliances):
     print(f"[STEP 3] Computed Inverter: {inverter_kw:.2f} kW")
 
     # 4. Impact Metrics
-    # Solar production in units/month
     solar_units_month = solar_kw * PEAK_SUN_HOURS * 30
-    # Net savings: Proportional to units offset
     units_offset = min(solar_units_month, avg_monthly)
-    monthly_save = units_offset * 55 # Rs. 55/unit tariff
+    monthly_save = units_offset * TARIFF_PER_UNIT
     
-    # Grid Impact: Percentage reduction
     grid_impact = min(100, (solar_units_month / max(avg_monthly, 1)) * 100)
-    
-    # Carbon Offset: 1.4 tons/kW/year
     carbon_offset = solar_kw * 1.4
 
     print(f"[STEP 4] Grid Impact: -{grid_impact:.0f}%")
@@ -309,3 +323,20 @@ Return format:
         "success": True,
         "insights": insights
     }
+
+# --- New: expose config to frontend ---
+@app.get("/config")
+async def config_endpoint():
+    """
+    Returns engineering parameters and appliance defaults so frontends
+    can use a single source-of-truth instead of hardcoded values.
+    """
+    try:
+        return {
+            "success": True,
+            "engineering": ENGINEERING,
+            "appliance_defaults": APPLIANCE_DEFAULTS
+        }
+    except Exception as e:
+        logger.exception("Failed to return config")
+        return {"success": False, "error": str(e)}

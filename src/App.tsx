@@ -1,21 +1,26 @@
 import { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sun, Moon, Zap, Leaf, Wallet, Clock, Plus, Minus,
   Wind, CloudSnow, Flower2, ThermometerSun,
   Download, Bell, Home, Calendar, ShieldCheck,
   CloudSun, Gauge, Info, TreeDeciduous, TrendingUp,
-  Activity, Cpu, BatteryMedium, Layers, X, ArrowLeft, 
+  Activity, Cpu, BatteryMedium, Layers, X, ArrowLeft,
   ChevronDown, Sparkles
 } from 'lucide-react';
 
 // Types & Config
 import { Appliance } from './types';
-import { UI_NAME_TO_ID } from './config/applianceConfigs';
+//import { UI_NAME_TO_ID } from './config/applianceWattages';
+// --- START: Import the centralized configuration ---
+import { APPLIANCE_WATTAGE_CONFIG } from './config/applianceWattages';
+// --- END: Import ---
 import { cn } from './lib/utils';
+
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
+// The CATEGORIES array now only defines the UI structure, not the data.
 const CATEGORIES = [
   {
     id: 'climate',
@@ -25,16 +30,17 @@ const CATEGORIES = [
         name: 'Air Conditioner',
         id: 'ac',
         variants: [
-          { key: '1-ton', label: '1.0 Ton', watt: 1250 },
-          { key: '1.5-ton', label: '1.5 Ton', watt: 1800 },
-          { key: '2-ton', label: '2.0 Ton', watt: 2400 }
+          // Wattage is now sourced from APPLIANCE_WATTAGE_CONFIG
+          { key: '1-ton', label: '1.0 Ton' },
+          { key: '1.5-ton', label: '1.5 Ton' },
+          { key: '2-ton', label: '2.0 Ton' }
         ]
       },
       {
         name: 'Ceiling Fan',
         id: 'fan',
         variants: [
-          { key: 'standard', label: 'Standard Fan', watt: 80 }
+          { key: 'standard', label: 'Standard Fan' }
         ]
       }
     ]
@@ -47,23 +53,23 @@ const CATEGORIES = [
         name: 'Refrigerator',
         id: 'fridge',
         variants: [
-          { key: 'small', label: 'Small', watt: 150 },
-          { key: 'medium', label: 'Medium', watt: 300 },
-          { key: 'large', label: 'Large', watt: 500 }
+          { key: 'small', label: 'Small' },
+          { key: 'medium', label: 'Medium' },
+          { key: 'large', label: 'Large' }
         ]
       },
       {
         name: 'Microwave Oven',
         id: 'microwave',
         variants: [
-          { key: 'standard', label: 'Standard', watt: 1200 }
+          { key: 'standard', label: 'Standard' }
         ]
       },
       {
         name: 'Water Motor',
         id: 'motor',
         variants: [
-          { key: '1hp', label: '1 HP', watt: 746 }
+          { key: '1hp', label: '1 HP' }
         ]
       }
     ]
@@ -72,24 +78,22 @@ const CATEGORIES = [
     id: 'tech',
     name: 'Tech',
     items: [
-      { name: 'LED TV', id: 'tv', variants: [{ key: 'std', label: 'LED TV', watt: 100 }] },
-      { name: 'LED Lights', id: 'lights', variants: [{ key: 'std', label: 'LED Lights', watt: 60 }] }
+      { name: 'LED TV', id: 'tv', variants: [{ key: 'std', label: 'LED TV' }] },
+      { name: 'LED Lights', id: 'lights', variants: [{ key: 'std', label: 'LED Lights' }] }
     ]
   },
   {
     id: 'ev',
     name: 'Mobility',
     items: [
-      { name: 'EV Car', id: 'tesla', variants: [{ key: 'ev', label: 'EV Car', watt: 7200 }] },
-      { name: 'Electric Bike', id: 'bike', variants: [{ key: 'ebike', label: 'E-Bike', watt: 500 }] }
+      { name: 'EV Car', id: 'tesla', variants: [{ key: 'ev', label: 'EV Car' }] },
+      { name: 'Electric Bike', id: 'bike', variants: [{ key: 'ebike', label: 'E-Bike' }] }
     ]
   }
 ];
 
-const WATTAGE_MAP: Record<string, number> = {
-  ac: 1800, fan: 80, fridge: 300, microwave: 1200,
-  motor: 746, tv: 100, lights: 60, tesla: 7200, bike: 500,
-};
+// No longer needed, as the new config is more detailed and centralized.
+// const WATTAGE_MAP: Record<string, number> = { ... };
 
 const SEASONS = [
   { name: 'Spring', color: 'from-green-100 to-rose-100', darkColor: 'from-emerald-950/40 to-slate-900', icon: Flower2, particle: '🌸' },
@@ -104,9 +108,8 @@ export default function App() {
   const [interactionLevel, setInteractionLevel] = useState<'initial' | 'bill-uploaded'>('initial');
   const [isScanning, setIsScanning] = useState(false);
   const [showTierDetails, setShowTierDetails] = useState(false);
-  
-  // New UI States
-  const [showLoadProfiling, setShowLoadProfiling] = useState(false); // Minimized by default
+
+  const [showLoadProfiling, setShowLoadProfiling] = useState(false);
   const [aiInsights, setAiInsights] = useState<string[] | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -119,9 +122,7 @@ export default function App() {
     monthlySavings: 0, carbonOffset: 0, gridImpact: 0
   });
 
-  // New states to support variants and quantities
   const [variantOpen, setVariantOpen] = useState<Record<string, boolean>>({});
-  // Map itemId -> variantKey -> { quantity, watt, name }
   const [applianceCounts, setApplianceCounts] = useState<Record<string, Record<string, { quantity: number; watt: number; name: string }>>>({});
 
   const isDark = theme === 'dark';
@@ -148,9 +149,8 @@ export default function App() {
       });
       const data = await res.json();
       if (data.success) {
-        // Handle both array and newline string formats
-        const insights = Array.isArray(data.insights) 
-          ? data.insights 
+        const insights = Array.isArray(data.insights)
+          ? data.insights
           : data.text?.split('\n').filter((l: string) => l.trim().length > 0);
         setAiInsights(insights);
       } else {
@@ -184,7 +184,6 @@ export default function App() {
     setAiError(null);
     if (!file) return;
 
-    // Allow only PDF and PNG
     const allowed = ['application/pdf', 'image/png'];
     if (!allowed.includes(file.type)) {
       setAiError("Only PDF and PNG files are allowed.");
@@ -199,54 +198,39 @@ export default function App() {
       if (result.success) {
         const units = Number(result.data.units_consumed) || 0;
         const user = { name: result.data.consumer_name || 'Valued User', city: result.data.location || 'Detecting...' };
-        
+
         setBillUnits(units);
         setUserData(user);
         setInteractionLevel('bill-uploaded');
-        
+
         const currentSpecs = await fetchSystemSpecs(units, []);
-        // Trigger AI Strategy immediately after upload
         requestAIInsights({ bill: result.data, specs: currentSpecs, units, appliances: [] });
       }
     } finally { setIsScanning(false); }
   };
-
-  const toggleAppliance = (name: string) => {
-    const techId = UI_NAME_TO_ID[name] || name.toLowerCase().replace(/\s+/g, '-');
-    const exists = selectedAppliances.find(a => a.id === techId);
-    const newSelection = exists
-      ? selectedAppliances.filter(a => a.id !== techId)
-      : [...selectedAppliances, { id: techId, name, wattage: WATTAGE_MAP[techId] || 500, quantity: 1, icon: 'zap' }];
-
-    setSelectedAppliances(newSelection);
-    fetchSystemSpecs(billUnits, newSelection);
-  };
-
-  // Reverse lookup for display name (UI_NAME_TO_ID maps displayName -> id)
-  const ID_TO_UI_NAME = useMemo(() => {
-    const map: Record<string, string> = {};
-    Object.entries(UI_NAME_TO_ID).forEach(([k, v]) => (map[v] = k));
-    return map;
-  }, []);
-
+  
   const openVariantPanel = (displayName: string) => {
     setVariantOpen(p => ({ ...p, [displayName]: !p[displayName] }));
   };
 
-  const updateApplianceCount = (itemId: string, name: string, variantKey: string, watt: number, delta: number) => {
+  const updateApplianceCount = (itemId: string, name: string, variantKey: string, delta: number) => {
+    // Get the wattage from the imported config file
+    const watt = APPLIANCE_WATTAGE_CONFIG[itemId]?.[variantKey];
+    if (typeof watt === 'undefined') {
+      console.error(`Wattage not found in config for: ${itemId} -> ${variantKey}`);
+      return;
+    }
+
     setApplianceCounts(prev => {
-      // deep-clone one level so we never mutate existing nested objects
       const next: Record<string, Record<string, { quantity: number; watt: number; name: string }>> = { ...prev };
-      next[itemId] = { ...(prev[itemId] || {}) }; // ensure we preserve other variants for this item
+      next[itemId] = { ...(prev[itemId] || {}) };
 
       const existing = next[itemId][variantKey];
       const currentQty = existing?.quantity || 0;
-      const newQty = Math.min(10, Math.max(0, currentQty + delta)); // clamp 0..10
+      const newQty = Math.min(10, Math.max(0, currentQty + delta));
 
       if (newQty <= 0) {
-        // remove this variant
         delete next[itemId][variantKey];
-        // if no variants left for this item, remove the item key entirely
         if (Object.keys(next[itemId]).length === 0) {
           delete next[itemId];
         }
@@ -254,12 +238,11 @@ export default function App() {
         next[itemId][variantKey] = { quantity: newQty, watt, name };
       }
 
-      // Build selectedAppliances array: include every variant separately (so all selected variants are considered)
-      const arr: any[] = [];
+      const arr: Appliance[] = [];
       Object.entries(next).forEach(([id, variants]) => {
         Object.entries(variants).forEach(([vKey, d]) => {
           arr.push({
-            id: `${id}:${vKey}`,            // unique id per variant
+            id: `${id}:${vKey}`,
             name: `${d.name} (${vKey})`,
             wattage: d.watt,
             quantity: d.quantity,
@@ -269,15 +252,13 @@ export default function App() {
       });
 
       setSelectedAppliances(arr);
-      // Refresh specs on change (debounce if you want fewer requests)
       fetchSystemSpecs(billUnits, arr);
       return next;
     });
   };
 
-  // Convenience handlers used in UI
-  const addOne = (itemId: string, name: string, variantKey: string, watt: number) => updateApplianceCount(itemId, name, variantKey, watt, +1);
-  const removeOne = (itemId: string, name: string, variantKey: string, watt: number) => updateApplianceCount(itemId, name, variantKey, watt, -1);
+  const addOne = (itemId: string, name: string, variantKey: string) => updateApplianceCount(itemId, name, variantKey, +1);
+  const removeOne = (itemId: string, name: string, variantKey: string) => updateApplianceCount(itemId, name, variantKey, -1);
 
   const currentSeason = SEASONS[seasonIdx];
 
@@ -310,10 +291,12 @@ export default function App() {
     };
   };
 
+  // The rest of your JSX remains unchanged...
   return (
     <div className={cn("h-screen w-full overflow-hidden transition-all duration-1000 font-sans", isDark ? "bg-slate-950 text-white" : "bg-white text-slate-900")}>
-
-      {/* 1. BACKGROUND */}
+       {/* ... Your entire JSX from the previous step ... */}
+       {/* REMAINDER OF THE FILE IS IDENTICAL TO THE PREVIOUS VERSION */}
+       {/* 1. BACKGROUND */}
       <div className={cn("absolute inset-0 z-0 transition-all duration-[3000ms] bg-gradient-to-br", isDark ? currentSeason.darkColor : currentSeason.color)}>
         <div className="absolute inset-0 flex items-center justify-center p-20 pointer-events-none">
           <img src="/h23.png" alt="Solar House" className="absolute w-full h-full object-cover" />
@@ -388,7 +371,7 @@ export default function App() {
             <div className="space-y-6">
               {/* COLLAPSIBLE LOAD PROFILING */}
               <div className="rounded-3xl border border-white/10 overflow-hidden bg-white/5">
-                <button 
+                <button
                   onClick={() => setShowLoadProfiling(!showLoadProfiling)}
                   className="w-full p-5 flex items-center justify-between hover:bg-white/5 transition-colors"
                 >
@@ -398,10 +381,10 @@ export default function App() {
                   </div>
                   <ChevronDown size={18} className={cn("transition-transform duration-500", showLoadProfiling ? "rotate-180" : "")} />
                 </button>
-                
+
                 <AnimatePresence>
                   {showLoadProfiling && (
-                    <motion.div 
+                    <motion.div
                       initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                       className="px-5 pb-5 space-y-6 overflow-hidden"
                     >
@@ -412,7 +395,6 @@ export default function App() {
                             {cat.items.map((item: any) => {
                               const displayName = item.name;
                               const itemId = item.id;
-                              // total across all variants for this item
                               const totalSelected = applianceCounts[itemId] ? Object.values(applianceCounts[itemId]).reduce((s, d) => s + d.quantity, 0) : 0;
                               const totalWatt = applianceCounts[itemId] ? Object.values(applianceCounts[itemId]).reduce((s, d) => s + (d.watt * d.quantity), 0) : 0;
                               return (
@@ -434,21 +416,21 @@ export default function App() {
                                     </div>
                                   </button>
 
-                                  {/* Variant dropdown */}
                                   {variantOpen[displayName] && (
                                     <div className="mt-2 p-3 rounded-2xl bg-current/3 border space-y-2">
                                       {item.variants.map((v: any) => {
-                                        const cnt = applianceCounts[itemId] && applianceCounts[itemId][v.key] ? applianceCounts[itemId][v.key].quantity : 0;
+                                        const cnt = applianceCounts[itemId]?.[v.key]?.quantity || 0;
+                                        const watt = APPLIANCE_WATTAGE_CONFIG[itemId]?.[v.key] || 0;
                                         return (
                                           <div key={v.key} className="flex items-center justify-between">
                                             <div>
                                               <div className="text-[10px] font-bold">{v.label}</div>
-                                              <div className="text-[9px] opacity-50">{v.watt} W / unit</div>
+                                              <div className="text-[9px] opacity-50">{watt} W / unit</div>
                                             </div>
                                             <div className="flex items-center gap-2">
                                               <button
                                                 type="button"
-                                                onClick={(e) => { e.stopPropagation(); removeOne(itemId, displayName, v.key, v.watt); }}
+                                                onClick={(e) => { e.stopPropagation(); removeOne(itemId, displayName, v.key); }}
                                                 className="p-2 rounded-full bg-current/5"
                                               >
                                                 <Minus size={12} />
@@ -456,7 +438,7 @@ export default function App() {
                                               <div className="text-[11px] font-black">{cnt}</div>
                                               <button
                                                 type="button"
-                                                onClick={(e) => { e.stopPropagation(); addOne(itemId, displayName, v.key, v.watt); }}
+                                                onClick={(e) => { e.stopPropagation(); addOne(itemId, displayName, v.key); }}
                                                 className="p-2 rounded-full bg-current/5"
                                               >
                                                 <Plus size={12} />
@@ -481,7 +463,7 @@ export default function App() {
 
               {/* AI STRATEGY BLOCK */}
               <div className={cn(
-                "p-6 rounded-[2.5rem] border transition-all duration-700", 
+                "p-6 rounded-[2.5rem] border transition-all duration-700",
                 isDark ? "bg-orange-500/5 border-orange-500/20" : "bg-orange-50 border-orange-200"
               )}>
                 <div className="flex items-center gap-3 mb-5">
@@ -502,7 +484,7 @@ export default function App() {
                 ) : aiInsights ? (
                   <ul className="space-y-4">
                     {aiInsights.map((insight, i) => (
-                      <motion.li 
+                      <motion.li
                         initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
                         key={i} className="text-[11px] leading-relaxed flex gap-3 group"
                       >
@@ -633,7 +615,6 @@ export default function App() {
   );
 }
 
-// SHARED COMPONENTS
 function ComponentRow({ icon: Icon, label, value }: any) {
   return (
     <div className="flex items-center justify-between p-3 rounded-2xl bg-current/5 border border-current/5">
