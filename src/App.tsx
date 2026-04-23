@@ -115,7 +115,7 @@ export default function App() {
     monthlySavings: 0, carbonOffset: 0, gridImpact: 0
   });
 
-  const [variantOpen, setVariantOpen] = useState<Record<string, boolean>>({});
+  const [variantOpen, setVariantOpen] = useState<string | null>(null);
   const [applianceCounts, setApplianceCounts] = useState<Record<string, Record<string, { quantity: number; watt: number; name: string }>>>({});
 
   const isDark = theme === 'dark';
@@ -216,8 +216,8 @@ export default function App() {
     }
   };
   
-  const openVariantPanel = (displayName: string) => {
-    setVariantOpen(p => ({ ...p, [displayName]: !p[displayName] }));
+  const openVariantPanel = (itemId: string) => {
+    setVariantOpen(current => current === itemId ? null : itemId);
   };
 
   const updateApplianceCount = (itemId: string, name: string, variantKey: string, delta: number) => {
@@ -400,7 +400,7 @@ export default function App() {
                               return (
                                 <div key={itemId} className="relative">
                                   <button
-                                    onClick={() => openVariantPanel(displayName)}
+                                    onClick={() => openVariantPanel(itemId)}
                                     className={cn("w-full p-4 rounded-2xl border text-[10px] font-black uppercase tracking-widest flex items-center justify-between transition-all", totalSelected > 0 ? "bg-orange-500 text-white border-transparent shadow-lg" : "bg-current/5 border-transparent opacity-60 hover:opacity-100")}
                                   >
                                     <div className="flex items-center gap-2">
@@ -412,28 +412,35 @@ export default function App() {
                                       <Plus size={14} className="opacity-40" />
                                     </div>
                                   </button>
-                                  {variantOpen[displayName] && (
-                                    <div className="mt-2 p-3 rounded-2xl bg-current/3 border space-y-2">
-                                      {item.variants.map((v: any) => {
-                                        const cnt = applianceCounts[itemId]?.[v.key]?.quantity || 0;
-                                        const watt = APPLIANCE_WATTAGE_CONFIG[itemId]?.[v.key] || 0;
-                                        return (
-                                          <div key={v.key} className="flex items-center justify-between">
-                                            <div>
-                                              <div className="text-[10px] font-bold">{v.label}</div>
-                                              <div className="text-[9px] opacity-50">{watt} W / unit</div>
+                                  <AnimatePresence>
+                                    {variantOpen === itemId && (
+                                      <motion.div 
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        className="mt-2 p-3 rounded-2xl bg-current/3 border space-y-2 overflow-hidden"
+                                      >
+                                        {item.variants.map((v: any) => {
+                                          const cnt = applianceCounts[itemId]?.[v.key]?.quantity || 0;
+                                          const watt = APPLIANCE_WATTAGE_CONFIG[itemId]?.[v.key] || 0;
+                                          return (
+                                            <div key={v.key} className="flex items-center justify-between">
+                                              <div>
+                                                <div className="text-[10px] font-bold">{v.label}</div>
+                                                <div className="text-[9px] opacity-50">{watt} W / unit</div>
+                                              </div>
+                                              <div className="flex items-center gap-2">
+                                                <button type="button" onClick={(e) => { e.stopPropagation(); removeOne(itemId, displayName, v.key); }} className="p-2 rounded-full bg-current/5"><Minus size={12} /></button>
+                                                <div className="text-[11px] font-black">{cnt}</div>
+                                                <button type="button" onClick={(e) => { e.stopPropagation(); addOne(itemId, displayName, v.key); }} className="p-2 rounded-full bg-current/5"><Plus size={12} /></button>
+                                              </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                              <button type="button" onClick={(e) => { e.stopPropagation(); removeOne(itemId, displayName, v.key); }} className="p-2 rounded-full bg-current/5"><Minus size={12} /></button>
-                                              <div className="text-[11px] font-black">{cnt}</div>
-                                              <button type="button" onClick={(e) => { e.stopPropagation(); addOne(itemId, displayName, v.key); }} className="p-2 rounded-full bg-current/5"><Plus size={12} /></button>
-                                            </div>
-                                          </div>
-                                        );
-                                      })}
-                                      <div className="text-[9px] opacity-40 italic">You can add up to 10 units per variant. Quantities update the system sizing immediately.</div>
-                                    </div>
-                                  )}
+                                          );
+                                        })}
+                                        <div className="text-[9px] opacity-40 italic">You can add up to 10 units per variant. Quantities update the system sizing immediately.</div>
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
                                 </div>
                               );
                             })}
