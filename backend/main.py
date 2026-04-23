@@ -34,7 +34,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -87,13 +87,13 @@ def terminal_solar_math(units, appliances):
     print("\n" + "═"*60)
     print(" ☀️  SKYELECTRIC ENGINEERING CALCULATION ENGINE")
     print("═"*60)
-    
+
     # 1. Base Load Calculation
     avg_monthly = float(units) if units > 0 else 0
     daily_avg_kwh = avg_monthly / 30
-    
+
     base_load_kw = daily_avg_kwh / (PEAK_SUN_HOURS * EFFICIENCY_FACTOR) if avg_monthly > 0 else 0
-    
+
     print(f"[STEP 1] Avg Monthly Units: {avg_monthly}")
     print(f"[STEP 1] Formula: ({avg_monthly} / 30) / ({PEAK_SUN_HOURS} * {EFFICIENCY_FACTOR}) = {base_load_kw:.2f} kW Base Load")
 
@@ -116,7 +116,7 @@ def terminal_solar_math(units, appliances):
         package_id = "Smart Plus"
     else:
         package_id = "Smart Lite"
-    
+
     # Battery Sizing per Tier (config-driven)
     if package_id == "Smart Lite":
         storage_kwh = SMART_LITE_STORAGE
@@ -143,7 +143,7 @@ def terminal_solar_math(units, appliances):
     solar_units_month = solar_kw * PEAK_SUN_HOURS * 30
     units_offset = min(solar_units_month, avg_monthly)
     monthly_save = units_offset * TARIFF_PER_UNIT
-    
+
     grid_impact = min(100, (solar_units_month / max(avg_monthly, 1)) * 100)
     carbon_offset = solar_kw * 1.4
 
@@ -172,8 +172,8 @@ async def extract_text(file_path):
     return "\n".join([doc.text for doc in docs])
 
 async def extract_bill_data(text):
-    # Use gemini-2.5-flash model
-    model = genai.GenerativeModel("gemini-2.5-flash") 
+    # Use gemini-1.5-flash model
+    model = genai.GenerativeModel("gemini-2.5-flash")
     prompt = f"""
     You are an expert in Pakistani electricity bills (IESCO, K-Electric, etc).
     Extract structured data. Return ONLY valid JSON.
@@ -210,6 +210,7 @@ async def calculate_endpoint(payload: CalcRequest):
     results = terminal_solar_math(payload.units, payload.appliances)
     return results
 
+# --- MODIFIED ENDPOINT ---
 @app.post("/upload-bill")
 async def upload_bill(file: UploadFile = File(...)):
     if not (file.filename.endswith('.pdf') or file.filename.endswith('.png')):
@@ -223,17 +224,28 @@ async def upload_bill(file: UploadFile = File(...)):
         text = await extract_text(file_path)
         details_raw = await extract_bill_data(text)
         details = safe_parse(details_raw)
-        
-        if not details:
-            return {"success": False, "error": "Could not parse bill"}
 
-        # Print initial terminal math for the 0-appliance state
-        terminal_solar_math(details.get('units_consumed', 0), [])
+        # --- START: ADDED VALIDATION BLOCK ---
+        # Check if parsing was successful and if essential data exists and is valid.
+        units_consumed = details.get("units_consumed") if isinstance(details, dict) else None
+
+        if not isinstance(units_consumed, (int, float)) or units_consumed <= 0:
+            error_message = "Invalid Bill: Key consumption data could not be extracted. Please upload a clear, valid bill."
+            logger.warning(f"Bill validation failed. Extracted details: {details}")
+            # Return a failure response that the frontend can handle
+            return {"success": False, "error": error_message}
+        # --- END: ADDED VALIDATION BLOCK ---
+
+        # If validation passes, proceed with the calculation
+        logger.info(f"Bill validated successfully. Units: {units_consumed}")
+        terminal_solar_math(units_consumed, [])
 
         return {"success": True, "data": details}
+
     except Exception as e:
-        logger.error(f"Error: {e}")
-        return {"success": False, "error": str(e)}
+        logger.error(f"An unexpected error occurred during bill processing: {e}")
+        return {"success": False, "error": "An internal error occurred. Please try again."}
+
 
 class AIRequest(BaseModel):
     bill: dict | None = None
@@ -242,7 +254,6 @@ class AIRequest(BaseModel):
     units: int | None = 0
     selectedAppliances: list | None = []
 
-@app.post("/ai-insights")
 @app.post("/ai-insights")
 async def ai_insights(payload: AIRequest):
     """
@@ -294,7 +305,7 @@ Return format:
 """
 
     try:
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        model = genai.GenerativeModel("gemini-1.5-flash")
         response = model.generate_content(prompt)
 
         cleaned = re.sub(r"```json|```", "", response.text).strip()

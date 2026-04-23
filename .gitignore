@@ -4,3 +4,5 @@ package-lock.json
 *.pdf
 backend/uploads/.png
 backend/uploads/.*
+backend/uploads/*.pdf
+backend/uploads/*.png
