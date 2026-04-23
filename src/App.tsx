@@ -376,7 +376,7 @@ export default function App() {
                   className="w-full p-5 flex items-center justify-between hover:bg-white/5 transition-colors"
                 >
                   <div className="flex flex-col items-start text-left">
-                    <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Load Profiling</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Load Profiling (Additional to current house load)</span>
                     <span className="text-[10px] font-bold text-orange-500 mt-0.5">{selectedAppliances.length} Active Devices</span>
                   </div>
                   <ChevronDown size={18} className={cn("transition-transform duration-500", showLoadProfiling ? "rotate-180" : "")} />

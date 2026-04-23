@@ -71,18 +71,28 @@ def apply_appliance_defaults(appliances):
 # ---------------------------------------------------------
 # 3. ENGINEERING MATH ENGINE (WITH TERMINAL PRINTS)
 # ---------------------------------------------------------
-def terminal_solar_math(units, appliances):
-    """Performs engineering math and prints formulas to the terminal."""
+def terminal_solar_math(units, appliances, tariff_override: Optional[float] = None):
+    """Performs engineering math and prints formulas to the terminal.
+
+    If tariff_override is provided, it will be used instead of the config value.
+    """
     # load tuned parameters from config (with sensible fallbacks)
     PEAK_SUN_HOURS = ENGINEERING.get("peak_sun_hours", 5.0)
     EFFICIENCY_FACTOR = ENGINEERING.get("efficiency_factor", 0.78)
     BACKUP_HOURS = ENGINEERING.get("backup_hours", 4)
-    TARIFF_PER_UNIT = ENGINEERING.get("tariff_per_unit", 55)
     PACKAGE_THRESHOLDS = ENGINEERING.get("package_thresholds", {})
     SMART_LITE_STORAGE = ENGINEERING.get("smart_lite_storage_kwh", 10.0)
     SMART_PLUS_CFG = ENGINEERING.get("smart_plus", {})
     ESTATE_CFG = ENGINEERING.get("estate", {})
     STANDARD_SIZES = ENGINEERING.get("inverter_sizes", [3,5,6,8,10,12,15,20,25,30,40,50,60,80,100])
+
+    # decide tariff source
+    if isinstance(tariff_override, (int, float)):
+        TARIFF_PER_UNIT = float(tariff_override)
+        tariff_source = "bill"
+    else:
+        TARIFF_PER_UNIT = ENGINEERING.get("tariff_per_unit", 55)
+        tariff_source = "config"
 
     print("\n" + "═"*60)
     print(" ☀️  SKYELECTRIC ENGINEERING CALCULATION ENGINE")
@@ -150,6 +160,8 @@ def terminal_solar_math(units, appliances):
     print(f"[STEP 4] Grid Impact: -{grid_impact:.0f}%")
     print(f"[STEP 4] Monthly Savings: Rs. {monthly_save:,.0f}")
     print(f"[STEP 4] Carbon Offset: {carbon_offset:.1f} Tons/Year")
+    # clearly indicate which tariff was used
+    print(f"[STEP 4] Tariff used: Rs. {TARIFF_PER_UNIT} per unit (from {tariff_source})")
     print(f"[STEP 5] Final Tier Assigned: {package_id.upper()}")
     print("═"*60 + "\n")
 
@@ -160,7 +172,9 @@ def terminal_solar_math(units, appliances):
         "packageId": package_id,
         "gridImpact": grid_impact,
         "carbonOffset": carbon_offset,
-        "monthlySavings": monthly_save
+        "monthlySavings": monthly_save,
+        "tariffPerUnit": TARIFF_PER_UNIT,
+        "tariffSource": tariff_source
     }
 
 # ---------------------------------------------------------
@@ -185,7 +199,8 @@ async def extract_bill_data(text):
       "billing_month": "string",
       "is_peak_available": boolean,
       "peak_units": number,
-      "off_peak_units": number
+      "off_peak_units": number,
+      "tariff": number
     }}
     BILL TEXT:
     {text}
@@ -199,6 +214,23 @@ def safe_parse(json_text):
         return json.loads(cleaned)
     except:
         return None
+
+# helper to robustly parse numeric tariff values from strings or numbers
+def parse_numeric(value):
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        # find first numeric token (allows "Rs. 55", "55.0", "1,234.50")
+        m = re.search(r"(\d+(?:[.,]\d+)?)", value)
+        if m:
+            num = m.group(1).replace(",", "")
+            try:
+                return float(num)
+            except:
+                return None
+    return None
 
 # ---------------------------------------------------------
 # 5. API ROUTES
@@ -224,6 +256,7 @@ async def upload_bill(file: UploadFile = File(...)):
         text = await extract_text(file_path)
         details_raw = await extract_bill_data(text)
         details = safe_parse(details_raw)
+        print(f"Extracted Bill Details: {details}")
 
         # --- START: ADDED VALIDATION BLOCK ---
         # Check if parsing was successful and if essential data exists and is valid.
@@ -236,11 +269,27 @@ async def upload_bill(file: UploadFile = File(...)):
             return {"success": False, "error": error_message}
         # --- END: ADDED VALIDATION BLOCK ---
 
-        # If validation passes, proceed with the calculation
-        logger.info(f"Bill validated successfully. Units: {units_consumed}")
-        terminal_solar_math(units_consumed, [])
+        # Determine tariff: prefer bill, fallback to config
+        tariff_value = None
+        tariff_source = "config"
+        if isinstance(details, dict):
+            for key in ["tariff", "tariff_per_unit", "per_unit", "rate", "tariff_rate", "unit_rate", "unit_price"]:
+                if key in details:
+                    parsed = parse_numeric(details[key])
+                    if parsed and parsed > 0:
+                        tariff_value = parsed
+                        tariff_source = "bill"
+                        break
 
-        return {"success": True, "data": details}
+        if tariff_value is None:
+            tariff_value = ENGINEERING.get("tariff_per_unit", 55)
+            tariff_source = "config"
+
+        logger.info(f"Bill validated successfully. Units: {units_consumed}; Using tariff Rs. {tariff_value} (from {tariff_source})")
+        # pass tariff_override so terminal prints the correct source as well
+        terminal_solar_math(units_consumed, [], tariff_override=tariff_value)
+
+        return {"success": True, "data": details, "tariffPerUnit": tariff_value, "tariffSource": tariff_source}
 
     except Exception as e:
         logger.error(f"An unexpected error occurred during bill processing: {e}")
@@ -305,7 +354,7 @@ Return format:
 """
 
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(prompt)
 
         cleaned = re.sub(r"```json|```", "", response.text).strip()
