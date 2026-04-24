@@ -183,11 +183,11 @@ export default function App() {
       setAiError("Only PDF and PNG files are allowed.");
       return;
     }
-    
+
     setIsScanning(true);
     const formData = new FormData();
     formData.append('file', file);
-    
+
     try {
       const response = await fetch(`${API_BASE}/upload-bill`, { method: 'POST', body: formData });
       const result = await response.json();
@@ -197,11 +197,11 @@ export default function App() {
         // --- Success Path ---
         const units = Number(result.data.units_consumed) || 0;
         const user = { name: result.data.consumer_name || 'Valued User', city: result.data.location || 'Detecting...' };
-        
+
         setBillUnits(units);
         setUserData(user);
         setInteractionLevel('bill-uploaded'); // <-- Move to the next screen
-        
+
         const currentSpecs = await fetchSystemSpecs(units, []);
         requestAIInsights({ bill: result.data, specs: currentSpecs, units, appliances: [] });
       } else {
@@ -210,12 +210,12 @@ export default function App() {
         // We DO NOT change the interactionLevel, so the user stays on the upload screen.
       }
     } catch (err) {
-        setAiError("Could not connect to the server. Please try again.");
-    } finally { 
-        setIsScanning(false); 
+      setAiError("Could not connect to the server. Please try again.");
+    } finally {
+      setIsScanning(false);
     }
   };
-  
+
   const openVariantPanel = (itemId: string) => {
     setVariantOpen(current => current === itemId ? null : itemId);
   };
@@ -287,9 +287,9 @@ export default function App() {
 
   return (
     <div className={cn("h-screen w-full overflow-hidden transition-all duration-1000 font-sans", isDark ? "bg-slate-950 text-white" : "bg-white text-slate-900")}>
-       {/* (The rest of your JSX is largely unchanged) */}
+      {/* (The rest of your JSX is largely unchanged) */}
 
-       {/* ... Background, Logo, Theme Button ... */}
+      {/* ... Background, Logo, Theme Button ... */}
       <div className={cn("absolute inset-0 z-0 transition-all duration-[3000ms] bg-gradient-to-br", isDark ? currentSeason.darkColor : currentSeason.color)}>
         <div className="absolute inset-0 flex items-center justify-center p-20 pointer-events-none">
           <img src="/h23.png" alt="Solar House" className="absolute w-full h-full object-cover" />
@@ -349,7 +349,7 @@ export default function App() {
                   disabled={isScanning} // Disable input while scanning
                 />
               </div>
-              
+
               {/* --- START: UI TO DISPLAY THE BILL ERROR --- */}
               <AnimatePresence>
                 {aiError && (
@@ -370,27 +370,42 @@ export default function App() {
             // --- This part is rendered only AFTER a valid bill is uploaded ---
             <div className="space-y-6">
               {/* COLLAPSIBLE LOAD PROFILING */}
-              <div className="rounded-3xl border border-white/10 overflow-hidden bg-white/5">
-                <button 
-                  onClick={() => setShowLoadProfiling(!showLoadProfiling)}
-                  className="w-full p-5 flex items-center justify-between hover:bg-white/5 transition-colors"
-                >
-                  <div className="flex flex-col items-start text-left">
-                    <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Load Profiling </span>
-                    <span className="text-[10px] font-bold text-orange-500 mt-0.5">{selectedAppliances.length} Active Devices</span>
-                  </div>
-                  <ChevronDown size={18} className={cn("transition-transform duration-500", showLoadProfiling ? "rotate-180" : "")} />
-                </button>
-                
-                <AnimatePresence>
-                  {showLoadProfiling && (
-                    <motion.div 
-                      initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                      className="px-5 pb-5 space-y-6 overflow-hidden"
+              <div className={cn("rounded-3xl border overflow-hidden transition-all duration-500", isDark ? "bg-white/5 border-white/10" : "bg-black/5 border-black/5", showLoadProfiling ? "ring-2 ring-orange-500/20" : "")}>
+                {!showLoadProfiling ? (
+                  <div className="p-6 text-center space-y-4">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="p-3 bg-orange-500/20 rounded-2xl text-orange-500">
+                        <Plus size={20} />
+                      </div>
+                      <p className="text-[11px] font-black uppercase tracking-widest leading-relaxed">
+                        Would you like to add<br />additional appliances?
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowLoadProfiling(true)}
+                      className="w-full py-3 rounded-2xl bg-orange-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20"
                     >
+                      Configure Appliances
+                    </button>
+                    <p className="text-[9px] font-bold opacity-30 italic">Used for high-precision system sizing</p>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setShowLoadProfiling(false)}
+                      className="w-full p-5 flex items-center justify-between hover:bg-white/5 transition-colors border-b border-white/10"
+                    >
+                      <div className="flex flex-col items-start text-left">
+                        <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Appliance Profile</span>
+                        <span className="text-[10px] font-bold text-orange-500 mt-0.5">{selectedAppliances.length} Active Devices</span>
+                      </div>
+                      <ChevronDown size={18} className="rotate-180" />
+                    </button>
+
+                    <div className="p-5 space-y-6 max-h-[400px] overflow-y-auto custom-scrollbar">
                       {CATEGORIES.map(cat => (
                         <div key={cat.id} className="space-y-3">
-                          <p className="text-[9px] font-black text-current/30 uppercase tracking-widest">{cat.name}</p>
+                          <p className="text-[10px] font-black text-current/30 uppercase tracking-widest">{cat.name}</p>
                           <div className="grid grid-cols-1 gap-2">
                             {cat.items.map((item: any) => {
                               const displayName = item.name;
@@ -401,11 +416,11 @@ export default function App() {
                                 <div key={itemId} className="relative">
                                   <button
                                     onClick={() => openVariantPanel(itemId)}
-                                    className={cn("w-full p-4 rounded-2xl border text-[10px] font-black uppercase tracking-widest flex items-center justify-between transition-all", totalSelected > 0 ? "bg-orange-500 text-white border-transparent shadow-lg" : "bg-current/5 border-transparent opacity-60 hover:opacity-100")}
+                                    className={cn("w-full p-4 rounded-2xl border text-[11px] font-black uppercase tracking-widest flex items-center justify-between transition-all", totalSelected > 0 ? "bg-orange-500 text-white border-transparent shadow-lg" : "bg-current/5 border-transparent opacity-60 hover:opacity-100")}
                                   >
                                     <div className="flex items-center gap-2">
                                       <span>{displayName}</span>
-                                      {totalSelected > 0 && <span className="text-[10px] font-bold opacity-90">x{totalSelected}</span>}
+                                      {totalSelected > 0 && <span className="text-[11px] font-bold opacity-90">x{totalSelected}</span>}
                                     </div>
                                     <div className="flex items-center gap-2">
                                       <span className="text-[10px] opacity-60">{totalSelected > 0 ? `${totalWatt} W` : ''}</span>
@@ -414,7 +429,7 @@ export default function App() {
                                   </button>
                                   <AnimatePresence>
                                     {variantOpen === itemId && (
-                                      <motion.div 
+                                      <motion.div
                                         initial={{ height: 0, opacity: 0 }}
                                         animate={{ height: 'auto', opacity: 1 }}
                                         exit={{ height: 0, opacity: 0 }}
@@ -426,18 +441,17 @@ export default function App() {
                                           return (
                                             <div key={v.key} className="flex items-center justify-between">
                                               <div>
-                                                <div className="text-[10px] font-bold">{v.label}</div>
-                                                <div className="text-[9px] opacity-50">{watt} W / unit</div>
+                                                <div className="text-[11px] font-bold">{v.label}</div>
+                                                <div className="text-[10px] opacity-50">{watt} W / unit</div>
                                               </div>
-                                              <div className="flex items-center gap-2">
-                                                <button type="button" onClick={(e) => { e.stopPropagation(); removeOne(itemId, displayName, v.key); }} className="p-2 rounded-full bg-current/5"><Minus size={12} /></button>
-                                                <div className="text-[11px] font-black">{cnt}</div>
-                                                <button type="button" onClick={(e) => { e.stopPropagation(); addOne(itemId, displayName, v.key); }} className="p-2 rounded-full bg-current/5"><Plus size={12} /></button>
+                                              <div className="flex items-center gap-4">
+                                                <button type="button" onClick={(e) => { e.stopPropagation(); removeOne(itemId, displayName, v.key); }} className="p-2 rounded-full bg-current/5 hover:bg-orange-500/20"><Minus size={14} /></button>
+                                                <div className="text-[13px] font-black">{cnt}</div>
+                                                <button type="button" onClick={(e) => { e.stopPropagation(); addOne(itemId, displayName, v.key); }} className="p-2 rounded-full bg-current/5 hover:bg-orange-500/20"><Plus size={14} /></button>
                                               </div>
                                             </div>
                                           );
                                         })}
-                                        <div className="text-[9px] opacity-40 italic">You can add up to 10 units per variant. Quantities update the system sizing immediately.</div>
                                       </motion.div>
                                     )}
                                   </AnimatePresence>
@@ -447,9 +461,9 @@ export default function App() {
                           </div>
                         </div>
                       ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* AI STRATEGY BLOCK */}
@@ -458,30 +472,30 @@ export default function App() {
                   <div className="p-2 bg-orange-500 rounded-xl shadow-lg shadow-orange-500/20"><Sparkles size={14} className="text-white" /></div>
                   <h4 className="text-[11px] font-black uppercase tracking-widest">AI Strategy Advisor</h4>
                 </div>
-                {aiLoading ? ( <div className="space-y-3">{[1, 2, 3, 4, 5, 6].map(i => (<div key={i} className="h-2 bg-orange-500/10 rounded-full animate-pulse" style={{ width: `${100 - (i * 8)}%` }} />))}</div>) 
-                : aiError ? (<p className="text-[10px] text-red-500 font-bold">{aiError}</p>) 
-                : aiInsights ? ( <ul className="space-y-4">{aiInsights.map((insight, i) => (<motion.li initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} key={i} className="text-[11px] leading-relaxed flex gap-3 group"><span className="text-orange-500 font-bold">•</span><span className={isDark ? "text-white/80" : "text-slate-700"}>{insight}</span></motion.li>))}</ul>) 
-                : (<p className="text-[10px] opacity-40 italic text-center py-4">Generating personalized energy insights...</p>)}
+                {aiLoading ? (<div className="space-y-3">{[1, 2, 3, 4, 5, 6].map(i => (<div key={i} className="h-2 bg-orange-500/10 rounded-full animate-pulse" style={{ width: `${100 - (i * 8)}%` }} />))}</div>)
+                  : aiError ? (<p className="text-[10px] text-red-500 font-bold">{aiError}</p>)
+                    : aiInsights ? (<ul className="space-y-4">{aiInsights.map((insight, i) => (<motion.li initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} key={i} className="text-[11px] leading-relaxed flex gap-3 group"><span className="text-orange-500 font-bold">•</span><span className={isDark ? "text-white/80" : "text-slate-700"}>{insight}</span></motion.li>))}</ul>)
+                      : (<p className="text-[10px] opacity-40 italic text-center py-4">Generating personalized energy insights...</p>)}
               </div>
             </div>
           )}
         </div>
       </motion.aside>
 
-      {/* ... The rest of the JSX (Recommended Size, Impact Grid, Modal) remains unchanged ... */}
+      {/* RECOMMENDED SIZE DISPLAY */}
       <AnimatePresence>
         {specs.solarKw > 0 && (
           <motion.div
             initial={{ x: 100, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
             className={cn(
-              "absolute right-10 top-72 -translate-y-1/2 z-50 p-8 rounded-[2rem] border backdrop-blur-[50px] shadow-2xl w-[400px]",
+              "absolute right-10 top-80 -translate-y-1/2 z-50 p-8 rounded-[2rem] border backdrop-blur-[50px] shadow-2xl w-[420px]",
               isDark ? "bg-black/30 border-white/10" : "bg-white/40 border-white/80"
             )}
           >
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40 mb-2">Designed Capacity</p>
+            <p className="text-[11px] font-black uppercase tracking-[0.4em] opacity-40 mb-2">Designed Capacity</p>
             <div className="flex items-baseline gap-3 mb-8">
-              <h3 className="text-[100px] font-black leading-none tracking-tighter text-orange-500">{specs.solarKw.toFixed(2)}</h3>
-              <span className="text-3xl font-black text-current opacity-40 italic">kW</span>
+              <h3 className="text-[115px] font-black leading-none tracking-tighter text-orange-500 drop-shadow-[0_0_20px_rgba(249,115,22,0.15)]">{specs.solarKw.toFixed(2)}</h3>
+              <span className="text-4xl font-black text-current opacity-40 italic">kW</span>
             </div>
 
             <div className="grid grid-cols-1 gap-3">
@@ -492,13 +506,14 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
       <AnimatePresence>
         {specs.solarKw > 0 && (
           <motion.div
             initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
             className="absolute bottom-10 left-[420px] right-10 z-50 space-y-4"
           >
-            <div className={cn("w-[46.5%] h-36 ml-11 rounded-[2rem] border backdrop-blur-2xl p-6 flex flex-col justify-center relative", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}>
+            <div className={cn("w-[47.5%] h-36 ml-11 rounded-[2rem] border backdrop-blur-2xl p-6 flex flex-col justify-center relative", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}>
               <div className="absolute top-6 left-6 text-[10px] font-black uppercase tracking-widest opacity-40 flex items-center gap-2">
                 <Activity size={12} className="text-orange-500" /> Dynamic Load Projection
               </div>
@@ -513,31 +528,49 @@ export default function App() {
             </div>
 
             <div className="flex gap-4 ml-11 ">
-              <ImpactBox isDark={isDark} label="Investment Recovery" value={`Rs ${(specs.monthlySavings / 1000).toFixed(1)}k`} sub="Monthly ROI" icon={Wallet} color="text-emerald-500" />
-              <ImpactBox isDark={isDark} label="Inflation Mastery" value={`${specs.gridImpact || 98}%`} sub="Cost Hedged" icon={TrendingUp} color="text-blue-500" />
+              <ImpactBox isDark={isDark} label="Investment Recovery" value={`Rs ${(specs.monthlySavings / 1000).toFixed(1)}k`} sub="Monthly ROI" icon={Wallet} iconColor="text-emerald-500" />
+              <ImpactBox isDark={isDark} label="Inflation Mastery" value={`${specs.gridImpact || 98}%`} sub="Cost Hedged" icon={TrendingUp} iconColor="text-blue-500" />
 
+              {/* SYSTEM METADATA - BOOSTED VISIBILITY */}
               <div
                 onClick={() => setShowTierDetails(true)}
-                className={cn("flex-[1.2] p-6 rounded-[2rem] border cursor-pointer hover:scale-[1.02] transition-transform shadow-lg", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}
+                className={cn(
+                  "flex-[1] p-7 rounded-[2.5rem] border-2 cursor-pointer hover:scale-[1.03] transition-all duration-500 shadow-2xl relative group overflow-hidden",
+                  isDark ? "bg-orange-500/20 border-orange-500/40 shadow-orange-500/20" : "bg-orange-100 border-orange-300 shadow-orange-200/50"
+                )}
               >
-                <p className="text-[8px] font-black uppercase tracking-widest mb-1">System Metadata</p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-[11px] font-black uppercase flex items-center opacity-80 gap-1"><Layers size={10} /> {specs.packageId || "Smart Lite"}</p>
-                    <p className="text-[8px] opacity-40 font-bold uppercase">Package Tier</p>
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
+                  <Sparkles size={60} className="text-orange-500" />
+                </div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-orange-500">System Metadata</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6 relative z-10">
+                  <div className="space-y-1">
+                    <p className={cn("text-lg font-black uppercase leading-tight tracking-tighter", isDark ? "text-white" : "text-slate-900")}>
+                      {specs.packageId || "Smart Lite"}
+                    </p>
+                    <p className={cn("text-[10px] font-bold uppercase flex items-center gap-1", isDark ? "text-orange-400" : "text-orange-600")}>
+                      <Layers size={10} /> Package Tier
+                    </p>
                   </div>
-                  <div>
-                    <p className="text-[11px] font-black uppercase opacity-80">3.2 Years</p>
-                    <p className="text-[8px] opacity-40 font-bold uppercase">ROI Est.</p>
+                  <div className="space-y-1">
+                    <p className={cn("text-lg font-black uppercase leading-tight tracking-tighter", isDark ? "text-white" : "text-slate-900")}>3.2 Years</p>
+                    <p className={cn("text-[10px] font-bold uppercase flex items-center gap-1", isDark ? "text-orange-400" : "text-orange-600")}>
+                      <Calendar size={10} /> ROI Est.
+                    </p>
                   </div>
                 </div>
               </div>
 
-              <ImpactBox isDark={isDark} label="Carbon Offset" value={`${specs.carbonOffset.toFixed(1)} KG`} sub="Impact" icon={TreeDeciduous} color="text-emerald-400" />
+              <ImpactBox isDark={isDark} label="Carbon Offset" value={`${specs.carbonOffset.toFixed(1)} KG`} sub="Impact" icon={TreeDeciduous} iconColor="text-emerald-400" />
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
       <AnimatePresence>
         {showTierDetails && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-10 bg-black/40 backdrop-blur-xl">
@@ -579,21 +612,27 @@ export default function App() {
 
 function ComponentRow({ icon: Icon, label, value }: any) {
   return (
-    <div className="flex items-center justify-between p-3 rounded-2xl bg-current/5 border border-current/5">
+    <div className="flex items-center justify-between p-4 rounded-2xl bg-current/5 border border-current/10 hover:border-orange-500/30 transition-colors">
       <div className="flex items-center gap-3">
-        <Icon size={14} className="text-orange-500" />
-        <span className="text-[9px] font-black uppercase tracking-widest opacity-40">{label}</span>
+        <Icon size={16} className="text-orange-500" />
+        <span className="text-[11px] font-black uppercase tracking-widest opacity-60">{label}</span>
       </div>
-      <span className="text-xs font-black uppercase">{value}</span>
+      <span className="text-sm font-black uppercase tracking-tight">{value}</span>
     </div>
   );
 }
 
-function ImpactBox({ label, value, sub, icon: Icon, color, isDark }: any) {
+function ImpactBox({ label, value, sub, icon: Icon, iconColor, isDark }: any) {
   return (
-    <div className={cn("flex-1 p-6 rounded-[2rem] backdrop-blur-3xl border shadow-xl flex flex-col justify-between", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}>
-      <div className="flex justify-between items-start"><p className="text-[8px] font-black uppercase tracking-widest opacity-40">{label}</p><Icon size={14} className={color} /></div>
-      <div><h4 className={cn("text-2xl font-black tracking-tighter", color)}>{value}</h4><p className="text-[9px] font-bold opacity-40 uppercase mt-1">{sub}</p></div>
+    <div className={cn("flex-1 p-7 rounded-[2.5rem] backdrop-blur-3xl border shadow-xl flex flex-col justify-between transition-transform hover:scale-[1.02]", isDark ? "bg-black/30 border-white/10" : "bg-white/40 border-white/80")}>
+      <div className="flex justify-between items-start">
+        <p className="text-[10px] font-black uppercase tracking-widest opacity-60">{label}</p>
+        <Icon size={16} className={iconColor} />
+      </div>
+      <div>
+        <h4 className={cn("text-3xl font-black tracking-tighter leading-none mb-1", iconColor)}>{value}</h4>
+        <p className="text-[10px] font-bold opacity-60 uppercase">{sub}</p>
+      </div>
     </div>
   );
 }
