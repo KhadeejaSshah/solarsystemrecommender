@@ -114,6 +114,7 @@ export default function App() {
     solarKw: 0, storageKwh: 0, inverterKw: 0, packageId: 'Smart Lite',
     monthlySavings: 0, carbonOffset: 0, gridImpact: 0
   });
+  const [billOnlySpecs, setBillOnlySpecs] = useState<any>(null);
 
   const [variantOpen, setVariantOpen] = useState<string | null>(null);
   const [applianceCounts, setApplianceCounts] = useState<Record<string, Record<string, { quantity: number; watt: number; name: string }>>>({});
@@ -203,6 +204,7 @@ export default function App() {
         setInteractionLevel('bill-uploaded'); // <-- Move to the next screen
 
         const currentSpecs = await fetchSystemSpecs(units, []);
+        setBillOnlySpecs(currentSpecs); // Store initial bill-only design
         requestAIInsights({ bill: result.data, specs: currentSpecs, units, appliances: [] });
       } else {
         // --- Failure Path (e.g., Invalid Bill) ---
@@ -321,6 +323,7 @@ export default function App() {
                     setBillUnits(0);
                     setAiInsights(null);
                     setAiError(null); // Clear errors when resetting
+                    setBillOnlySpecs(null);
                     setSpecs({ solarKw: 0, storageKwh: 0, inverterKw: 0, packageId: 'Smart Lite', monthlySavings: 0, carbonOffset: 0, gridImpact: 0 });
                   }}
                   className="p-2 rounded-xl bg-current/5 hover:bg-orange-500 hover:text-white transition-all"
@@ -482,33 +485,64 @@ export default function App() {
         </div>
       </motion.aside>
 
-      {/* RECOMMENDED SIZE DISPLAY */}
+      {/* SIZING DISPLAYS - PARALLEL CARDS */}
       <AnimatePresence>
-        {specs.solarKw > 0 && (
-          <motion.div
-            initial={{ x: 100, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
-            className={cn(
-              "absolute right-10 top-80 -translate-y-1/2 z-50 p-8 rounded-[2rem] border backdrop-blur-[50px] shadow-2xl w-[420px]",
-              isDark ? "bg-black/30 border-white/10" : "bg-white/40 border-white/80"
-            )}
-          >
-            <p className="text-[11px] font-black uppercase tracking-[0.4em] opacity-40 mb-2">Designed Capacity</p>
-            <div className="flex items-baseline gap-3 mb-8">
-              <h3 className="text-[115px] font-black leading-none tracking-tighter text-orange-500 drop-shadow-[0_0_20px_rgba(249,115,22,0.15)]">{specs.solarKw.toFixed(2)}</h3>
-              <span className="text-4xl font-black text-current opacity-40 italic">kW</span>
-            </div>
+        {billOnlySpecs?.solarKw > 0 && (
+          <div className="absolute right-10 top-[40%] -translate-y-1/2 z-50 flex items-start gap-6">
+            {/* REFINED SIZING PANEL (Shown when appliances added) */}
+            {selectedAppliances.length > 0 && (
+              <motion.div
+                initial={{ x: 20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                className={cn(
+                  "p-8 rounded-[2rem] border backdrop-blur-[50px] shadow-2xl w-[420px]",
+                  isDark ? "bg-orange-500/5 border-orange-500/20 shadow-orange-500/5" : "bg-orange-50/40 border-orange-200/80 shadow-orange-100"
+                )}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                   <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                   <p className="text-[11px] font-black uppercase tracking-[0.4em] text-orange-500">Refined System Design</p>
+                </div>
+                <div className="flex items-baseline gap-3 mb-8">
+                  <h3 className="text-[115px] font-black leading-none tracking-tighter text-orange-500 drop-shadow-[0_0_20px_rgba(249,115,22,0.15)]">{specs.solarKw.toFixed(2)}</h3>
+                  <span className="text-4xl font-black text-current opacity-40 italic">kW</span>
+                </div>
 
-            <div className="grid grid-cols-1 gap-3">
-              <ComponentRow icon={Sun} label="PV Panel Matrix" value={`${specs.solarKw.toFixed(1)} kW`} />
-              <ComponentRow icon={Cpu} label="Hybrid Inverter" value={`${specs.inverterKw.toFixed(2) || (specs.solarKw * 0.8).toFixed(1)} kW`} />
-              <ComponentRow icon={BatteryMedium} label="LFP Battery Storage" value={`${specs.storageKwh.toFixed(2)} kWh`} />
-            </div>
-          </motion.div>
+                <div className="grid grid-cols-1 gap-3">
+                  <ComponentRow icon={Sun} label="Refined PV Matrix" value={`${specs.solarKw.toFixed(1)} kW`} />
+                  <ComponentRow icon={Cpu} label="Refined Inverter" value={`${specs.inverterKw.toFixed(1)} kW`} />
+                  <ComponentRow icon={BatteryMedium} label="Refined Battery" value={`${specs.storageKwh.toFixed(2)} kWh`} />
+                </div>
+              </motion.div>
+            )}
+
+            {/* ORIGINAL SIZING PANEL */}
+            <motion.div
+              initial={{ x: 100, opacity: 0 }} 
+              animate={{ x: 0, opacity: 1 }}
+              className={cn(
+                "p-8 rounded-[2rem] border backdrop-blur-[50px] shadow-2xl w-[420px]",
+                isDark ? "bg-black/30 border-white/10" : "bg-white/40 border-white/80"
+              )}
+            >
+              <p className="text-[11px] font-black uppercase tracking-[0.4em] opacity-40 mb-2">Original Designed Capacity</p>
+              <div className="flex items-baseline gap-3 mb-8">
+                <h3 className="text-[115px] font-black leading-none tracking-tighter text-current drop-shadow-[0_0_20px_rgba(255,255,255,0.05)] opacity-80">{billOnlySpecs.solarKw.toFixed(2)}</h3>
+                <span className="text-4xl font-black text-current opacity-40 italic">kW</span>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                <ComponentRow icon={Sun} label="PV Panel Matrix" value={`${billOnlySpecs.solarKw.toFixed(1)} kW`} />
+                <ComponentRow icon={Cpu} label="Hybrid Inverter" value={`${billOnlySpecs.inverterKw.toFixed(2) || (billOnlySpecs.solarKw * 0.8).toFixed(1)} kW`} />
+                <ComponentRow icon={BatteryMedium} label="LFP Battery Storage" value={`${billOnlySpecs.storageKwh.toFixed(2)} kWh`} />
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
-        {specs.solarKw > 0 && (
+        {billOnlySpecs?.solarKw > 0 && (
           <motion.div
             initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
             className="absolute bottom-10 left-[420px] right-10 z-50 space-y-4"
