@@ -236,6 +236,11 @@ def parse_numeric(value):
 # 5. API ROUTES
 # ---------------------------------------------------------
 
+
+# ---------------------------------------------------------
+# 5. API ROUTES
+# ---------------------------------------------------------
+
 @app.post("/calculate")
 async def calculate_endpoint(payload: CalcRequest):
     """Called every time an appliance is toggled or bill changes."""
@@ -256,44 +261,95 @@ async def upload_bill(file: UploadFile = File(...)):
         text = await extract_text(file_path)
         details_raw = await extract_bill_data(text)
         details = safe_parse(details_raw)
-        print(f"Extracted Bill Details: {details}")
 
-        # --- START: ADDED VALIDATION BLOCK ---
-        # Check if parsing was successful and if essential data exists and is valid.
+        # --- START: MODIFIED VALIDATION LOGIC ---
         units_consumed = details.get("units_consumed") if isinstance(details, dict) else None
 
-        if not isinstance(units_consumed, (int, float)) or units_consumed <= 0:
-            error_message = "Invalid Bill: Key consumption data could not be extracted. Please upload a clear, valid bill."
-            logger.warning(f"Bill validation failed. Extracted details: {details}")
-            # Return a failure response that the frontend can handle
+        # Step 1: Check for a truly invalid or unreadable bill first.
+        if not isinstance(units_consumed, (int, float)):
+            error_message = "Invalid Bill: We could not read the consumption data. Please upload a clear, valid bill."
+            logger.warning(f"Bill validation failed (unreadable units). Extracted: {details}")
             return {"success": False, "error": error_message}
-        # --- END: ADDED VALIDATION BLOCK ---
 
-        # Determine tariff: prefer bill, fallback to config
-        tariff_value = None
-        tariff_source = "config"
-        if isinstance(details, dict):
-            for key in ["tariff", "tariff_per_unit", "per_unit", "rate", "tariff_rate", "unit_rate", "unit_price"]:
-                if key in details:
-                    parsed = parse_numeric(details[key])
-                    if parsed and parsed > 0:
-                        tariff_value = parsed
-                        tariff_source = "bill"
-                        break
+        # Step 2: Handle the specific case where the user already has net metering.
+        if units_consumed <= 0:
+            # This is not an error, but a specific business case.
+            info_message = "Your bill shows zero or negative consumption. This often means you already have a solar system. Our tool is designed for new installations, so we cannot proceed."
+            logger.info(f"User with potential existing solar detected. Units: {units_consumed}")
+            return {"success": False, "error": info_message}
+        # --- END: MODIFIED VALIDATION LOGIC ---
 
-        if tariff_value is None:
-            tariff_value = ENGINEERING.get("tariff_per_unit", 55)
-            tariff_source = "config"
+        # If validation passes, proceed with the calculation.
+        logger.info(f"Bill validated successfully. Units: {units_consumed}")
+        terminal_solar_math(units_consumed, [])
 
-        logger.info(f"Bill validated successfully. Units: {units_consumed}; Using tariff Rs. {tariff_value} (from {tariff_source})")
-        # pass tariff_override so terminal prints the correct source as well
-        terminal_solar_math(units_consumed, [], tariff_override=tariff_value)
-
-        return {"success": True, "data": details, "tariffPerUnit": tariff_value, "tariffSource": tariff_source}
+        return {"success": True, "data": details}
 
     except Exception as e:
         logger.error(f"An unexpected error occurred during bill processing: {e}")
         return {"success": False, "error": "An internal error occurred. Please try again."}
+
+
+
+
+# @app.post("/calculate")
+# async def calculate_endpoint(payload: CalcRequest):
+#     """Called every time an appliance is toggled or bill changes."""
+#     results = terminal_solar_math(payload.units, payload.appliances)
+#     return results
+
+# # --- MODIFIED ENDPOINT ---
+# @app.post("/upload-bill")
+# async def upload_bill(file: UploadFile = File(...)):
+#     if not (file.filename.endswith('.pdf') or file.filename.endswith('.png')):
+#         raise HTTPException(status_code=400, detail="Only .pdf and .png allowed")
+
+#     file_path = os.path.join(UPLOAD_DIR, file.filename)
+#     with open(file_path, "wb") as buffer:
+#         shutil.copyfileobj(file.file, buffer)
+
+#     try:
+#         text = await extract_text(file_path)
+#         details_raw = await extract_bill_data(text)
+#         details = safe_parse(details_raw)
+#         print(f"Extracted Bill Details: {details}")
+
+#         # --- START: ADDED VALIDATION BLOCK ---
+#         # Check if parsing was successful and if essential data exists and is valid.
+#         units_consumed = details.get("units_consumed") if isinstance(details, dict) else None
+
+#         if not isinstance(units_consumed, (int, float)) or units_consumed <= 0:
+#             error_message = "Invalid Bill: Key consumption data could not be extracted. Please upload a clear, valid bill."
+#             logger.warning(f"Bill validation failed. Extracted details: {details}")
+#             # Return a failure response that the frontend can handle
+#             return {"success": False, "error": error_message}
+#         # --- END: ADDED VALIDATION BLOCK ---
+
+#         # Determine tariff: prefer bill, fallback to config
+#         tariff_value = None
+#         tariff_source = "config"
+#         if isinstance(details, dict):
+#             for key in ["tariff", "tariff_per_unit", "per_unit", "rate", "tariff_rate", "unit_rate", "unit_price"]:
+#                 if key in details:
+#                     parsed = parse_numeric(details[key])
+#                     if parsed and parsed > 0:
+#                         tariff_value = parsed
+#                         tariff_source = "bill"
+#                         break
+
+#         if tariff_value is None:
+#             tariff_value = ENGINEERING.get("tariff_per_unit", 55)
+#             tariff_source = "config"
+
+#         logger.info(f"Bill validated successfully. Units: {units_consumed}; Using tariff Rs. {tariff_value} (from {tariff_source})")
+#         # pass tariff_override so terminal prints the correct source as well
+#         terminal_solar_math(units_consumed, [], tariff_override=tariff_value)
+
+#         return {"success": True, "data": details, "tariffPerUnit": tariff_value, "tariffSource": tariff_source}
+
+#     except Exception as e:
+#         logger.error(f"An unexpected error occurred during bill processing: {e}")
+#         return {"success": False, "error": "An internal error occurred. Please try again."}
 
 
 class AIRequest(BaseModel):
