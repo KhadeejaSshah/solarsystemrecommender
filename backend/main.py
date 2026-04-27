@@ -84,6 +84,8 @@ def terminal_solar_math_new(units, appliances: List[ApplianceItem], tariff_overr
     effective_tariff = float(ENGINEERING.get("tariff_per_unit", 55))
     tariff_source = "config"
     if peak_tariff is not None and off_peak_tariff is not None:
+        print(f"Tariff from bill: Peak={peak_tariff} PKR, Off-Peak={off_peak_tariff} PKR")
+        print(f"Units from bill: Peak={peak_units} units, Off-Peak={off_peak_units} units")
         p_units = float(peak_units or 0)
         o_units = float(off_peak_units or 0)
         if (p_units + o_units) > 0:
@@ -95,7 +97,7 @@ def terminal_solar_math_new(units, appliances: List[ApplianceItem], tariff_overr
     elif isinstance(tariff_override, (int, float)) and tariff_override > 0:
         effective_tariff = float(tariff_override)
         tariff_source = "override"
-
+    print(f"Effective Tariff Used: {effective_tariff:.2f} PKR (Source: {tariff_source})")
     print("\n" + "═"*60)
     print(" ☀️  SKYELECTRIC ENGINEERING CALCULATION ENGINE")
     print("═"*60)
@@ -105,30 +107,33 @@ def terminal_solar_math_new(units, appliances: List[ApplianceItem], tariff_overr
     daily_energy_bill_kwh = avg_monthly_units / 30
     print(f"[STEP 1] Daily Energy (Bill): {daily_energy_bill_kwh:.2f} kWh")
 
-    # 🔌 STEP 2: Appliance Load (Instantaneous)
+    # 🔌 STEP 2: Appliance Load (Power)
     apply_appliance_defaults(appliances)
     app_load_kw = sum([(a.wattage * a.quantity) / 1000 for a in appliances])
-    print(f"[STEP 2] Active Appliance Load: {app_load_kw:.2f} kW")
+    print(f"[STEP 2] Appliance Load: {app_load_kw:.2f} kW")
 
-    # ☀️ STEP 3: PV Sizing (Units Load + Appliance Load)
-    # We treat appliance load as a direct addition to the required solar capacity
-    pv_from_bill = daily_energy_bill_kwh / (YIELD * EFFICIENCY)
-    pv_size_kw = pv_from_bill + app_load_kw  # Total PV grows with appliances
-    
-    # Round to nearest 0.5 for realistic panel strings
+    # 🔋 Convert appliance load → energy (ASSUMPTION)
+    APPLIANCE_HOURS = 5  # configurable assumption
+    appliance_daily_energy = app_load_kw * APPLIANCE_HOURS
+
+    # 🔢 STEP 3: Total Daily Energy Demand
+    base_daily_energy = avg_monthly_units / 30
+    total_daily_energy = base_daily_energy + appliance_daily_energy
+
+    print(f"[STEP 3] Total Daily Energy: {total_daily_energy:.2f} kWh")
+
+    # ☀️ STEP 4: PV Sizing
+    pv_size_kw = total_daily_energy / (YIELD * EFFICIENCY)
     pv_size_kw = math.ceil(pv_size_kw * 2) / 2
-    print(f"[STEP 3] Total PV Size: {pv_size_kw:.2f} kW (Bill: {pv_from_bill:.2f} + Apps: {app_load_kw:.2f})")
+    print(f"[STEP 4] PV Size: {pv_size_kw:.2f} kW")
 
-    # 🔋 STEP 4: Battery Sizing 
-    # Based on the total generation capacity (which now includes appliances)
-    total_daily_energy = pv_size_kw * YIELD * EFFICIENCY
+    # 🔋 STEP 5: Battery
     battery_size_kwh = (0.6 * total_daily_energy) / DOD
-    print(f"[STEP 4] Battery Size: {battery_size_kwh:.2f} kWh (Based on {total_daily_energy:.2f} daily gen)")
+    print(f"[STEP 5] Battery: {battery_size_kwh:.2f} kWh")
 
-    # 🔌 STEP 5: Inverter Sizing
-    # Must handle the higher of (Solar Capacity) OR (Appliance Peak) + 25% safety
-    peak_demand = max(pv_size_kw, app_load_kw)
-    raw_inverter_size = 1.25 * peak_demand
+    # ⚡ STEP 6: Inverter
+    peak_demand_kw = max(app_load_kw, pv_size_kw)
+    raw_inverter_size = 1.25 * peak_demand_kw
     inverter_size_kw = next((s for s in STANDARD_INVERTER_SIZES if s >= raw_inverter_size), max(STANDARD_INVERTER_SIZES))
     print(f"[STEP 5] Inverter Size: {raw_inverter_size:.2f} kW -> Selected: {inverter_size_kw} kW")
 
@@ -139,9 +144,11 @@ def terminal_solar_math_new(units, appliances: List[ApplianceItem], tariff_overr
     carbon_offset = pv_size_kw * 1.4
 
     # Savings logic using TOU (Time of Use) or effective tariff
+    print(f"\nCalculating savings with effective tariff: {effective_tariff:.2f} PKR/unit")
     peak_ratio = 0.6 if not (peak_units and off_peak_units) else (peak_units / (peak_units + off_peak_units))
     solar_peak = solar_units_month * peak_ratio
     solar_offpeak = solar_units_month * (1 - peak_ratio)
+    print(f"Estimated Solar Generation: {solar_units_month:.2f} units/month | Peak: {solar_peak:.2f} units, Off-Peak: {solar_offpeak:.2f} units")
     
     monthly_save = (
         solar_peak * float(peak_tariff or effective_tariff) + 
