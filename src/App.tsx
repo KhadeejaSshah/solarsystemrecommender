@@ -305,7 +305,7 @@ export default function App() {
         </div>
       </div>
       <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className={cn("p-3 absolute top-10 right-10 rounded-[2rem] backdrop-blur-xl border shadow-lg transition-all z-[100]", isDark ? "bg-black/60 border-white/10 hover:bg-black/80" : "bg-white/70 border-black/10 hover:bg-white/90")}>
-        {isDark ? <Sun size={18} className="text-orange-400" /> : <Moon size={18} className="text-slate-700" />}
+        {isDark ? <Sun size={18} className="text-orange-200" /> : <Moon size={18} className="text-slate-700" />}
       </button>
 
       <motion.aside className={cn("absolute left-12 top-10 bottom-10 w-[380px] z-50 rounded-[2rem] border backdrop-blur-[40px] shadow-2xl flex flex-col transition-all duration-500 overflow-hidden", isDark ? "bg-black/40 border-white/10" : "bg-white/60 border-white/80")}>
@@ -313,7 +313,7 @@ export default function App() {
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-black tracking-tighter">
-                {interactionLevel === 'initial' ? "System Design" : `Hello, ${userData.name.split(' ')[0]}`}
+                {interactionLevel === 'initial' ? "System Design" : `SYSTEM DESIGN`}
               </h2>
               {interactionLevel === 'bill-uploaded' && (
                 <button
@@ -501,17 +501,46 @@ export default function App() {
               >
                 <div className="flex items-center gap-2 mb-2">
                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-                   <p className="text-[11px] font-black uppercase tracking-[0.4em] text-orange-500">Refined System Design</p>
+                   <p className="text-[13px] font-black uppercase tracking-[0.4em] text-orange-500">Refined System Design</p>
                 </div>
                 <div className="flex items-baseline gap-3 mb-8">
-                  <h3 className="text-[115px] font-black leading-none tracking-tighter text-orange-500 drop-shadow-[0_0_20px_rgba(249,115,22,0.15)]">{specs.solarKw.toFixed(2)}</h3>
+                  <h3 className="text-[125px] font-black leading-none tracking-tighter text-orange-500 drop-shadow-[0_0_20px_rgba(249,115,22,0.15)]">{specs.solarKw.toFixed(2)}</h3>
                   <span className="text-4xl font-black text-current opacity-40 italic">kW</span>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3">
-                  <ComponentRow icon={Sun} label="Refined PV Matrix" value={`${specs.solarKw.toFixed(1)} kW`} />
-                  <ComponentRow icon={Cpu} label="Refined Inverter" value={`${specs.inverterKw.toFixed(1)} kW`} />
-                  <ComponentRow icon={BatteryMedium} label="Refined Battery" value={`${specs.storageKwh.toFixed(2)} kWh`} />
+                  <div className="flex items-center justify-between p-4 rounded-2xl bg-current/5 border border-current/10">
+                    <div className="flex items-center gap-3">
+                      <Sun size={18} className="text-orange-500" />
+                      <span className="text-[12px] md:text-[13px] font-black uppercase tracking-widest opacity-75">Refined PV Matrix</span>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl md:text-3xl font-black text-orange-500">{specs.solarKw.toFixed(1)}</span>
+                      <span className="text-sm font-black italic opacity-60">kW</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 rounded-2xl bg-current/5 border border-current/10">
+                    <div className="flex items-center gap-3">
+                      <Cpu size={18} className="text-orange-500" />
+                      <span className="text-[12px] md:text-[13px] font-black uppercase tracking-widest opacity-75">Refined Inverter</span>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl md:text-3xl font-black">{specs.inverterKw.toFixed(1)}</span>
+                      <span className="text-sm font-black italic opacity-60">kW</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 rounded-2xl bg-current/5 border border-current/10">
+                    <div className="flex items-center gap-3">
+                      <BatteryMedium size={18} className="text-orange-500" />
+                      <span className="text-[12px] md:text-[13px] font-black uppercase tracking-widest opacity-75">Refined Battery</span>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl md:text-3xl font-black">{specs.storageKwh.toFixed(2)}</span>
+                      <span className="text-sm font-black italic opacity-60">kWh</span>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -525,16 +554,45 @@ export default function App() {
                 isDark ? "bg-black/30 border-white/10" : "bg-white/40 border-white/80"
               )}
             >
-              <p className="text-[11px] font-black uppercase tracking-[0.4em] opacity-40 mb-2">Original Designed Capacity</p>
+              <p className="text-[13px] font-black uppercase tracking-[0.4em] opacity-40 mb-2">Original Designed Capacity</p>
               <div className="flex items-baseline gap-3 mb-8">
-                <h3 className="text-[115px] font-black leading-none tracking-tighter text-current drop-shadow-[0_0_20px_rgba(255,255,255,0.05)] opacity-80">{billOnlySpecs.solarKw.toFixed(2)}</h3>
+                <h3 className="text-[125px] font-black leading-none tracking-tighter text-current drop-shadow-[0_0_20px_rgba(255,255,255,0.05)] opacity-80">{billOnlySpecs.solarKw.toFixed(2)}</h3>
                 <span className="text-4xl font-black text-current opacity-40 italic">kW</span>
               </div>
 
               <div className="grid grid-cols-1 gap-3">
-                <ComponentRow icon={Sun} label="PV Panel Matrix" value={`${billOnlySpecs.solarKw.toFixed(1)} kW`} />
-                <ComponentRow icon={Cpu} label="Hybrid Inverter" value={`${billOnlySpecs.inverterKw.toFixed(2) || (billOnlySpecs.solarKw * 0.8).toFixed(1)} kW`} />
-                <ComponentRow icon={BatteryMedium} label="LFP Battery Storage" value={`${billOnlySpecs.storageKwh.toFixed(2)} kWh`} />
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-current/5 border border-current/10">
+                  <div className="flex items-center gap-3">
+                    <Sun size={18} className="text-current" />
+                    <span className="text-[12px] md:text-[13px] font-black uppercase tracking-widest opacity-75">PV Panel Matrix</span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl md:text-3xl font-black">{billOnlySpecs.solarKw.toFixed(1)}</span>
+                    <span className="text-sm font-black italic opacity-60">kW</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-current/5 border border-current/10">
+                  <div className="flex items-center gap-3">
+                    <Cpu size={18} className="text-current" />
+                    <span className="text-[12px] md:text-[13px] font-black uppercase tracking-widest opacity-75">Hybrid Inverter</span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl md:text-3xl font-black">{(billOnlySpecs.inverterKw || (billOnlySpecs.solarKw * 0.8)).toFixed(1)}</span>
+                    <span className="text-sm font-black italic opacity-60">kW</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-current/5 border border-current/10">
+                  <div className="flex items-center gap-3">
+                    <BatteryMedium size={18} className="text-current" />
+                    <span className="text-[12px] md:text-[13px] font-black uppercase tracking-widest opacity-75">Battery</span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl md:text-3xl font-black">{billOnlySpecs.storageKwh.toFixed(2)}</span>
+                    <span className="text-sm font-black italic opacity-60">kWh</span>
+                  </div>
+                </div>
               </div>
             </motion.div>
           </div>
@@ -574,11 +632,11 @@ export default function App() {
                 )}
               >
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
-                  <Sparkles size={60} className="text-orange-500" />
+                  <Sparkles size={60} className="text-orange-900" />
                 </div>
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-orange-500">System Metadata</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-orange-900">System Metadata</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-6 relative z-10">
@@ -586,13 +644,13 @@ export default function App() {
                     <p className={cn("text-lg font-black uppercase leading-tight tracking-tighter", isDark ? "text-white" : "text-slate-900")}>
                       {specs.packageId || "Smart Lite"}
                     </p>
-                    <p className={cn("text-[10px] font-bold uppercase flex items-center gap-1", isDark ? "text-orange-400" : "text-orange-600")}>
+                    <p className={cn("text-[10px] font-bold uppercase flex items-center gap-1", isDark ? "text-orange-900" : "text-orange-900")}>
                       <Layers size={10} /> Package Tier
                     </p>
                   </div>
                   <div className="space-y-1">
                     <p className={cn("text-lg font-black uppercase leading-tight tracking-tighter", isDark ? "text-white" : "text-slate-900")}>3.2 Years</p>
-                    <p className={cn("text-[10px] font-bold uppercase flex items-center gap-1", isDark ? "text-orange-400" : "text-orange-600")}>
+                    <p className={cn("text-[10px] font-bold uppercase flex items-center gap-1", isDark ? "text-orange-900" : "text-orange-900")}>
                       <Calendar size={10} /> ROI Est.
                     </p>
                   </div>
@@ -651,7 +709,7 @@ function ComponentRow({ icon: Icon, label, value }: any) {
         <Icon size={16} className="text-orange-500" />
         <span className="text-[11px] font-black uppercase tracking-widest opacity-60">{label}</span>
       </div>
-      <span className="text-sm font-black uppercase tracking-tight">{value}</span>
+      <span className="text-base font-black uppercase tracking-tight">{value}</span>
     </div>
   );
 }
