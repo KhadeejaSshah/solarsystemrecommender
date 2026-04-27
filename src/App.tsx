@@ -311,11 +311,11 @@ export default function App() {
 
   // UI status for optimization (offline / scanning / online)
   const optimizationStatus = isScanning
-    ? { label: 'Scanning Bill...', dotClass: 'bg-yellow-400', textClass: 'text-black' }
+    ? { label: 'Scanning Bill...', dotClass: 'bg-yellow-400', textClass: 'text-yellow' }
     : interactionLevel === 'bill-uploaded'
       ? { label: 'Optimization Active', dotClass: 'bg-orange-500', textClass: 'text-orange-200' }
-      : { label: 'Optimization Offline', dotClass: 'bg-slate-400', textClass: 'text-slate-700' };
-  
+      : { label: 'Optimization Offline', dotClass: 'bg-blue-100', textClass: 'text-slate-700' };
+
   return (
     <div className={cn("h-screen w-full overflow-hidden transition-all duration-1000 font-sans", isDark ? "bg-slate-950 text-white" : "bg-white text-slate-900")}>
       {/* (The rest of your JSX is largely unchanged) */}
@@ -378,7 +378,6 @@ export default function App() {
                     <span className="flex items-center justify-center gap-2">
                       <Activity size={14} className="animate-spin text-orange-400" />
                       <span>AI is analyzing your bill...</span>
-                      <span className="ml-2 text-sm opacity-60">🔒</span>
                     </span>
                   ) : (
                     "Drop Energy Bill"
@@ -386,7 +385,7 @@ export default function App() {
                 </p>
                 {isScanning && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="p-2 rounded-xl bg-black/75 text-white text-xs font-bold">
+                    <div className="p-2 mt-66 rounded-xl bg-black/75 text-white text-xs font-bold">
                       Locking & analyzing… this may take a few moments
                     </div>
                   </div>
@@ -691,10 +690,10 @@ export default function App() {
                      <TrendingUp size={16} className="text-orange-500" />
                      <div>
                        <p className="text-[11px] font-black uppercase tracking-widest opacity-60">Energy Cost Outlook</p>
-                       <p className="text-[10px] uppercase font-bold opacity-40">5 Year Outlook</p>
+                       <p className="text-[10px] uppercase font-bold opacity-40">3 Year Outlook</p>
                      </div>
                    </div>
-                   <div className="px-3 py-1 rounded-full bg-orange-500/10 text-orange-500 text-sm font-black">5-YEAR OUTLOOK</div>
+                   <div className="px-3 py-1 rounded-full bg-orange-500/10 text-orange-500 text-sm font-black">3-YEAR OUTLOOK</div>
                  </div>
  
                  <div className="mb-4">
@@ -731,39 +730,16 @@ export default function App() {
               <ImpactBox compact isDark={isDark} label="Monthly savings" value={`Rs ${(specs.monthlySavings / 1000).toFixed(1)}k`} sub="Monthly Savings" icon={Wallet} iconColor="text-emerald-500" />
                
               {/* SYSTEM METADATA (compact, half of energy box height) */}
-              <div
+              <ImpactBox
+                compact
+                isDark={isDark}
                 onClick={() => setShowTierDetails(true)}
-                className={cn(
-                  "flex-[1] h-28 p-3 rounded-[2.5rem] border-2 cursor-pointer hover:scale-[1.03] transition-all duration-500 shadow-2xl relative group overflow-hidden",
-                    
-                  isDark? "bg-black/75 border-white/10 shadow-black/40 backdrop-blur-xl": "bg-white/20 border-white/60 backdrop-blur-xl"                )}
-              >
-                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
-                   <Sparkles size={60} className="text-orange-500" />
-                 </div>
-                 <div className="flex items-center gap-2 mb-3">
-                   <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
-                   <p className="text-[11px] font-black uppercase tracking-[0.2em] text-orange-500">System Metadata</p>
-                 </div>
- 
-                 <div className="grid grid-cols-2 gap-6 relative z-10">
-                   <div className="space-y-1">
-                     <p className={cn("text-sm font-black uppercase leading-tight tracking-tighter", isDark ? "text-white" : "text-slate-900")}>
-                       {specs.packageId || "Smart Lite"}
-                     </p>
-                     <p className={cn("text-[10px] font-bold uppercase flex items-center gap-1", isDark ? "text-orange-500" : "text-orange-500")}>
-                       <Layers size={10} /> Package Tier
-                     </p>
-                   </div>
-                   <div className="space-y-1">
-                     <p className={cn("text-sm font-black uppercase leading-tight tracking-tighter", isDark ? "text-white" : "text-slate-900")}>3.2 Years</p>
-                     <p className={cn("text-[10px] font-bold uppercase flex items-center gap-1", isDark ? "text-orange-500" : "text-orange-500")}>
-                       <Calendar size={10} /> ROI Est.
-                     </p>
-                   </div>
-                 </div>
-                 </div>
-
+                label={specs.packageId || "Smart Lite"}
+                value="3.2 yrs"
+                sub="ROI Est."
+                icon={Layers}
+                iconColor="text-orange-500"
+              />
                {/* CARBON OFFSET (compact, half of energy box height) */}
                <ImpactBox compact isDark={isDark} label="Carbon Offset" value={`${specs.carbonOffset.toFixed(1)} KG`} sub="Impact" icon={TreeDeciduous} iconColor="text-emerald-400" />
              </div>
@@ -827,26 +803,54 @@ function ImpactBox({
   value,
   sub,
   icon: Icon,
-  color = "text-emerald-500", // default accent
+  iconColor = "text-emerald-500",
   isDark,
+  compact = false,
+  onClick,
 }: any) {
+  // Compact, left-logo + centered text layout (used for Monthly Savings, System Metadata, Carbon Offset)
+  if (compact) {
+    return (
+      <div
+        onClick={onClick}
+        className={cn(
+          "flex-1 h-28 p-3 rounded-[2.5rem] border cursor-pointer transition-all duration-500 shadow-2xl relative group overflow-hidden hover:scale-[1.03] flex items-center",
+          isDark ? "bg-black/75 border-white/10 shadow-black/40 backdrop-blur-xl" : "bg-white/20 border-white/60 backdrop-blur-xl"
+        )}
+      >
+        <div className="flex items-center ml-5 gap-6 w-full">
+          <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center shadow-md flex-shrink-0", isDark ? "bg-gradient-to-br from-orange-500/90 to-orange-400/60" : "bg-gradient-to-br from-emerald-500/90 to-emerald-400/50")}>
+            {Icon && <Icon size={26} className="text-white" />}
+          </div>
+
+          <div className="flex-1 text-center ml-[-20%]">
+            <div className="text-[11px] font-black uppercase opacity-60 tracking-widest">{label}</div>
+            <div className={cn("text-2xl font-black mt-1", isDark ? "text-white" : "text-slate-900")}>{value}</div>
+            {sub && <div className="text-[10px] opacity-40 mt-1">{sub}</div>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Default (larger) card - keep previous visual intent
   return (
     <div
       className={cn(
         "flex-1 h-28 p-3 rounded-[2.5rem] border cursor-pointer transition-all duration-500 shadow-2xl relative group overflow-hidden hover:scale-[1.03]",
-        "bg-black/75 border-white/10 shadow-black/40 backdrop-blur-xl"
+        isDark ? "bg-black/75 border-white/10 shadow-black/40 backdrop-blur-xl" : "bg-white/20 border-white/60 backdrop-blur-xl"
       )}
     >
       {/* background icon glow */}
       {Icon && (
         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
-          <Icon size={50} className={color} />
+          <Icon size={50} className={iconColor} />
         </div>
       )}
 
       {/* header */}
       <div className="flex items-center gap-2 mb-2">
-        <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", color)} />
+        <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", iconColor)} />
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">
           {label}
         </p>
@@ -854,7 +858,7 @@ function ImpactBox({
 
       {/* value */}
       <div className="relative z-10">
-        <p className={cn("text-xl font-black tracking-tight", color)}>
+        <p className={cn("text-xl font-black tracking-tight", iconColor)}>
           {value}
         </p>
         <p className="text-[10px] font-bold uppercase text-white/50">
