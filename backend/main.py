@@ -55,144 +55,110 @@ genai.configure(api_key=GEMINI_API_KEY)
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+# --- RE-ADDED HELPER ---
+def apply_appliance_defaults(appliances: List[ApplianceItem]):
+    """Fill missing or zero wattage values from config defaults."""
+    for a in appliances:
+        try:
+            name_key = (a.name or "").strip().lower()
+            if (not getattr(a, "wattage", 0)) and name_key in APPLIANCE_DEFAULTS:
+                a.wattage = APPLIANCE_DEFAULTS[name_key]
+        except Exception:
+            continue
+
 
 # ---------------------------------------------------------
-# 3. NEW ENGINEERING MATH ENGINE (AS PER YOUR SPEC)
+# 3. UPDATED ENGINEERING MATH ENGINE
 # ---------------------------------------------------------
-def terminal_solar_math_new(units, tariff_override=None, peak_tariff=None, off_peak_tariff=None, peak_units=None, off_peak_units=None):
+def terminal_solar_math_new(units, appliances: List[ApplianceItem], tariff_override=None, peak_tariff=None, off_peak_tariff=None, peak_units=None, off_peak_units=None):
     """
-    Performs engineering math based on the new 5-step logic.
+    Performs engineering math where appliances increase the total system demand.
     """
     # --- Constants from Config ---
-    YIELD = ENGINEERING.get("peak_sun_hours", 5.0)  # Y (kWh/kW/day)
-    EFFICIENCY = ENGINEERING.get("efficiency_factor", 0.8) # η
-    DOD = ENGINEERING.get("battery_dod", 0.8) # Depth of Discharge
+    YIELD = ENGINEERING.get("peak_sun_hours", 5.0)  
+    EFFICIENCY = ENGINEERING.get("efficiency_factor", 0.8) 
+    DOD = ENGINEERING.get("battery_dod", 0.8) 
     STANDARD_INVERTER_SIZES = ENGINEERING.get("inverter_sizes", [3, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 60, 80, 100])
 
-    # --- Tariff Logic / Effective Tariff Calculation ---
-    # priority: bill-extracted peak+off tariffs (if BOTH present) > explicit tariff_override > single tariff from bill > config
+    # --- Tariff Logic (Same as your fixed version) ---
+    effective_tariff = float(ENGINEERING.get("tariff_per_unit", 55))
     tariff_source = "config"
-    config_tariff = ENGINEERING.get("tariff_per_unit", 55)
-    print("peak units:", peak_units, "off-peak units:", off_peak_units)
-    # If BOTH peak and off-peak tariffs are present in the bill, use them first
     if peak_tariff is not None and off_peak_tariff is not None:
-        print("Both peak and off-peak tariffs found on bill. Computing effective tariff...")
-        print(f"Peak Tariff: {peak_tariff}, Off-Peak Tariff: {off_peak_tariff}, Peak Units: {peak_units}, Off-Peak Units: {off_peak_units}")
-        # If usage split is available, compute weighted effective tariff using the split
-        if (isinstance(peak_units, (int, float)) and peak_units > 0) or (isinstance(off_peak_units, (int, float)) and off_peak_units > 0):
-            print("Usage split found. Calculating weighted effective tariff based on usage proportions.")
-            p_units = float(peak_units or 0)
-            o_units = float(off_peak_units or 0)
-            total_units_split = p_units + o_units
-            if total_units_split > 0:
-                proportion_peak = p_units / total_units_split
-            else:
-                proportion_peak = 0.0
-            effective_tariff = proportion_peak * float(peak_tariff) + (1 - proportion_peak) * float(off_peak_tariff)
-            tariff_source = "bill (weighted by usage)"
+        p_units = float(peak_units or 0)
+        o_units = float(off_peak_units or 0)
+        if (p_units + o_units) > 0:
+            effective_tariff = (p_units/(p_units+o_units))*float(peak_tariff) + (o_units/(p_units+o_units))*float(off_peak_tariff)
+            tariff_source = "bill (weighted)"
         else:
-            print("Both tariffs found but no valid usage split. Using simple average of the two tariffs.")
-            # No usage split: use average of the two tariffs
             effective_tariff = (float(peak_tariff) + float(off_peak_tariff)) / 2.0
             tariff_source = "bill (average)"
-    # If both tariffs not present, then use explicit override if provided
     elif isinstance(tariff_override, (int, float)) and tariff_override > 0:
-        print("Using explicit tariff override provided in the request.")
         effective_tariff = float(tariff_override)
         tariff_source = "override"
-    # If only one tariff present on the bill, use that tariff for all units
-    elif peak_tariff is not None:
-        print("Only peak tariff found on bill. Using it as the effective tariff for all units.")
-        effective_tariff = float(peak_tariff)
-        tariff_source = "bill (on-peak only)"
-    elif off_peak_tariff is not None:
-        print("Only off-peak tariff found on bill. Using it as the effective tariff for all units.")
-        effective_tariff = float(off_peak_tariff)
-        tariff_source = "bill (off-peak only)"
-    else:
-        print("No tariff information found on bill. Fallback to config tariff.")
-        # Fallback to config
-        effective_tariff = float(config_tariff)
-        tariff_source = "config"
-
-    print("Tariff determination:", {"effective_tariff": effective_tariff, "source": tariff_source, "peak_tariff": peak_tariff, "off_peak_tariff": off_peak_tariff, "peak_units": peak_units, "off_peak_units": off_peak_units})
 
     print("\n" + "═"*60)
-    print(" ☀️  SKYELECTRIC NEW ENGINEERING CALCULATION ENGINE")
+    print(" ☀️  SKYELECTRIC ENGINEERING CALCULATION ENGINE")
     print("═"*60)
 
+    # 🔢 STEP 1: Daily Energy from Bill
     avg_monthly_units = float(units) if units > 0 else 0
-    print(f"Input Monthly Units: {avg_monthly_units:.2f} kWh")
+    daily_energy_bill_kwh = avg_monthly_units / 30
+    print(f"[STEP 1] Daily Energy (Bill): {daily_energy_bill_kwh:.2f} kWh")
 
-    # 🔢 STEP 1: Daily Energy (Edaily)
-    daily_energy_kwh = avg_monthly_units / 30
-    print(f"[STEP 1] Daily Energy (Edaily): {avg_monthly_units:.2f} / 30 = {daily_energy_kwh:.2f} kWh")
+    # 🔌 STEP 2: Appliance Load (Instantaneous)
+    apply_appliance_defaults(appliances)
+    app_load_kw = sum([(a.wattage * a.quantity) / 1000 for a in appliances])
+    print(f"[STEP 2] Active Appliance Load: {app_load_kw:.2f} kW")
 
-    # ☀️ STEP 2: PV Size (PVkW)
-    pv_size_kw = daily_energy_kwh / (YIELD * EFFICIENCY)
-    print(f"[STEP 2] PV Size (PVkW): {daily_energy_kwh:.2f} / ({YIELD} * {EFFICIENCY}) = {pv_size_kw:.2f} kW")
+    # ☀️ STEP 3: PV Sizing (Units Load + Appliance Load)
+    # We treat appliance load as a direct addition to the required solar capacity
+    pv_from_bill = daily_energy_bill_kwh / (YIELD * EFFICIENCY)
+    pv_size_kw = pv_from_bill + app_load_kw  # Total PV grows with appliances
+    
+    # Round to nearest 0.5 for realistic panel strings
+    pv_size_kw = math.ceil(pv_size_kw * 2) / 2
+    print(f"[STEP 3] Total PV Size: {pv_size_kw:.2f} kW (Bill: {pv_from_bill:.2f} + Apps: {app_load_kw:.2f})")
 
-    # 🔋 STEP 3: Battery Sizing (BatterykWh)
-    energy_to_store = 0.6 * daily_energy_kwh
-    battery_size_kwh = energy_to_store / DOD
-    print(f"[STEP 3] Battery Size (BatterykWh): (0.6 * {daily_energy_kwh:.2f}) / {DOD} = {battery_size_kwh:.2f} kWh")
+    # 🔋 STEP 4: Battery Sizing 
+    # Based on the total generation capacity (which now includes appliances)
+    total_daily_energy = pv_size_kw * YIELD * EFFICIENCY
+    battery_size_kwh = (0.6 * total_daily_energy) / DOD
+    print(f"[STEP 4] Battery Size: {battery_size_kwh:.2f} kWh (Based on {total_daily_energy:.2f} daily gen)")
 
-    # ⚡ STEP 4: Peak Load Approximation (Ppeak)
-    peak_load_kw = battery_size_kwh / 2
-    print(f"[STEP 4] Peak Load Approx. (Ppeak): {battery_size_kwh:.2f} / 2 = {peak_load_kw:.2f} kW")
-
-    # 🔌 STEP 5: Inverter Sizing (InverterkW)
-    raw_inverter_size = 1.25 * max(pv_size_kw, peak_load_kw)
+    # 🔌 STEP 5: Inverter Sizing
+    # Must handle the higher of (Solar Capacity) OR (Appliance Peak) + 25% safety
+    peak_demand = max(pv_size_kw, app_load_kw)
+    raw_inverter_size = 1.25 * peak_demand
     inverter_size_kw = next((s for s in STANDARD_INVERTER_SIZES if s >= raw_inverter_size), max(STANDARD_INVERTER_SIZES))
-    print(f"[STEP 5] Inverter Size (InverterkW): 1.25 * max({pv_size_kw:.2f}, {peak_load_kw:.2f}) = {raw_inverter_size:.2f} kW -> Rounded up to {inverter_size_kw} kW")
+    print(f"[STEP 5] Inverter Size: {raw_inverter_size:.2f} kW -> Selected: {inverter_size_kw} kW")
 
-    # --- Financial & Environmental Calculations (Using new values) ---
-    # --- Financial & Environmental Calculations (FIXED TO TOU MODEL) ---
-
+    # --- Savings & Impact ---
     solar_units_month = pv_size_kw * YIELD * 30
-
     total_units = max(avg_monthly_units, 1)
-
-    # default split from bill
-    if peak_units is not None and off_peak_units is not None:
-        print("Using peak/off-peak usage split from bill for savings calculation.")
-        print(f"Peak Units: {peak_units}, Off-Peak Units: {off_peak_units}, Total Units: {total_units}")
-        peak_ratio = peak_units / total_units
-        offpeak_ratio = off_peak_units / total_units
-        print(f"Calculated usage ratios - Peak: {peak_ratio:.2f}, Off-Peak: {offpeak_ratio:.2f}")
-    else:
-        print("No valid usage split found on bill. Using default 60% peak / 40% off-peak split for savings calculation.")
-        # fallback split
-        peak_ratio = 0.6
-        offpeak_ratio = 0.4
-
-    solar_peak = solar_units_month * peak_ratio
-    solar_offpeak = solar_units_month * offpeak_ratio
-
-    # savings split correctly
-    monthly_save = (
-        solar_peak * float(peak_tariff if peak_tariff else effective_tariff) +
-        solar_offpeak * float(off_peak_tariff if off_peak_tariff else effective_tariff)
-    )
-
     grid_impact = min(100, (solar_units_month / total_units) * 100)
     carbon_offset = pv_size_kw * 1.4
 
-    print("\n" + "--- FINAL RESULTS ---")
-    print(f"Grid Impact: -{grid_impact:.0f}%")
-    print(f"Monthly Savings: Rs. {monthly_save:,.0f}")
-    print(f"Carbon Offset: {carbon_offset:.1f} Tons/Year")
-    print(f"Tariff used: Rs. {effective_tariff:.2f} per unit (from {tariff_source})")
+    # Savings logic using TOU (Time of Use) or effective tariff
+    peak_ratio = 0.6 if not (peak_units and off_peak_units) else (peak_units / (peak_units + off_peak_units))
+    solar_peak = solar_units_month * peak_ratio
+    solar_offpeak = solar_units_month * (1 - peak_ratio)
+    
+    monthly_save = (
+        solar_peak * float(peak_tariff or effective_tariff) + 
+        solar_offpeak * float(off_peak_tariff or effective_tariff)
+    )
+
+    print(f"\nGrid Impact: -{grid_impact:.0f}% | Savings: Rs. {monthly_save:,.0f}")
     print("═"*60 + "\n")
 
     return {
-        "solarKw": round(pv_size_kw, 2),
+        "solarKw": pv_size_kw,
         "storageKwh": round(battery_size_kwh, 2),
         "inverterKw": inverter_size_kw,
-        "gridImpact": grid_impact,
-        "carbonOffset": carbon_offset,
-        "monthlySavings": monthly_save,
-        "tariffPerUnit": effective_tariff,
+        "gridImpact": round(grid_impact, 1),
+        "carbonOffset": round(carbon_offset, 2),
+        "monthlySavings": round(monthly_save, 0),
+        "tariffPerUnit": round(effective_tariff, 2),
         "tariffSource": tariff_source
     }
 
@@ -259,7 +225,8 @@ async def calculate_endpoint(payload: CalcRequest):
     It uses the new 5-step engineering logic.
     """
     results = terminal_solar_math_new(
-        payload.units,
+        units=payload.units,
+        appliances=payload.appliances, # Passed from frontend
         tariff_override=tariff_value,
         peak_tariff=peak_tariff,
         off_peak_tariff=off_peak_tariff,
