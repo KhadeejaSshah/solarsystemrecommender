@@ -627,7 +627,7 @@ export default function App() {
             initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
             className="absolute bottom-10 left-[420px] right-10 z-50 space-y-4"
           >
-            <div className={cn("w-[23.5%] h-55 ml-11 rounded-[2rem] border backdrop-blur-2xl p-6 flex flex-col justify-center relative", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}>
+            <div className={cn("w-[21.5%] h-50 ml-285 mt-9 relative top-48 rounded-[2rem] border backdrop-blur-2xl p-8 flex flex-col justify-center relative", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}>
               <div className="absolute top-4 left-6 text-[10px] font-black uppercase tracking-widest opacity-40 flex items-center gap-2">
                 <Activity size={12} className="text-orange-500" /> Dynamic Load Projection
               </div>
@@ -698,7 +698,7 @@ export default function App() {
                      <span className="text-orange-500 font-black">↑</span>
                      <span className="text-[13px] font-black text-orange-500">+{pctChange}% vs current bill</span>
                    </div>
-                   <div className="text-sm opacity-40 italic">Without solar</div>
+                   <div className="text-sm opacity-40 italic text-red-400">Without solar</div>
                  </div>
                </div>
 
@@ -710,15 +710,15 @@ export default function App() {
                 onClick={() => setShowTierDetails(true)}
                 className={cn(
                   "flex-[1] h-28 p-3 rounded-[2.5rem] border-2 cursor-pointer hover:scale-[1.03] transition-all duration-500 shadow-2xl relative group overflow-hidden",
-                  isDark ? "bg-orange-500/20 border-orange-500/40 shadow-orange-500/20" : "bg-orange-100 border-orange-300 shadow-orange-200/50"
-                )}
+                    
+                  isDark? "bg-black/60 border-white/10 shadow-black/40 backdrop-blur-xl": "bg-white/20 border-white/60 backdrop-blur-xl"                )}
               >
                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
-                   <Sparkles size={60} className="text-orange-900" />
+                   <Sparkles size={60} className="text-orange-500" />
                  </div>
                  <div className="flex items-center gap-2 mb-3">
                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
-                   <p className="text-[11px] font-black uppercase tracking-[0.2em] text-orange-900">System Metadata</p>
+                   <p className="text-[11px] font-black uppercase tracking-[0.2em] text-orange-500">System Metadata</p>
                  </div>
  
                  <div className="grid grid-cols-2 gap-6 relative z-10">
@@ -726,13 +726,13 @@ export default function App() {
                      <p className={cn("text-sm font-black uppercase leading-tight tracking-tighter", isDark ? "text-white" : "text-slate-900")}>
                        {specs.packageId || "Smart Lite"}
                      </p>
-                     <p className={cn("text-[10px] font-bold uppercase flex items-center gap-1", isDark ? "text-orange-900" : "text-orange-900")}>
+                     <p className={cn("text-[10px] font-bold uppercase flex items-center gap-1", isDark ? "text-orange-500" : "text-orange-500")}>
                        <Layers size={10} /> Package Tier
                      </p>
                    </div>
                    <div className="space-y-1">
                      <p className={cn("text-sm font-black uppercase leading-tight tracking-tighter", isDark ? "text-white" : "text-slate-900")}>3.2 Years</p>
-                     <p className={cn("text-[10px] font-bold uppercase flex items-center gap-1", isDark ? "text-orange-900" : "text-orange-900")}>
+                     <p className={cn("text-[10px] font-bold uppercase flex items-center gap-1", isDark ? "text-orange-500" : "text-orange-500")}>
                        <Calendar size={10} /> ROI Est.
                      </p>
                    </div>
@@ -797,24 +797,46 @@ function ComponentRow({ icon: Icon, label, value }: any) {
   );
 }
 
-function ImpactBox({ label, value, sub, subDetail, icon: Icon, iconColor, isDark, compact }: any) {
-  const base = "rounded-[2.5rem] backdrop-blur-3xl border shadow-xl flex flex-col justify-between transition-transform hover:scale-[1.02]";
-  // compact variant: fixed half-height of energy outlook (h-28)
-  const sizeClass = compact ? "flex-1 p-3 h-28" : "flex-1 p-7";
-  const titleClass = compact ? "text-xl" : "text-3xl";
-  const subClass = compact ? "text-[9px]" : "text-[10px]";
-
+function ImpactBox({
+  label,
+  value,
+  sub,
+  icon: Icon,
+  color = "text-emerald-500", // default accent
+  isDark,
+}: any) {
   return (
-    <div className={cn(base, sizeClass, isDark ? "bg-black/30 border-white/10" : "bg-white/40 border-white/80")}>
-      <div className="flex justify-between items-start">
-        <p className={cn(subClass, "font-black uppercase tracking-widest opacity-60")}>{label}</p>
-        {Icon && <Icon size={16} className={iconColor} />}
+    <div
+      className={cn(
+        "flex-1 h-28 p-3 rounded-[2.5rem] border cursor-pointer transition-all duration-500 shadow-2xl relative group overflow-hidden hover:scale-[1.03]",
+        "bg-black/60 border-white/10 shadow-black/40 backdrop-blur-xl"
+      )}
+    >
+      {/* background icon glow */}
+      {Icon && (
+        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
+          <Icon size={50} className={color} />
+        </div>
+      )}
+
+      {/* header */}
+      <div className="flex items-center gap-2 mb-2">
+        <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", color)} />
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">
+          {label}
+        </p>
       </div>
-      <div>
-        <h4 className={cn(titleClass, "font-black tracking-tighter leading-none mb-1", iconColor)}>{value}</h4>
-        <p className={cn(subClass, "font-bold opacity-60 uppercase")}>{sub}</p>
-        {subDetail && <p className="text-[10px] mt-1 opacity-50 text-xs normal-case">{subDetail}</p>}
+
+      {/* value */}
+      <div className="relative z-10">
+        <p className={cn("text-xl font-black tracking-tight", color)}>
+          {value}
+        </p>
+        <p className="text-[10px] font-bold uppercase text-white/50">
+          {sub}
+        </p>
       </div>
     </div>
   );
 }
+
