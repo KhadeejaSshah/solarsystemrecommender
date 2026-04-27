@@ -1,3 +1,4 @@
+// filepath: /home/khadeeja/Desktop/solarsystemrecommender/src/App.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -6,7 +7,7 @@ import {
   Download, Bell, Home, Calendar, ShieldCheck,
   CloudSun, Gauge, Info, TreeDeciduous, TrendingUp,
   Activity, Cpu, BatteryMedium, Layers, X, ArrowLeft,
-  ChevronDown, Sparkles
+  ChevronDown, Sparkles, ArrowRight
 } from 'lucide-react';
 
 // Types & Config
@@ -122,9 +123,10 @@ export default function App() {
   const isDark = theme === 'dark';
 
   const loadCurveData = useMemo(() => {
-    const base = [15, 20, 18, 25, 45, 70, 85, 90, 75, 60, 40, 25, 20, 35, 50, 65, 80, 95, 85, 60, 45, 30, 20, 15];
+    // 12 monthly baseline percentages (Jan -> Dec). Tune these to match expected seasonal load.
+    const baseMonthly = [40, 42, 45, 50, 70, 70, 75, 68, 58, 48, 42, 38];
     const multiplier = 1 + (selectedAppliances.length * 0.15);
-    return base.map(val => Math.min(100, val * multiplier));
+    return baseMonthly.map(val => Math.min(100, val * multiplier));
   }, [selectedAppliances]);
 
   useEffect(() => {
@@ -166,8 +168,21 @@ export default function App() {
       });
       if (res.ok) {
         const data = await res.json();
-        setSpecs(data);
-        return data;
+        // Backend may return either:
+        //  - the specs object directly (e.g. { solarKw: 1.2, ... })
+        //  - a wrapper { success: true, data: { solarKw: 1.2, ... } }
+        let payload: any = data;
+        if (data && typeof data === 'object' && data.success) {
+          payload = data.data ?? data.result ?? data.specs ?? {};
+        }
+        // Ensure payload is an object with expected fields before setting
+        if (payload && typeof payload === 'object') {
+          setSpecs(payload);
+          return payload;
+        }
+      } else {
+        console.error('fetchSystemSpecs non-ok response', res.status);
+        try { console.error(await res.text()); } catch {}
       }
     } catch (e) { console.error(e); }
     return null;
@@ -204,7 +219,7 @@ export default function App() {
         setInteractionLevel('bill-uploaded'); // <-- Move to the next screen
 
         const currentSpecs = await fetchSystemSpecs(units, []);
-        setBillOnlySpecs(currentSpecs); // Store initial bill-only design
+        setBillOnlySpecs(currentSpecs || null); // Store initial bill-only design
         requestAIInsights({ bill: result.data, specs: currentSpecs, units, appliances: [] });
       } else {
         // --- Failure Path (e.g., Invalid Bill) ---
@@ -286,6 +301,13 @@ export default function App() {
       support: 'Mobile App + Cloud Monitoring'
     };
   };
+
+  // Derived values for the Energy Cost Outlook display
+  const projectedVal = Math.round(specs.projectedMonthlyBill ?? billOnlySpecs?.projectedMonthlyBill ?? 78000);
+  const todayVal = Math.round(specs.currentMonthlyBill ?? billOnlySpecs?.currentMonthlyBill ?? 52000);
+  const inFiveVal = projectedVal;
+  const pctChange = todayVal > 0 ? Math.round(((inFiveVal - todayVal) / todayVal) * 100) : 32;
+  const formatK = (v: number) => `Rs ${(v / 1000).toFixed(1)}k`;
 
   return (
     <div className={cn("h-screen w-full overflow-hidden transition-all duration-1000 font-sans", isDark ? "bg-slate-950 text-white" : "bg-white text-slate-900")}>
@@ -473,12 +495,12 @@ export default function App() {
               <div className={cn("p-6 rounded-[2.5rem] border transition-all duration-700", isDark ? "bg-orange-500/5 border-orange-500/20" : "bg-orange-50 border-orange-200")}>
                 <div className="flex items-center gap-3 mb-5">
                   <div className="p-2 bg-orange-500 rounded-xl shadow-lg shadow-orange-500/20"><Sparkles size={14} className="text-white" /></div>
-                  <h4 className="text-[11px] font-black uppercase tracking-widest">AI Strategy Advisor</h4>
+                  <h4 className="text-[14px] font-black uppercase tracking-widest">AI Strategy Advisor</h4>
                 </div>
                 {aiLoading ? (<div className="space-y-3">{[1, 2, 3, 4, 5, 6].map(i => (<div key={i} className="h-2 bg-orange-500/10 rounded-full animate-pulse" style={{ width: `${100 - (i * 8)}%` }} />))}</div>)
                   : aiError ? (<p className="text-[10px] text-red-500 font-bold">{aiError}</p>)
                     : aiInsights ? (<ul className="space-y-4">{aiInsights.map((insight, i) => (<motion.li initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} key={i} className="text-[11px] leading-relaxed flex gap-3 group"><span className="text-orange-500 font-bold">•</span><span className={isDark ? "text-white/80" : "text-slate-700"}>{insight}</span></motion.li>))}</ul>)
-                      : (<p className="text-[10px] opacity-40 italic text-center py-4">Generating personalized energy insights...</p>)}
+                      : (<p className="text-[12px] opacity-40 italic text-center py-4">Generating personalized energy insights...</p>)}
               </div>
             </div>
           )}
@@ -488,7 +510,7 @@ export default function App() {
       {/* SIZING DISPLAYS - PARALLEL CARDS */}
       <AnimatePresence>
         {billOnlySpecs?.solarKw > 0 && (
-          <div className="absolute right-10 top-[40%] -translate-y-1/2 z-50 flex items-start gap-6">
+          <div className="absolute right-10 top-[35%] -translate-y-1/2 z-50 flex items-start gap-6">
             {/* REFINED SIZING PANEL (Shown when appliances added) */}
             {selectedAppliances.length > 0 && (
               <motion.div
@@ -551,7 +573,7 @@ export default function App() {
               animate={{ x: 0, opacity: 1 }}
               className={cn(
                 "p-8 rounded-[2rem] border backdrop-blur-[50px] shadow-2xl w-[420px]",
-                isDark ? "bg-black/30 border-white/10" : "bg-white/40 border-white/80"
+                isDark ? "bg-black/60 border-white/10" : "bg-white/40 border-white/80"
               )}
             >
               <p className="text-[13px] font-black uppercase tracking-[0.4em] opacity-40 mb-2">Original Designed Capacity</p>
@@ -605,60 +627,121 @@ export default function App() {
             initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
             className="absolute bottom-10 left-[420px] right-10 z-50 space-y-4"
           >
-            <div className={cn("w-[47.5%] h-36 ml-11 rounded-[2rem] border backdrop-blur-2xl p-6 flex flex-col justify-center relative", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}>
-              <div className="absolute top-6 left-6 text-[10px] font-black uppercase tracking-widest opacity-40 flex items-center gap-2">
+            <div className={cn("w-[23.5%] h-55 ml-11 rounded-[2rem] border backdrop-blur-2xl p-6 flex flex-col justify-center relative", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}>
+              <div className="absolute top-4 left-6 text-[10px] font-black uppercase tracking-widest opacity-40 flex items-center gap-2">
                 <Activity size={12} className="text-orange-500" /> Dynamic Load Projection
               </div>
               <div className="flex items-end h-30 mt-9 gap-1">
-                {loadCurveData.map((h, i) => (
-                  <motion.div
-                    key={i} initial={{ height: 0 }} animate={{ height: `${h}%` }}
-                    className={cn("flex-1 rounded-t-sm transition-all", i > 5 && i < 18 ? "bg-orange-500/60 shadow-[0_0_10px_rgba(249,115,22,0.2)]" : "bg-current/10")}
-                  />
-                ))}
+                {loadCurveData.map((h, i) => {
+                  const MAX_BAR_PX = 120; // max pixel height for the tallest bar
+                  const barPx = Math.max(6, Math.round((h / 100) * MAX_BAR_PX)); // ensure a visible min height
+                  const isPeakMonth = i >= 4 && i <= 7;
+                  return (
+                    <div key={i} className="flex flex-col items-center gap-1">
+                      <motion.div
+                        initial={{ height: 4 }}
+                        animate={{ height: `${barPx}px` }}
+                        transition={{ type: 'spring', stiffness: 120, damping: 18 }}
+                        className={cn(
+                          "w-3 md:w-4 rounded-t-sm",
+                          isPeakMonth ? "bg-orange-500/60 shadow-[0_0_10px_rgba(249,115,22,0.18)]" : "bg-current/10"
+                        )}
+                        aria-label={`Month ${i + 1} load ${Math.round(h)}%`}
+                        title={`${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][i]}: ${Math.round(h)}%`}
+                      />
+                      <span className="text-[10px] opacity-40 select-none">
+                        {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][i]}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="flex gap-4 ml-11 ">
-              <ImpactBox isDark={isDark} label="Investment Recovery" value={`Rs ${(specs.monthlySavings / 1000).toFixed(1)}k`} sub="Monthly ROI" icon={Wallet} iconColor="text-emerald-500" />
-              <ImpactBox isDark={isDark} label="Inflation Mastery" value={`${specs.gridImpact || 98}%`} sub="Cost Hedged" icon={TrendingUp} iconColor="text-blue-500" />
+            <div className="flex items-end gap-4 ml-11 ">
+              {/* ENERGY COST OUTLOOK (moved left) */}
+              <div className={cn("flex-[1.2] h-75 p-6 rounded-[2.5rem] border-2 transition-all duration-500 relative overflow-hidden", isDark ? "bg-black/60 border-white/8" : "bg-white/10 border-white/60")}>
+                 <div className="flex items-center justify-between mb-4">
+                   <div className="flex items-center gap-3">
+                     <TrendingUp size={16} className="text-orange-500" />
+                     <div>
+                       <p className="text-[11px] font-black uppercase tracking-widest opacity-60">Energy Cost Outlook</p>
+                       <p className="text-[10px] uppercase font-bold opacity-40">5 Year Outlook</p>
+                     </div>
+                   </div>
+                   <div className="px-3 py-1 rounded-full bg-orange-500/10 text-orange-500 text-sm font-black">5-YEAR OUTLOOK</div>
+                 </div>
+ 
+                 <div className="mb-4">
+                   <h2 className={cn("text-3xl font-black tracking-tighter", isDark ? "text-white" : "text-orange-800")}>{formatK(inFiveVal)}</h2>
+                   <p className="text-[12px] opacity-50 mt-1">Projected monthly bill based on tariff trends and inflation forecast.</p>
+                 </div>
+ 
+                 <div className="flex items-center justify-between p-4 rounded-2xl bg-current/5 border border-current/10 mb-3">
+                   <div className="flex-1 text-left">
+                     <p className="text-[11px] font-black opacity-60 uppercase">Today</p>
+                     <p className="text-lg font-black mt-1">{formatK(todayVal)}<span className="text-sm font-bold opacity-60">/month</span></p>
+                   </div>
+ 
+                   <div className="px-3">
+                     <ArrowRight size={22} className="text-orange-500" />
+                   </div>
+ 
+                   <div className="flex-1 text-right">
+                     <p className="text-[11px] font-black opacity-60 uppercase">In 5 Years</p>
+                     <p className="text-lg font-black mt-1">{formatK(inFiveVal)}<span className="text-sm font-bold opacity-60">/month</span></p>
+                   </div>
+                 </div>
+ 
+                 <div className="flex items-center justify-between">
+                   <div className="flex items-center gap-2">
+                     <span className="text-orange-500 font-black">↑</span>
+                     <span className="text-[13px] font-black text-orange-500">+{pctChange}% vs current bill</span>
+                   </div>
+                   <div className="text-sm opacity-40 italic">Without solar</div>
+                 </div>
+               </div>
 
-              {/* SYSTEM METADATA - BOOSTED VISIBILITY */}
+              {/* MONTHLY SAVINGS (compact, half of energy box height) */}
+              <ImpactBox compact isDark={isDark} label="Monthly savings" value={`Rs ${(specs.monthlySavings / 1000).toFixed(1)}k`} sub="Monthly Savings" icon={Wallet} iconColor="text-emerald-500" />
+               
+              {/* SYSTEM METADATA (compact, half of energy box height) */}
               <div
                 onClick={() => setShowTierDetails(true)}
                 className={cn(
-                  "flex-[1] p-7 rounded-[2.5rem] border-2 cursor-pointer hover:scale-[1.03] transition-all duration-500 shadow-2xl relative group overflow-hidden",
+                  "flex-[1] h-28 p-3 rounded-[2.5rem] border-2 cursor-pointer hover:scale-[1.03] transition-all duration-500 shadow-2xl relative group overflow-hidden",
                   isDark ? "bg-orange-500/20 border-orange-500/40 shadow-orange-500/20" : "bg-orange-100 border-orange-300 shadow-orange-200/50"
                 )}
               >
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
-                  <Sparkles size={60} className="text-orange-900" />
-                </div>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-orange-900">System Metadata</p>
-                </div>
+                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
+                   <Sparkles size={60} className="text-orange-900" />
+                 </div>
+                 <div className="flex items-center gap-2 mb-3">
+                   <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
+                   <p className="text-[11px] font-black uppercase tracking-[0.2em] text-orange-900">System Metadata</p>
+                 </div>
+ 
+                 <div className="grid grid-cols-2 gap-6 relative z-10">
+                   <div className="space-y-1">
+                     <p className={cn("text-sm font-black uppercase leading-tight tracking-tighter", isDark ? "text-white" : "text-slate-900")}>
+                       {specs.packageId || "Smart Lite"}
+                     </p>
+                     <p className={cn("text-[10px] font-bold uppercase flex items-center gap-1", isDark ? "text-orange-900" : "text-orange-900")}>
+                       <Layers size={10} /> Package Tier
+                     </p>
+                   </div>
+                   <div className="space-y-1">
+                     <p className={cn("text-sm font-black uppercase leading-tight tracking-tighter", isDark ? "text-white" : "text-slate-900")}>3.2 Years</p>
+                     <p className={cn("text-[10px] font-bold uppercase flex items-center gap-1", isDark ? "text-orange-900" : "text-orange-900")}>
+                       <Calendar size={10} /> ROI Est.
+                     </p>
+                   </div>
+                 </div>
+                 </div>
 
-                <div className="grid grid-cols-2 gap-6 relative z-10">
-                  <div className="space-y-1">
-                    <p className={cn("text-lg font-black uppercase leading-tight tracking-tighter", isDark ? "text-white" : "text-slate-900")}>
-                      {specs.packageId || "Smart Lite"}
-                    </p>
-                    <p className={cn("text-[10px] font-bold uppercase flex items-center gap-1", isDark ? "text-orange-900" : "text-orange-900")}>
-                      <Layers size={10} /> Package Tier
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className={cn("text-lg font-black uppercase leading-tight tracking-tighter", isDark ? "text-white" : "text-slate-900")}>3.2 Years</p>
-                    <p className={cn("text-[10px] font-bold uppercase flex items-center gap-1", isDark ? "text-orange-900" : "text-orange-900")}>
-                      <Calendar size={10} /> ROI Est.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <ImpactBox isDark={isDark} label="Carbon Offset" value={`${specs.carbonOffset.toFixed(1)} KG`} sub="Impact" icon={TreeDeciduous} iconColor="text-emerald-400" />
-            </div>
+               {/* CARBON OFFSET (compact, half of energy box height) */}
+               <ImpactBox compact isDark={isDark} label="Carbon Offset" value={`${specs.carbonOffset.toFixed(1)} KG`} sub="Impact" icon={TreeDeciduous} iconColor="text-emerald-400" />
+             </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -714,16 +797,23 @@ function ComponentRow({ icon: Icon, label, value }: any) {
   );
 }
 
-function ImpactBox({ label, value, sub, icon: Icon, iconColor, isDark }: any) {
+function ImpactBox({ label, value, sub, subDetail, icon: Icon, iconColor, isDark, compact }: any) {
+  const base = "rounded-[2.5rem] backdrop-blur-3xl border shadow-xl flex flex-col justify-between transition-transform hover:scale-[1.02]";
+  // compact variant: fixed half-height of energy outlook (h-28)
+  const sizeClass = compact ? "flex-1 p-3 h-28" : "flex-1 p-7";
+  const titleClass = compact ? "text-xl" : "text-3xl";
+  const subClass = compact ? "text-[9px]" : "text-[10px]";
+
   return (
-    <div className={cn("flex-1 p-7 rounded-[2.5rem] backdrop-blur-3xl border shadow-xl flex flex-col justify-between transition-transform hover:scale-[1.02]", isDark ? "bg-black/30 border-white/10" : "bg-white/40 border-white/80")}>
+    <div className={cn(base, sizeClass, isDark ? "bg-black/30 border-white/10" : "bg-white/40 border-white/80")}>
       <div className="flex justify-between items-start">
-        <p className="text-[10px] font-black uppercase tracking-widest opacity-60">{label}</p>
-        <Icon size={16} className={iconColor} />
+        <p className={cn(subClass, "font-black uppercase tracking-widest opacity-60")}>{label}</p>
+        {Icon && <Icon size={16} className={iconColor} />}
       </div>
       <div>
-        <h4 className={cn("text-3xl font-black tracking-tighter leading-none mb-1", iconColor)}>{value}</h4>
-        <p className="text-[10px] font-bold opacity-60 uppercase">{sub}</p>
+        <h4 className={cn(titleClass, "font-black tracking-tighter leading-none mb-1", iconColor)}>{value}</h4>
+        <p className={cn(subClass, "font-bold opacity-60 uppercase")}>{sub}</p>
+        {subDetail && <p className="text-[10px] mt-1 opacity-50 text-xs normal-case">{subDetail}</p>}
       </div>
     </div>
   );
