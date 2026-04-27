@@ -28,7 +28,8 @@ class ApplianceItem(BaseModel):
 
 class CalcRequest(BaseModel):
     units: float
-    appliances: List[ApplianceItem]
+    appliances: List[ApplianceItem] # Note: This is not used in the new logic but kept for API compatibility
+    tariff: Optional[float] = None
 
 app = FastAPI()
 
@@ -40,145 +41,164 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Replace previous CONF_PATH loading with explicit conf.yaml usage ---
 with open("conf.yaml", "r") as f:
     config = yaml.safe_load(f)
 
 GEMINI_API_KEY = config["secrets"]["GEMINI_API_KEY"]
 LLAMA_PARSER_API_KEY = config["secrets"]["LLAMA_PARSER_API_KEY"]
 
-# expose engineering and appliance defaults for use in calculations
 ENGINEERING = config.get("engineering", {})
 APPLIANCE_DEFAULTS = {k.lower(): v for k, v in config.get("appliance_defaults", {}).items()}
 
-# configure the Google generative client
 genai.configure(api_key=GEMINI_API_KEY)
 
-# uploads directory
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-def apply_appliance_defaults(appliances):
-    """Fill missing or zero wattage values from config defaults (match by name)."""
-    for a in appliances:
-        try:
-            name_key = (a.name or "").strip().lower()
-            if (not getattr(a, "wattage", None)) and name_key in APPLIANCE_DEFAULTS:
-                a.wattage = APPLIANCE_DEFAULTS[name_key]
-        except Exception:
-            continue
 
 # ---------------------------------------------------------
-# 3. ENGINEERING MATH ENGINE (WITH TERMINAL PRINTS)
+# 3. NEW ENGINEERING MATH ENGINE (AS PER YOUR SPEC)
 # ---------------------------------------------------------
-def terminal_solar_math(units, appliances, tariff_override: Optional[float] = None):
-    """Performs engineering math and prints formulas to the terminal.
-
-    If tariff_override is provided, it will be used instead of the config value.
+def terminal_solar_math_new(units, tariff_override=None, peak_tariff=None, off_peak_tariff=None, peak_units=None, off_peak_units=None):
     """
-    # load tuned parameters from config (with sensible fallbacks)
-    PEAK_SUN_HOURS = ENGINEERING.get("peak_sun_hours", 5.0)
-    EFFICIENCY_FACTOR = ENGINEERING.get("efficiency_factor", 0.78)
-    BACKUP_HOURS = ENGINEERING.get("backup_hours", 4)
-    PACKAGE_THRESHOLDS = ENGINEERING.get("package_thresholds", {})
-    SMART_LITE_STORAGE = ENGINEERING.get("smart_lite_storage_kwh", 10.0)
-    SMART_PLUS_CFG = ENGINEERING.get("smart_plus", {})
-    ESTATE_CFG = ENGINEERING.get("estate", {})
-    STANDARD_SIZES = ENGINEERING.get("inverter_sizes", [3,5,6,8,10,12,15,20,25,30,40,50,60,80,100])
+    Performs engineering math based on the new 5-step logic.
+    """
+    # --- Constants from Config ---
+    YIELD = ENGINEERING.get("peak_sun_hours", 5.0)  # Y (kWh/kW/day)
+    EFFICIENCY = ENGINEERING.get("efficiency_factor", 0.8) # η
+    DOD = ENGINEERING.get("battery_dod", 0.8) # Depth of Discharge
+    STANDARD_INVERTER_SIZES = ENGINEERING.get("inverter_sizes", [3, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 60, 80, 100])
 
-    # decide tariff source
-    if isinstance(tariff_override, (int, float)):
-        TARIFF_PER_UNIT = float(tariff_override)
-        tariff_source = "bill"
+    # --- Tariff Logic / Effective Tariff Calculation ---
+    # priority: bill-extracted peak+off tariffs (if BOTH present) > explicit tariff_override > single tariff from bill > config
+    tariff_source = "config"
+    config_tariff = ENGINEERING.get("tariff_per_unit", 55)
+    print("peak units:", peak_units, "off-peak units:", off_peak_units)
+    # If BOTH peak and off-peak tariffs are present in the bill, use them first
+    if peak_tariff is not None and off_peak_tariff is not None:
+        print("Both peak and off-peak tariffs found on bill. Computing effective tariff...")
+        print(f"Peak Tariff: {peak_tariff}, Off-Peak Tariff: {off_peak_tariff}, Peak Units: {peak_units}, Off-Peak Units: {off_peak_units}")
+        # If usage split is available, compute weighted effective tariff using the split
+        if (isinstance(peak_units, (int, float)) and peak_units > 0) or (isinstance(off_peak_units, (int, float)) and off_peak_units > 0):
+            print("Usage split found. Calculating weighted effective tariff based on usage proportions.")
+            p_units = float(peak_units or 0)
+            o_units = float(off_peak_units or 0)
+            total_units_split = p_units + o_units
+            if total_units_split > 0:
+                proportion_peak = p_units / total_units_split
+            else:
+                proportion_peak = 0.0
+            effective_tariff = proportion_peak * float(peak_tariff) + (1 - proportion_peak) * float(off_peak_tariff)
+            tariff_source = "bill (weighted by usage)"
+        else:
+            print("Both tariffs found but no valid usage split. Using simple average of the two tariffs.")
+            # No usage split: use average of the two tariffs
+            effective_tariff = (float(peak_tariff) + float(off_peak_tariff)) / 2.0
+            tariff_source = "bill (average)"
+    # If both tariffs not present, then use explicit override if provided
+    elif isinstance(tariff_override, (int, float)) and tariff_override > 0:
+        print("Using explicit tariff override provided in the request.")
+        effective_tariff = float(tariff_override)
+        tariff_source = "override"
+    # If only one tariff present on the bill, use that tariff for all units
+    elif peak_tariff is not None:
+        print("Only peak tariff found on bill. Using it as the effective tariff for all units.")
+        effective_tariff = float(peak_tariff)
+        tariff_source = "bill (on-peak only)"
+    elif off_peak_tariff is not None:
+        print("Only off-peak tariff found on bill. Using it as the effective tariff for all units.")
+        effective_tariff = float(off_peak_tariff)
+        tariff_source = "bill (off-peak only)"
     else:
-        TARIFF_PER_UNIT = ENGINEERING.get("tariff_per_unit", 55)
+        print("No tariff information found on bill. Fallback to config tariff.")
+        # Fallback to config
+        effective_tariff = float(config_tariff)
         tariff_source = "config"
 
+    print("Tariff determination:", {"effective_tariff": effective_tariff, "source": tariff_source, "peak_tariff": peak_tariff, "off_peak_tariff": off_peak_tariff, "peak_units": peak_units, "off_peak_units": off_peak_units})
+
     print("\n" + "═"*60)
-    print(" ☀️  SKYELECTRIC ENGINEERING CALCULATION ENGINE")
+    print(" ☀️  SKYELECTRIC NEW ENGINEERING CALCULATION ENGINE")
     print("═"*60)
 
-    # 1. Base Load Calculation
-    avg_monthly = float(units) if units > 0 else 0
-    daily_avg_kwh = avg_monthly / 30
+    avg_monthly_units = float(units) if units > 0 else 0
+    print(f"Input Monthly Units: {avg_monthly_units:.2f} kWh")
 
-    base_load_kw = daily_avg_kwh / (PEAK_SUN_HOURS * EFFICIENCY_FACTOR) if avg_monthly > 0 else 0
+    # 🔢 STEP 1: Daily Energy (Edaily)
+    daily_energy_kwh = avg_monthly_units / 30
+    print(f"[STEP 1] Daily Energy (Edaily): {avg_monthly_units:.2f} / 30 = {daily_energy_kwh:.2f} kWh")
 
-    print(f"[STEP 1] Avg Monthly Units: {avg_monthly}")
-    print(f"[STEP 1] Formula: ({avg_monthly} / 30) / ({PEAK_SUN_HOURS} * {EFFICIENCY_FACTOR}) = {base_load_kw:.2f} kW Base Load")
+    # ☀️ STEP 2: PV Size (PVkW)
+    pv_size_kw = daily_energy_kwh / (YIELD * EFFICIENCY)
+    print(f"[STEP 2] PV Size (PVkW): {daily_energy_kwh:.2f} / ({YIELD} * {EFFICIENCY}) = {pv_size_kw:.2f} kW")
 
-    # 2. Appliance Load
-    # ensure defaults applied if caller sent incomplete appliance items
-    apply_appliance_defaults(appliances)
-    app_load_kw = sum([(a.wattage * a.quantity) / 1000 for a in appliances])
-    print(f"[STEP 2] Appliance Load: {app_load_kw:.2f} kW (Total active appliances)")
+    # 🔋 STEP 3: Battery Sizing (BatterykWh)
+    energy_to_store = 0.6 * daily_energy_kwh
+    battery_size_kwh = energy_to_store / DOD
+    print(f"[STEP 3] Battery Size (BatterykWh): (0.6 * {daily_energy_kwh:.2f}) / {DOD} = {battery_size_kwh:.2f} kWh")
 
-    # 3. Hardware Sizing
-    total_load_kw = base_load_kw + app_load_kw
-    solar_kw = total_load_kw * 1.2
-    solar_kw = math.ceil(solar_kw * 2) / 2
+    # ⚡ STEP 4: Peak Load Approximation (Ppeak)
+    peak_load_kw = battery_size_kwh / 2
+    print(f"[STEP 4] Peak Load Approx. (Ppeak): {battery_size_kwh:.2f} / 2 = {peak_load_kw:.2f} kW")
 
-    # Package Determination (config-driven thresholds)
-    package_id = "Smart Lite"
-    if solar_kw >= PACKAGE_THRESHOLDS.get("estate_max_kw", 50):
-        package_id = "Estate Max"
-    elif solar_kw >= PACKAGE_THRESHOLDS.get("smart_plus_kw", 15):
-        package_id = "Smart Plus"
+    # 🔌 STEP 5: Inverter Sizing (InverterkW)
+    raw_inverter_size = 1.25 * max(pv_size_kw, peak_load_kw)
+    inverter_size_kw = next((s for s in STANDARD_INVERTER_SIZES if s >= raw_inverter_size), max(STANDARD_INVERTER_SIZES))
+    print(f"[STEP 5] Inverter Size (InverterkW): 1.25 * max({pv_size_kw:.2f}, {peak_load_kw:.2f}) = {raw_inverter_size:.2f} kW -> Rounded up to {inverter_size_kw} kW")
+
+    # --- Financial & Environmental Calculations (Using new values) ---
+    # --- Financial & Environmental Calculations (FIXED TO TOU MODEL) ---
+
+    solar_units_month = pv_size_kw * YIELD * 30
+
+    total_units = max(avg_monthly_units, 1)
+
+    # default split from bill
+    if peak_units is not None and off_peak_units is not None:
+        print("Using peak/off-peak usage split from bill for savings calculation.")
+        print(f"Peak Units: {peak_units}, Off-Peak Units: {off_peak_units}, Total Units: {total_units}")
+        peak_ratio = peak_units / total_units
+        offpeak_ratio = off_peak_units / total_units
+        print(f"Calculated usage ratios - Peak: {peak_ratio:.2f}, Off-Peak: {offpeak_ratio:.2f}")
     else:
-        package_id = "Smart Lite"
+        print("No valid usage split found on bill. Using default 60% peak / 40% off-peak split for savings calculation.")
+        # fallback split
+        peak_ratio = 0.6
+        offpeak_ratio = 0.4
 
-    # Battery Sizing per Tier (config-driven)
-    if package_id == "Smart Lite":
-        storage_kwh = SMART_LITE_STORAGE
-    elif package_id == "Smart Plus":
-        calculated_storage = (total_load_kw * BACKUP_HOURS) / 0.8
-        min_k = SMART_PLUS_CFG.get("min_kwh", 20.0)
-        max_k = SMART_PLUS_CFG.get("max_kwh", 40.0)
-        incr = SMART_PLUS_CFG.get("round_increment", 2.5)
-        storage_kwh = max(min_k, min(max_k, math.ceil(calculated_storage / incr) * incr))
-    else:  # Estate Max
-        calculated_storage = (total_load_kw * BACKUP_HOURS) / 0.8
-        incr = ESTATE_CFG.get("round_increment", 5.0)
-        storage_kwh = math.ceil(calculated_storage / incr) * incr
+    solar_peak = solar_units_month * peak_ratio
+    solar_offpeak = solar_units_month * offpeak_ratio
 
-    # Inverter Sizing
-    inverter_kw = max(solar_kw, total_load_kw) * 1.25
-    inverter_kw = next((s for s in STANDARD_SIZES if s >= inverter_kw), inverter_kw)
+    # savings split correctly
+    monthly_save = (
+        solar_peak * float(peak_tariff if peak_tariff else effective_tariff) +
+        solar_offpeak * float(off_peak_tariff if off_peak_tariff else effective_tariff)
+    )
 
-    print(f"[STEP 3] Computed Solar: {solar_kw:.2f} kW")
-    print(f"[STEP 3] Computed Battery: {storage_kwh:.2f} kWh")
-    print(f"[STEP 3] Computed Inverter: {inverter_kw:.2f} kW")
+    grid_impact = min(100, (solar_units_month / total_units) * 100)
+    carbon_offset = pv_size_kw * 1.4
 
-    # 4. Impact Metrics
-    solar_units_month = solar_kw * PEAK_SUN_HOURS * 30
-    units_offset = min(solar_units_month, avg_monthly)
-    monthly_save = units_offset * TARIFF_PER_UNIT
-
-    grid_impact = min(100, (solar_units_month / max(avg_monthly, 1)) * 100)
-    carbon_offset = solar_kw * 1.4
-
-    print(f"[STEP 4] Grid Impact: -{grid_impact:.0f}%")
-    print(f"[STEP 4] Monthly Savings: Rs. {monthly_save:,.0f}")
-    print(f"[STEP 4] Carbon Offset: {carbon_offset:.1f} Tons/Year")
-    # clearly indicate which tariff was used
-    print(f"[STEP 4] Tariff used: Rs. {TARIFF_PER_UNIT} per unit (from {tariff_source})")
-    print(f"[STEP 5] Final Tier Assigned: {package_id.upper()}")
+    print("\n" + "--- FINAL RESULTS ---")
+    print(f"Grid Impact: -{grid_impact:.0f}%")
+    print(f"Monthly Savings: Rs. {monthly_save:,.0f}")
+    print(f"Carbon Offset: {carbon_offset:.1f} Tons/Year")
+    print(f"Tariff used: Rs. {effective_tariff:.2f} per unit (from {tariff_source})")
     print("═"*60 + "\n")
 
     return {
-        "solarKw": solar_kw,
-        "storageKwh": storage_kwh,
-        "inverterKw": inverter_kw,
-        "packageId": package_id,
+        "solarKw": round(pv_size_kw, 2),
+        "storageKwh": round(battery_size_kwh, 2),
+        "inverterKw": inverter_size_kw,
         "gridImpact": grid_impact,
         "carbonOffset": carbon_offset,
         "monthlySavings": monthly_save,
-        "tariffPerUnit": TARIFF_PER_UNIT,
+        "tariffPerUnit": effective_tariff,
         "tariffSource": tariff_source
     }
 
+
 # ---------------------------------------------------------
-# 4. SCRAPER LOGIC
+# 4. SCRAPER LOGIC (Unchanged)
 # ---------------------------------------------------------
 async def extract_text(file_path):
     parser = LlamaParse(api_key=LLAMA_PARSER_API_KEY, result_type="text", language="en")
@@ -186,21 +206,21 @@ async def extract_text(file_path):
     return "\n".join([doc.text for doc in docs])
 
 async def extract_bill_data(text):
-    # Use gemini-1.5-flash model
     model = genai.GenerativeModel("gemini-2.5-flash")
     prompt = f"""
-    You are an expert in Pakistani electricity bills (IESCO, K-Electric, etc).
-    Extract structured data. Return ONLY valid JSON.
+    You are an expert in Pakistani electricity bills. Extract structured data. Return ONLY valid JSON.
+    - Find 'units_consumed'.
+    - Find all tariff rates. If you find two distinct rates, assign the HIGHER value to 'on_peak_tariff' and the LOWER value to 'off_peak_tariff'.
+    - Find all tariff units . If you find two distinct units values, assign the HIGHER value to 'on_peak_units' and the LOWER value to 'off_peak_units'.
+
+    - CRITICAL RULE: If you find only a single tariff rate (e.g., "Tariff 44.060 X Units"), you MUST populate BOTH 'on_peak_tariff' AND 'off_peak_tariff' with that same value (e.g., 44.06).
+    - CRITICAL RULE: If you find only a single tariff unit (e.g., "Tariff 44.060 X 100 Units"), you MUST populate BOTH 'on_peak_units' AND 'off_peak_units' with that same value (e.g., 100).
+
+    - If you cannot find any tariff information, all tariff fields should be null.
     Format:
     {{
-      "consumer_name": "string",
-      "location": "string",
-      "units_consumed": number,
-      "billing_month": "string",
-      "is_peak_available": boolean,
-      "peak_units": number,
-      "off_peak_units": number,
-      "tariff": number
+      "consumer_name": "string", "location": "string", "units_consumed": number,
+      "billing_month": "string", "on_peak_tariff": number | null, "off_peak_tariff": number | null, "on_peak_units": number | null, "off_peak_units": number | null
     }}
     BILL TEXT:
     {text}
@@ -210,48 +230,52 @@ async def extract_bill_data(text):
 
 def safe_parse(json_text):
     try:
-        cleaned = re.sub(r"```json|```", "", json_text).strip()
-        return json.loads(cleaned)
+        return json.loads(re.sub(r"```json|```", "", json_text).strip())
     except:
         return None
 
-# helper to robustly parse numeric tariff values from strings or numbers
 def parse_numeric(value):
-    if value is None:
-        return None
-    if isinstance(value, (int, float)):
-        return float(value)
+    if isinstance(value, (int, float)): return float(value)
     if isinstance(value, str):
-        # find first numeric token (allows "Rs. 55", "55.0", "1,234.50")
         m = re.search(r"(\d+(?:[.,]\d+)?)", value)
         if m:
-            num = m.group(1).replace(",", "")
-            try:
-                return float(num)
-            except:
-                return None
+            try: return float(m.group(1).replace(",", ""))
+            except: return None
     return None
 
 # ---------------------------------------------------------
 # 5. API ROUTES
 # ---------------------------------------------------------
-
-
-# ---------------------------------------------------------
-# 5. API ROUTES
-# ---------------------------------------------------------
+tariff_value = None  # Global variable to hold the tariff value extracted from the bill
+peak_tariff = None
+off_peak_tariff = None
+peak_units = None
+off_peak_units = None
 
 @app.post("/calculate")
 async def calculate_endpoint(payload: CalcRequest):
-    """Called every time an appliance is toggled or bill changes."""
-    results = terminal_solar_math(payload.units, payload.appliances)
+    """
+    This is the ONLY endpoint that performs calculations.
+    It uses the new 5-step engineering logic.
+    """
+    results = terminal_solar_math_new(
+        payload.units,
+        tariff_override=tariff_value,
+        peak_tariff=peak_tariff,
+        off_peak_tariff=off_peak_tariff,
+        peak_units=peak_units,
+        off_peak_units=off_peak_units
+    )
     return results
 
-# --- MODIFIED ENDPOINT ---
 @app.post("/upload-bill")
 async def upload_bill(file: UploadFile = File(...)):
-    if not (file.filename.endswith('.pdf') or file.filename.endswith('.png')):
-        raise HTTPException(status_code=400, detail="Only .pdf and .png allowed")
+    """
+    This endpoint's ONLY job is to parse the bill and return the data.
+    IT DOES NOT PERFORM A CALCULATION.
+    """
+    if not any(file.filename.lower().endswith(ext) for ext in ['.pdf', '.png', '.jpg', '.jpeg']):
+        raise HTTPException(status_code=400, detail="Only .pdf, .png, and .jpg files are allowed")
 
     file_path = os.path.join(UPLOAD_DIR, file.filename)
     with open(file_path, "wb") as buffer:
@@ -261,95 +285,60 @@ async def upload_bill(file: UploadFile = File(...)):
         text = await extract_text(file_path)
         details_raw = await extract_bill_data(text)
         details = safe_parse(details_raw)
+        logger.info(f"Extracted Bill Details: {details}")
 
-        # --- START: MODIFIED VALIDATION LOGIC ---
         units_consumed = details.get("units_consumed") if isinstance(details, dict) else None
+        if not isinstance(units_consumed, (int, float)) or units_consumed <= 0:
+            raise HTTPException(status_code=400, detail="Could not read valid consumption data from the bill.")
 
-        # Step 1: Check for a truly invalid or unreadable bill first.
-        if not isinstance(units_consumed, (int, float)):
-            error_message = "Invalid Bill: We could not read the consumption data. Please upload a clear, valid bill."
-            logger.warning(f"Bill validation failed (unreadable units). Extracted: {details}")
-            return {"success": False, "error": error_message}
+        # --- Tariff Logic to find the correct single tariff value ---
+        # store extracted tariffs and optional usage splits into globals so /calculate can use them
+        global tariff_value, peak_tariff, off_peak_tariff, peak_units, off_peak_units
+        tariff_value = None
+        tariff_source = "config"
+        peak_tariff = None
+        off_peak_tariff = None
+        peak_units = None
+        off_peak_units = None
 
-        # Step 2: Handle the specific case where the user already has net metering.
-        if units_consumed <= 0:
-            # This is not an error, but a specific business case.
-            info_message = "Your bill shows zero or negative consumption. This often means you already have a solar system. Our tool is designed for new installations, so we cannot proceed."
-            logger.info(f"User with potential existing solar detected. Units: {units_consumed}")
-            return {"success": False, "error": info_message}
-        # --- END: MODIFIED VALIDATION LOGIC ---
+        if isinstance(details, dict):
+            peak_tariff = parse_numeric(details.get("on_peak_tariff"))
+            off_peak_tariff = parse_numeric(details.get("off_peak_tariff"))
+            # Try several possible keys for peak/off usage counts that some parsers might return
+            peak_units = parse_numeric(details.get("units_peak") or details.get("on_peak_units") or details.get("peak_usage") or details.get("peak"))
+            off_peak_units = parse_numeric(details.get("units_offpeak") or details.get("offpeak_units") or details.get("off_peak_units") or details.get("offpeak_usage") or details.get("offpeak"))
 
-        # If validation passes, proceed with the calculation.
-        logger.info(f"Bill validated successfully. Units: {units_consumed}")
-        terminal_solar_math(units_consumed, [])
+            print(f"Parsed Tariffs - On-Peak: {peak_tariff}, Off-Peak: {off_peak_tariff}, Peak Units: {peak_units}, Off-Peak Units: {off_peak_units}")
 
-        return {"success": True, "data": details}
+            # Determine a fallback numeric tariff_value consistent with prior behaviour:
+            if peak_tariff is not None and off_peak_tariff is not None:
+                tariff_value = (peak_tariff + off_peak_tariff) / 2.0
+                tariff_source = "bill (average)"
+            elif peak_tariff is not None:
+                tariff_value = peak_tariff
+                tariff_source = "bill (on-peak)"
+            elif off_peak_tariff is not None:
+                tariff_value = off_peak_tariff
+                tariff_source = "bill (off-peak)"
+
+        print(f"Determined Tariff Value (fallback for legacy callers): {tariff_value} (Source: {tariff_source})")
+        # Fallback if no tariff was found in the bill
+        if tariff_value is None:
+            tariff_value = ENGINEERING.get("tariff_per_unit", 55)
+
+        logger.info(f"Bill validated. Units: {units_consumed}; Effective tariff Rs. {tariff_value:.2f} (from {tariff_source})")
+
+        # IMPORTANT: Return the data so the frontend can immediately call /calculate
+        return {
+            "success": True,
+            "data": details,
+            "tariffPerUnit": tariff_value,
+            "tariffSource": tariff_source
+        }
 
     except Exception as e:
-        logger.error(f"An unexpected error occurred during bill processing: {e}")
+        logger.error(f"An unexpected error occurred during bill processing: {e}", exc_info=True)
         return {"success": False, "error": "An internal error occurred. Please try again."}
-
-
-
-
-# @app.post("/calculate")
-# async def calculate_endpoint(payload: CalcRequest):
-#     """Called every time an appliance is toggled or bill changes."""
-#     results = terminal_solar_math(payload.units, payload.appliances)
-#     return results
-
-# # --- MODIFIED ENDPOINT ---
-# @app.post("/upload-bill")
-# async def upload_bill(file: UploadFile = File(...)):
-#     if not (file.filename.endswith('.pdf') or file.filename.endswith('.png')):
-#         raise HTTPException(status_code=400, detail="Only .pdf and .png allowed")
-
-#     file_path = os.path.join(UPLOAD_DIR, file.filename)
-#     with open(file_path, "wb") as buffer:
-#         shutil.copyfileobj(file.file, buffer)
-
-#     try:
-#         text = await extract_text(file_path)
-#         details_raw = await extract_bill_data(text)
-#         details = safe_parse(details_raw)
-#         print(f"Extracted Bill Details: {details}")
-
-#         # --- START: ADDED VALIDATION BLOCK ---
-#         # Check if parsing was successful and if essential data exists and is valid.
-#         units_consumed = details.get("units_consumed") if isinstance(details, dict) else None
-
-#         if not isinstance(units_consumed, (int, float)) or units_consumed <= 0:
-#             error_message = "Invalid Bill: Key consumption data could not be extracted. Please upload a clear, valid bill."
-#             logger.warning(f"Bill validation failed. Extracted details: {details}")
-#             # Return a failure response that the frontend can handle
-#             return {"success": False, "error": error_message}
-#         # --- END: ADDED VALIDATION BLOCK ---
-
-#         # Determine tariff: prefer bill, fallback to config
-#         tariff_value = None
-#         tariff_source = "config"
-#         if isinstance(details, dict):
-#             for key in ["tariff", "tariff_per_unit", "per_unit", "rate", "tariff_rate", "unit_rate", "unit_price"]:
-#                 if key in details:
-#                     parsed = parse_numeric(details[key])
-#                     if parsed and parsed > 0:
-#                         tariff_value = parsed
-#                         tariff_source = "bill"
-#                         break
-
-#         if tariff_value is None:
-#             tariff_value = ENGINEERING.get("tariff_per_unit", 55)
-#             tariff_source = "config"
-
-#         logger.info(f"Bill validated successfully. Units: {units_consumed}; Using tariff Rs. {tariff_value} (from {tariff_source})")
-#         # pass tariff_override so terminal prints the correct source as well
-#         terminal_solar_math(units_consumed, [], tariff_override=tariff_value)
-
-#         return {"success": True, "data": details, "tariffPerUnit": tariff_value, "tariffSource": tariff_source}
-
-#     except Exception as e:
-#         logger.error(f"An unexpected error occurred during bill processing: {e}")
-#         return {"success": False, "error": "An internal error occurred. Please try again."}
 
 
 class AIRequest(BaseModel):
@@ -361,98 +350,48 @@ class AIRequest(BaseModel):
 
 @app.post("/ai-insights")
 async def ai_insights(payload: AIRequest):
-    """
-    Generate structured AI insights for frontend display
-    """
     logger.info("Received /ai-insights request")
-
     city = payload.user.get("city") if payload.user else "your area"
     units = payload.units or 0
     solar_kw = payload.specs.get("solarKw") if payload.specs else None
     savings = payload.specs.get("monthlySavings") if payload.specs else None
 
     prompt = f"""
-You are an expert solar energy consultant in Pakistan.
-
-Generate AI insights for a homeowner in {city}.
-
-User Details:
-- City: {city}
+You are an expert solar energy consultant in Pakistan. Generate 6 short, data-driven, helpful bullet points for a homeowner in {city} based on these details:
 - Monthly Units: {units}
 - Recommended Solar Size: {solar_kw} kW
 - Estimated Savings: {savings} PKR
-
-Return ONLY a JSON array of 6 short bullet points.
-
-Tone:
-- Professional
-- Data-driven
-- Helpful
-- Not salesy
-
-Example Style:
-- Electricity prices in Islamabad have steadily increased over the past year
-- Future tariffs are expected to rise 20–30% over the next few years
-- Your annual electricity expenses may increase significantly without solar
-- Solar helps lock in long-term energy costs
-- Installing solar now protects against future tariff hikes
-- Solar can increase property value and energy independence
-
-Return format:
-[
- "bullet 1",
- "bullet 2",
- "bullet 3",
- "bullet 4",
- "bullet 5",
- "bullet 6"
-]
+Return ONLY a valid JSON array of strings. Do not be salesy.
+Example: ["Electricity prices in {city} have steadily increased.", "Future tariffs are expected to rise.", ...]
 """
 
     try:
         model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(prompt)
-
-        cleaned = re.sub(r"```json|```", "", response.text).strip()
-        insights = json.loads(cleaned)
-
+        insights = json.loads(re.sub(r"```json|```", "", response.text).strip())
     except Exception as e:
         logger.exception("Gemini failed — fallback insights")
-
         insights = [
-            f"Electricity prices in {city} have steadily increased over the past year",
-            "Future tariffs are expected to rise 20–30% over the next few years",
-            "Your annual electricity expenses may increase significantly without solar",
-            "Solar helps lock in long-term energy costs",
-            "Installing solar now protects against future tariff hikes",
-            "Solar can increase property value and energy independence"
+            f"Electricity prices in {city} have steadily increased over the past year.",
+            "Future tariffs are expected to rise 20–30% over the next few years.",
+            "Your annual electricity expenses may increase significantly without solar.",
+            "Solar helps lock in long-term energy costs.",
+            "Installing solar now protects against future tariff hikes.",
+            "Solar can increase property value and energy independence."
         ]
 
-    # Terminal Output
     print("\n" + "="*60)
     print("🧠 AI INSIGHTS")
-    for i in insights:
-        print(f"• {i}")
+    for i in insights: print(f"• {i}")
     print("="*60 + "\n")
 
-    return {
-        "success": True,
-        "insights": insights
-    }
+    return {"success": True, "insights": insights}
 
-# --- New: expose config to frontend ---
+
 @app.get("/config")
 async def config_endpoint():
-    """
-    Returns engineering parameters and appliance defaults so frontends
-    can use a single source-of-truth instead of hardcoded values.
-    """
     try:
-        return {
-            "success": True,
-            "engineering": ENGINEERING,
-            "appliance_defaults": APPLIANCE_DEFAULTS
-        }
+        return {"success": True, "engineering": ENGINEERING, "appliance_defaults": APPLIANCE_DEFAULTS}
     except Exception as e:
         logger.exception("Failed to return config")
         return {"success": False, "error": str(e)}
