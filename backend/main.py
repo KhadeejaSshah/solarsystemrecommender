@@ -70,7 +70,7 @@ def apply_appliance_defaults(appliances: List[ApplianceItem]):
 # ---------------------------------------------------------
 # 3. UPDATED ENGINEERING MATH ENGINE
 # ---------------------------------------------------------
-def terminal_solar_math_new(units, appliances: List[ApplianceItem], tariff_override=None, peak_tariff=None, off_peak_tariff=None, peak_units=None, off_peak_units=None):
+def terminal_solar_math_new(units, appliances: List[ApplianceItem], tariff_override=None, peak_tariff=None, off_peak_tariff=None, peak_units=None, off_peak_units=None, monthly_bill_amount=None):
     """
     Performs engineering math where appliances increase the total system demand.
     """
@@ -157,7 +157,7 @@ def terminal_solar_math_new(units, appliances: List[ApplianceItem], tariff_overr
 
     print(f"\nGrid Impact: -{grid_impact:.0f}% | Savings: Rs. {monthly_save:,.0f}")
     print("═"*60 + "\n")
-
+    print("monthly bill amount:", monthly_bill_amount)
     return {
         "solarKw": pv_size_kw,
         "storageKwh": round(battery_size_kwh, 2),
@@ -166,7 +166,8 @@ def terminal_solar_math_new(units, appliances: List[ApplianceItem], tariff_overr
         "carbonOffset": round(carbon_offset, 2),
         "monthlySavings": round(monthly_save, 0),
         "tariffPerUnit": round(effective_tariff, 2),
-        "tariffSource": tariff_source
+        "tariffSource": tariff_source,
+        "monthlyBillAmount": monthly_bill_amount
     }
 
 
@@ -183,17 +184,18 @@ async def extract_bill_data(text):
     prompt = f"""
     You are an expert in Pakistani electricity bills. Extract structured data. Return ONLY valid JSON.
     - Find 'units_consumed'.
+    - Find amount of bill of current month which will be after: PAYABLE WITHIN DUE DATE like:  PAYABLE WITHIN DUE DATE 44,060.
     - Find all tariff rates. If you find two distinct rates, assign the HIGHER value to 'on_peak_tariff' and the LOWER value to 'off_peak_tariff'.
     - Find all tariff units . If you find two distinct units values, assign the HIGHER value to 'on_peak_units' and the LOWER value to 'off_peak_units'.
 
-    - CRITICAL RULE: If you find only a single tariff rate (e.g., "Tariff 44.060 X Units"), you MUST populate BOTH 'on_peak_tariff' AND 'off_peak_tariff' with that same value (e.g., 44.06).
-    - CRITICAL RULE: If you find only a single tariff unit (e.g., "Tariff 44.060 X 100 Units"), you MUST populate BOTH 'on_peak_units' AND 'off_peak_units' with that same value (e.g., 100).
+    - CRITICAL RULE: If you find only a single tariff rate (e.g., "Tariff 44.060 X Units"), you MUST populate BOTH 'on_peak_tariff' AND 'off_peak_tariff' with that same value divided by 2 (e.g., 44.06 then offpeak and onpeak will be: 22.03, 22.03).
+    - CRITICAL RULE: If you find only a single tariff unit (e.g., "Tariff 44.060 X 100 Units"), you MUST populate BOTH 'on_peak_units' AND 'off_peak_units' with that same value divided by 2 (e.g., 100, then offpeak will be 50, onpeak will be 50).
 
     - If you cannot find any tariff information, all tariff fields should be null.
     Format:
     {{
       "consumer_name": "string", "location": "string", "units_consumed": number,
-      "billing_month": "string", "on_peak_tariff": number | null, "off_peak_tariff": number | null, "on_peak_units": number | null, "off_peak_units": number | null
+      "billing_month": "string", "on_peak_tariff": number | null, "off_peak_tariff": number | null, "on_peak_units": number | null, "off_peak_units": number | null, "monthly_bill_amount": number | null
     }}
     BILL TEXT:
     {text}
@@ -224,6 +226,7 @@ peak_tariff = None
 off_peak_tariff = None
 peak_units = None
 off_peak_units = None
+monthly_bill_amount = None
 
 @app.post("/calculate")
 async def calculate_endpoint(payload: CalcRequest):
@@ -238,7 +241,8 @@ async def calculate_endpoint(payload: CalcRequest):
         peak_tariff=peak_tariff,
         off_peak_tariff=off_peak_tariff,
         peak_units=peak_units,
-        off_peak_units=off_peak_units
+        off_peak_units=off_peak_units,
+        monthly_bill_amount=monthly_bill_amount
     )
     return results
 
@@ -255,6 +259,7 @@ async def upload_bill(file: UploadFile = File(...)):
 
     try:
         text = await extract_text(file_path)
+        print('text of bill:', text)
         details = safe_parse(await extract_bill_data(text))
         
         # --- START: VALIDATION LOGIC ---
@@ -272,12 +277,13 @@ async def upload_bill(file: UploadFile = File(...)):
         # --- END: VALIDATION LOGIC ---
 
         # Store tariffs globally for the next /calculate call
-        global tariff_value, peak_tariff, off_peak_tariff, peak_units, off_peak_units
+        global tariff_value, peak_tariff, off_peak_tariff, peak_units, off_peak_units, monthly_bill_amount
         peak_tariff = parse_numeric(details.get("on_peak_tariff"))
         off_peak_tariff = parse_numeric(details.get("off_peak_tariff"))
         peak_units = parse_numeric(details.get("on_peak_units"))
         off_peak_units = parse_numeric(details.get("off_peak_units"))
-        
+        monthly_bill_amount = parse_numeric(details.get("monthly_bill_amount"))
+
         # Fallback single tariff
         tariff_value = peak_tariff if peak_tariff else parse_numeric(details.get("tariff"))
 

@@ -113,7 +113,7 @@ export default function App() {
   const [selectedAppliances, setSelectedAppliances] = useState<Appliance[]>([]);
   const [specs, setSpecs] = useState<any>({
     solarKw: 0, storageKwh: 0, inverterKw: 0, packageId: 'Smart Lite',
-    monthlySavings: 0, carbonOffset: 0, gridImpact: 0
+    monthlySavings: 0, carbonOffset: 0, gridImpact: 0, monthlyBillAmount: 0
   });
   const [billOnlySpecs, setBillOnlySpecs] = useState<any>(null);
 
@@ -303,8 +303,8 @@ export default function App() {
   };
 
   // Derived values for the Energy Cost Outlook display
-  const projectedVal = Math.round(specs.projectedMonthlyBill ?? billOnlySpecs?.projectedMonthlyBill ?? 78000);
-  const todayVal = Math.round(specs.currentMonthlyBill ?? billOnlySpecs?.currentMonthlyBill ?? 52000);
+  const todayVal = specs.monthlyBillAmount || billOnlySpecs?.monthlyBillAmount || 78000;
+  const projectedVal = specs.monthlyBillAmount ? specs.monthlyBillAmount * 1.32 : todayVal * 1.32; // Assume 32% increase if we don't have a projection
   const inFiveVal = projectedVal;
   const pctChange = todayVal > 0 ? Math.round(((inFiveVal - todayVal) / todayVal) * 100) : 32;
   const formatK = (v: number) => `Rs ${(v / 1000).toFixed(1)}k`;
@@ -354,7 +354,7 @@ export default function App() {
                     setAiInsights(null);
                     setAiError(null); // Clear errors when resetting
                     setBillOnlySpecs(null);
-                    setSpecs({ solarKw: 0, storageKwh: 0, inverterKw: 0, packageId: 'Smart Lite', monthlySavings: 0, carbonOffset: 0, gridImpact: 0 });
+                    setSpecs({ solarKw: 0, storageKwh: 0, inverterKw: 0, packageId: 'Smart Lite', monthlySavings: 0, carbonOffset: 0, gridImpact: 0 ,monthlyBillAmount: 0});
                   }}
                   className="p-2 rounded-xl bg-current/5 hover:bg-orange-500 hover:text-white transition-all"
                 >
