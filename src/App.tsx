@@ -309,6 +309,13 @@ export default function App() {
   const pctChange = todayVal > 0 ? Math.round(((inFiveVal - todayVal) / todayVal) * 100) : 32;
   const formatK = (v: number) => `Rs ${(v / 1000).toFixed(1)}k`;
 
+  // UI status for optimization (offline / scanning / online)
+  const optimizationStatus = isScanning
+    ? { label: 'Scanning Bill...', dotClass: 'bg-yellow-400', textClass: 'text-black' }
+    : interactionLevel === 'bill-uploaded'
+      ? { label: 'Optimization Active', dotClass: 'bg-orange-500', textClass: 'text-orange-200' }
+      : { label: 'Optimization Offline', dotClass: 'bg-slate-400', textClass: 'text-slate-700' };
+  
   return (
     <div className={cn("h-screen w-full overflow-hidden transition-all duration-1000 font-sans", isDark ? "bg-slate-950 text-white" : "bg-white text-slate-900")}>
       {/* (The rest of your JSX is largely unchanged) */}
@@ -316,21 +323,22 @@ export default function App() {
       {/* ... Background, Logo, Theme Button ... */}
       <div className={cn("absolute inset-0 z-0 transition-all duration-[3000ms] bg-gradient-to-br", isDark ? currentSeason.darkColor : currentSeason.color)}>
         <div className="absolute inset-0 flex items-center justify-center p-20 pointer-events-none">
-          <img src="/h23.png" alt="Solar House" className="absolute w-full h-full object-cover" />
+          {/* make image a little dark: */}
+          <img src="/h23.png" alt="Solar House" className="absolute w-full h-full object-cover brightness-75" />
         </div>
       </div>
-      <div className={cn("absolute p-2 top-10 left-[465px] z-50 flex items-center gap-8 rounded-[2rem] backdrop-blur-xl border shadow-lg", isDark ? "bg-black/60 border-white/10" : "bg-white/70 border-black/10")}>
+      <div className={cn("absolute p-2 top-10 left-[465px] z-50 flex items-center gap-8 rounded-[2rem] backdrop-blur-xl border shadow-lg", isDark ? "bg-black/75 border-white/10" : "bg-white/70 border-black/10")}>
         <img src="/logofull.png" className="h-10" alt="Logo" />
-        <div className={cn("px-5 py-2 rounded-full border text-[10px] font-black uppercase tracking-widest flex items-center gap-3", isDark ? "bg-black/60 border-white/10" : "bg-black/5 border-black/10")}>
-          <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-          <span>Optimization Active</span>
+        <div className={cn("px-5 py-2 rounded-full border text-[10px] font-black uppercase tracking-widest flex items-center gap-3", isDark ? "bg-black/75 border-white/10" : "bg-black/5 border-black/10")}>
+          <div className={cn("w-2 h-2 rounded-full animate-pulse", optimizationStatus.dotClass)} />
+          <span className={cn("whitespace-nowrap", optimizationStatus.textClass)}>{optimizationStatus.label}</span>
         </div>
       </div>
-      <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className={cn("p-3 absolute top-10 right-10 rounded-[2rem] backdrop-blur-xl border shadow-lg transition-all z-[100]", isDark ? "bg-black/60 border-white/10 hover:bg-black/80" : "bg-white/70 border-black/10 hover:bg-white/90")}>
+      <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} className={cn("p-3 absolute top-10 right-10 rounded-[2rem] backdrop-blur-xl border shadow-lg transition-all z-[100]", isDark ? "bg-black/75 border-white/10 hover:bg-black/80" : "bg-white/70 border-black/10 hover:bg-white/90")}>
         {isDark ? <Sun size={18} className="text-orange-200" /> : <Moon size={18} className="text-slate-700" />}
       </button>
 
-      <motion.aside className={cn("absolute left-12 top-10 bottom-10 w-[380px] z-50 rounded-[2rem] border backdrop-blur-[40px] shadow-2xl flex flex-col transition-all duration-500 overflow-hidden", isDark ? "bg-black/40 border-white/10" : "bg-white/60 border-white/80")}>
+      <motion.aside className={cn("absolute left-12 top-10 bottom-10 w-[380px] z-50 rounded-[2rem] border backdrop-blur-[40px] shadow-2xl flex flex-col transition-all duration-500 overflow-hidden", isDark ? "bg-black/75 border-white/10" : "bg-white/60 border-white/80")}>
         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-6">
           <div className="space-y-1">
             <div className="flex items-center justify-between">
@@ -365,14 +373,31 @@ export default function App() {
                 <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform">
                   <Download className="text-white" size={20} />
                 </div>
-                <p className="text-[11px] font-black uppercase tracking-widest">{isScanning ? "Processing..." : "Drop Energy Bill"}</p>
-                <input
-                  type="file"
-                  accept="application/pdf,image/png"
-                  onChange={handleFileUpload}
-                  className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                  disabled={isScanning} // Disable input while scanning
-                />
+                <p className="text-[11px] font-black uppercase tracking-widest">
+                  {isScanning ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Activity size={14} className="animate-spin text-orange-400" />
+                      <span>AI is analyzing your bill...</span>
+                      <span className="ml-2 text-sm opacity-60">🔒</span>
+                    </span>
+                  ) : (
+                    "Drop Energy Bill"
+                  )}
+                </p>
+                {isScanning && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="p-2 rounded-xl bg-black/75 text-white text-xs font-bold">
+                      Locking & analyzing… this may take a few moments
+                    </div>
+                  </div>
+                )}
+                 <input
+                   type="file"
+                   accept="application/pdf,image/png"
+                   onChange={handleFileUpload}
+                   className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                   disabled={isScanning} // Disable input while scanning
+                 />
               </div>
 
               {/* --- START: UI TO DISPLAY THE BILL ERROR --- */}
@@ -573,7 +598,7 @@ export default function App() {
               animate={{ x: 0, opacity: 1 }}
               className={cn(
                 "p-8 rounded-[2rem] border backdrop-blur-[50px] shadow-2xl w-[420px]",
-                isDark ? "bg-black/60 border-white/10" : "bg-white/40 border-white/80"
+                isDark ? "bg-black/75 border-white/10" : "bg-white/40 border-white/80"
               )}
             >
               <p className="text-[13px] font-black uppercase tracking-[0.4em] opacity-40 mb-2">Original Designed Capacity</p>
@@ -627,7 +652,7 @@ export default function App() {
             initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
             className="absolute bottom-10 left-[420px] right-10 z-50 space-y-4"
           >
-            <div className={cn("w-[21.5%] h-50 ml-285 mt-9 relative top-48 rounded-[2rem] border backdrop-blur-2xl p-8 flex flex-col justify-center relative", isDark ? "bg-black/20 border-white/5" : "bg-white/20 border-white/60")}>
+            <div className={cn("w-[21.5%] h-50 ml-285 mt-9 relative top-48 rounded-[2rem] border backdrop-blur-2xl p-8 flex flex-col justify-center relative", isDark ? "bg-black/75 border-white/5" : "bg-white/20 border-white/60")}>
               <div className="absolute top-4 left-6 text-[10px] font-black uppercase tracking-widest opacity-40 flex items-center gap-2">
                 <Activity size={12} className="text-orange-500" /> Dynamic Load Projection
               </div>
@@ -660,7 +685,7 @@ export default function App() {
 
             <div className="flex items-end gap-4 ml-11 ">
               {/* ENERGY COST OUTLOOK (moved left) */}
-              <div className={cn("flex-[1.2] h-75 p-6 rounded-[2.5rem] border-2 transition-all duration-500 relative overflow-hidden", isDark ? "bg-black/60 border-white/8" : "bg-white/10 border-white/60")}>
+              <div className={cn("flex-[1.2] h-75 p-6 rounded-[2.5rem] border-2 transition-all duration-500 relative overflow-hidden", isDark ? "bg-black/75 border-white/8" : "bg-white/10 border-white/60")}>
                  <div className="flex items-center justify-between mb-4">
                    <div className="flex items-center gap-3">
                      <TrendingUp size={16} className="text-orange-500" />
@@ -711,7 +736,7 @@ export default function App() {
                 className={cn(
                   "flex-[1] h-28 p-3 rounded-[2.5rem] border-2 cursor-pointer hover:scale-[1.03] transition-all duration-500 shadow-2xl relative group overflow-hidden",
                     
-                  isDark? "bg-black/60 border-white/10 shadow-black/40 backdrop-blur-xl": "bg-white/20 border-white/60 backdrop-blur-xl"                )}
+                  isDark? "bg-black/75 border-white/10 shadow-black/40 backdrop-blur-xl": "bg-white/20 border-white/60 backdrop-blur-xl"                )}
               >
                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
                    <Sparkles size={60} className="text-orange-500" />
@@ -748,7 +773,7 @@ export default function App() {
 
       <AnimatePresence>
         {showTierDetails && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-10 bg-black/40 backdrop-blur-xl">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-10 bg-black/75 backdrop-blur-xl">
             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className={cn("w-[600px] p-8 rounded-[3rem] border shadow-2xl relative", isDark ? "bg-slate-900 border-white/10" : "bg-white border-slate-200")}>
               <button onClick={() => setShowTierDetails(false)} className="absolute top-6 right-6 opacity-40 hover:opacity-100"><X size={24} /></button>
 
@@ -809,7 +834,7 @@ function ImpactBox({
     <div
       className={cn(
         "flex-1 h-28 p-3 rounded-[2.5rem] border cursor-pointer transition-all duration-500 shadow-2xl relative group overflow-hidden hover:scale-[1.03]",
-        "bg-black/60 border-white/10 shadow-black/40 backdrop-blur-xl"
+        "bg-black/75 border-white/10 shadow-black/40 backdrop-blur-xl"
       )}
     >
       {/* background icon glow */}
