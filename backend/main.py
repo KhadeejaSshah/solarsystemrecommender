@@ -235,14 +235,12 @@ async def calculate_endpoint(payload: CalcRequest):
     )
     return results
 
+
 @app.post("/upload-bill")
 async def upload_bill(file: UploadFile = File(...)):
-    """
-    This endpoint's ONLY job is to parse the bill and return the data.
-    IT DOES NOT PERFORM A CALCULATION.
-    """
+    # 1. Extension Check
     if not any(file.filename.lower().endswith(ext) for ext in ['.pdf', '.png', '.jpg', '.jpeg']):
-        raise HTTPException(status_code=400, detail="Only .pdf, .png, and .jpg files are allowed")
+        return {"success": False, "error": "Only .pdf, .png, and .jpg files are allowed"}
 
     file_path = os.path.join(UPLOAD_DIR, file.filename)
     with open(file_path, "wb") as buffer:
@@ -250,61 +248,36 @@ async def upload_bill(file: UploadFile = File(...)):
 
     try:
         text = await extract_text(file_path)
-        details_raw = await extract_bill_data(text)
-        details = safe_parse(details_raw)
-        logger.info(f"Extracted Bill Details: {details}")
-
+        details = safe_parse(await extract_bill_data(text))
+        
+        # --- START: VALIDATION LOGIC ---
         units_consumed = details.get("units_consumed") if isinstance(details, dict) else None
-        if not isinstance(units_consumed, (int, float)) or units_consumed <= 0:
-            raise HTTPException(status_code=400, detail="Could not read valid consumption data from the bill.")
 
-        # --- Tariff Logic to find the correct single tariff value ---
-        # store extracted tariffs and optional usage splits into globals so /calculate can use them
+        # Step 1: Unreadable consumption
+        if not isinstance(units_consumed, (int, float)):
+            logger.warning(f"Validation failed (unreadable): {details}")
+            return {"success": False, "error": "Invalid Bill: We could not read the consumption data. Please upload a clear, valid bill."}
+
+        # Step 2: Already has Solar/Net Metering
+        if units_consumed <= 0:
+            logger.info(f"Existing solar detected: {units_consumed} units")
+            return {"success": False, "error": "Your bill shows zero or negative consumption. This often means you already have a solar system. Our tool is designed for new installations, so we cannot proceed."}
+        # --- END: VALIDATION LOGIC ---
+
+        # Store tariffs globally for the next /calculate call
         global tariff_value, peak_tariff, off_peak_tariff, peak_units, off_peak_units
-        tariff_value = None
-        tariff_source = "config"
-        peak_tariff = None
-        off_peak_tariff = None
-        peak_units = None
-        off_peak_units = None
+        peak_tariff = parse_numeric(details.get("on_peak_tariff"))
+        off_peak_tariff = parse_numeric(details.get("off_peak_tariff"))
+        peak_units = parse_numeric(details.get("on_peak_units"))
+        off_peak_units = parse_numeric(details.get("off_peak_units"))
+        
+        # Fallback single tariff
+        tariff_value = peak_tariff if peak_tariff else parse_numeric(details.get("tariff"))
 
-        if isinstance(details, dict):
-            peak_tariff = parse_numeric(details.get("on_peak_tariff"))
-            off_peak_tariff = parse_numeric(details.get("off_peak_tariff"))
-            # Try several possible keys for peak/off usage counts that some parsers might return
-            peak_units = parse_numeric(details.get("units_peak") or details.get("on_peak_units") or details.get("peak_usage") or details.get("peak"))
-            off_peak_units = parse_numeric(details.get("units_offpeak") or details.get("offpeak_units") or details.get("off_peak_units") or details.get("offpeak_usage") or details.get("offpeak"))
-
-            print(f"Parsed Tariffs - On-Peak: {peak_tariff}, Off-Peak: {off_peak_tariff}, Peak Units: {peak_units}, Off-Peak Units: {off_peak_units}")
-
-            # Determine a fallback numeric tariff_value consistent with prior behaviour:
-            if peak_tariff is not None and off_peak_tariff is not None:
-                tariff_value = (peak_tariff + off_peak_tariff) / 2.0
-                tariff_source = "bill (average)"
-            elif peak_tariff is not None:
-                tariff_value = peak_tariff
-                tariff_source = "bill (on-peak)"
-            elif off_peak_tariff is not None:
-                tariff_value = off_peak_tariff
-                tariff_source = "bill (off-peak)"
-
-        print(f"Determined Tariff Value (fallback for legacy callers): {tariff_value} (Source: {tariff_source})")
-        # Fallback if no tariff was found in the bill
-        if tariff_value is None:
-            tariff_value = ENGINEERING.get("tariff_per_unit", 55)
-
-        logger.info(f"Bill validated. Units: {units_consumed}; Effective tariff Rs. {tariff_value:.2f} (from {tariff_source})")
-
-        # IMPORTANT: Return the data so the frontend can immediately call /calculate
-        return {
-            "success": True,
-            "data": details,
-            "tariffPerUnit": tariff_value,
-            "tariffSource": tariff_source
-        }
+        return {"success": True, "data": details}
 
     except Exception as e:
-        logger.error(f"An unexpected error occurred during bill processing: {e}", exc_info=True)
+        logger.error(f"Error: {e}")
         return {"success": False, "error": "An internal error occurred. Please try again."}
 
 
